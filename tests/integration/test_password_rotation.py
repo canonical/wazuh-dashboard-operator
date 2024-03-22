@@ -55,9 +55,10 @@ async def recreate_opensearch_kibanaserver(ops_test: OpsTest):
     # To make it EVEN worse: we set the opensearch charm update period to 1h,
     # since on each status update opensearch is deleting all "unexpected" users :sweat_smile:
     #
-    opensearch_endpoint = await get_application_relation_data(
+    opensearch_endpoints = await get_application_relation_data(
         ops_test, APP_NAME, "opensearch_client", "endpoints"
     )
+    opensearch_endpoint = opensearch_endpoints.split(",")[0]
 
     unit_name = f"{OPENSEARCH_CHARM}/0"
     action = await ops_test.model.units.get(unit_name).run_action("get-password")
@@ -87,7 +88,7 @@ async def test_deploy_active(ops_test: OpsTest):
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     # Pinning down opensearch revision to the last 2.10 one
     # NOTE: can't access 2/stable from the tests, only 'edge' available
-    await ops_test.model.deploy(OPENSEARCH_CHARM, revision=43, channel="2/edge", num_units=1)
+    await ops_test.model.deploy(OPENSEARCH_CHARM, channel="2/edge", num_units=2)
 
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config)

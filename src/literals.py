@@ -4,7 +4,7 @@
 
 """Collection of global literals for the ZooKeeper charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = 5
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = 8
 
 SUBSTRATE = "vm"
 CHARM_KEY = "opensearch-dashboards"
