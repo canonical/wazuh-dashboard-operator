@@ -8,26 +8,18 @@ import logging
 import time
 
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
-from ops.charm import InstallEvent, SecretChangedEvent
+from ops.charm import CharmBase, InstallEvent, SecretChangedEvent
 from ops.framework import EventBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 
 from core.cluster import ClusterState
-from core.models import CharmWithRelationData
 from events.password_actions import PasswordActionEvents
 from events.requirer import RequirerEvents
 
 # from events.provider import ProviderEvents
 from events.tls import TLSEvents
-from literals import (
-    CHARM_KEY,
-    CHARM_USERS,
-    PEER,
-    PEER_APP_SECRETS,
-    PEER_UNIT_SECRETS,
-    SUBSTRATE,
-)
+from literals import CHARM_KEY, CHARM_USERS, PEER, RESTART_TIMEOUT, SUBSTRATE
 from managers.config import ConfigManager
 from managers.tls import TLSManager
 from workload import ODWorkload
@@ -38,15 +30,11 @@ from workload import ODWorkload
 logger = logging.getLogger(__name__)
 
 
-class OpensearchDasboardsCharm(CharmWithRelationData):
+class OpensearchDasboardsCharm(CharmBase):
     """Charmed Operator for Opensearch Dashboards."""
 
     def __init__(self, *args):
-        super().__init__(
-            peer_app_secrets=PEER_APP_SECRETS,
-            peer_unit_secrets=PEER_UNIT_SECRETS,
-            *args,
-        )
+        super().__init__(*args)
         self.name = CHARM_KEY
         self.state = ClusterState(self, substrate=SUBSTRATE)
         self.workload = ODWorkload()
@@ -80,7 +68,7 @@ class OpensearchDasboardsCharm(CharmWithRelationData):
 
         self.framework.observe(getattr(self.on, "install"), self._on_install)
 
-        self.framework.observe(getattr(self.on, "start"), self._manual_restart)
+        self.framework.observe(getattr(self.on, "start"), self._start)
 
         self.framework.observe(
             getattr(self.on, "update_status"), self._on_cluster_relation_changed
@@ -138,9 +126,6 @@ class OpensearchDasboardsCharm(CharmWithRelationData):
         if getattr(event, "departing_unit", None) == self.unit:
             return
 
-        # check whether restart is needed for all `*_changed` events
-        # only restart where necessary to avoid slowdowns
-        # config_changed call here implicitly updates jaas + zoo.cfg
         if (
             self.config_manager.config_changed()
             and self.state.unit_server.started
@@ -162,9 +147,6 @@ class OpensearchDasboardsCharm(CharmWithRelationData):
             None,  # type:ignore noqa
         ):  # Changes with the soon upcoming new version of DP-libs STILL within this POC
 
-            # check whether restart is needed for all `*_changed` events
-            # only restart where necessary to avoid slowdowns
-            # config_changed call here implicitly updates jaas + zoo.cfg
             if (
                 self.config_manager.config_changed()
                 and self.state.unit_server.started
@@ -172,7 +154,7 @@ class OpensearchDasboardsCharm(CharmWithRelationData):
             ):
                 logger.info(f"Secret {event.secret.label} changed.")
 
-    def _manual_restart(self, event: EventBase) -> None:
+    def _start(self, event: EventBase) -> None:
         """Forces a rolling-restart event.
 
         Necessary for ensuring that `on_start` restarts roll.
@@ -200,21 +182,16 @@ class OpensearchDasboardsCharm(CharmWithRelationData):
         logger.info(f"{self.unit.name} (re)starting...")
         self.workload.restart()
 
-        # TODO: Here we may wanna put a healthcheck?
-        time.sleep(5)
+        start_time = time.time()
+        while not self.workload.alive() and time.time() - start_time < RESTART_TIMEOUT:
+            time.sleep(5)
 
         self.unit.status = ActiveStatus()
-
-        # self.update_client_data()
 
     # --- CONVENIENCE METHODS ---
 
     def init_server(self):
-        """Calls startup functions for server start.
-
-        Sets myid, server_jvmflgas env_var, initial servers in dynamic properties,
-            default properties and jaas_config
-        """
+        """Calls startup functions for server start."""
         # don't run if leader has not yet created passwords
         if not self.state.cluster.internal_user_credentials:
             self.unit.status = MaintenanceStatus("waiting for passwords to be created")
@@ -239,26 +216,6 @@ class OpensearchDasboardsCharm(CharmWithRelationData):
                 "state": "started",
             }
         )
-
-    # def update_client_data(self) -> None:
-    #     """Writes necessary relation data to all related applications."""
-    #     if not self.state.ready or not self.unit.is_leader():
-    #         return
-    #
-    #     for client in self.state.clients:
-    #         if not client.password:
-    #             continue  # skip as ACLs have not yet been added
-    #
-    #         client.update(
-    #             {
-    #                 "uris": client.uris,
-    #                 "endpoints": client.endpoints,
-    #                 "tls": client.tls,
-    #                 "username": client.username,
-    #                 "password": client.password,
-    #                 "chroot": client.chroot,
-    #             }
-    #         )
 
 
 if __name__ == "__main__":

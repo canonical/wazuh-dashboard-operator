@@ -32,10 +32,11 @@ class TLSEvents(Object):
         self.certificates = TLSCertificatesRequiresV3(self.charm, "certificates")
 
         self.framework.observe(
-            getattr(self.charm.on, "certificates_relation_created"), self._on_certificates_created
+            getattr(self.charm.on, "certificates_relation_created"),
+            self._on_certs_relation_created,
         )
         self.framework.observe(
-            getattr(self.charm.on, "certificates_relation_joined"), self._on_certificates_joined
+            getattr(self.charm.on, "certificates_relation_joined"), self._on_certs_relation_joined
         )
         self.framework.observe(
             getattr(self.certificates.on, "certificate_available"), self._on_certificate_available
@@ -44,29 +45,21 @@ class TLSEvents(Object):
             getattr(self.certificates.on, "certificate_expiring"), self._on_certificate_expiring
         )
         self.framework.observe(
-            getattr(self.charm.on, "certificates_relation_broken"), self._on_certificates_broken
+            getattr(self.charm.on, "certificates_relation_broken"), self._on_certs_relation_broken
         )
 
         self.framework.observe(
             getattr(self.charm.on, "set_tls_private_key_action"), self._set_tls_private_key
         )
 
-    def _on_certificates_created(self, event: RelationCreatedEvent) -> None:
+    def _on_certs_relation_created(self, event: RelationCreatedEvent) -> None:
         """Handler for `certificates_relation_created` event."""
         if not self.charm.unit.is_leader():
             return
 
-        if not self.charm.state.stable:
-            logger.debug("certificates relation created - quorum not stable - deferring")
-            event.defer()
-            return
-
-        # if this event fired, we don't know whether the cluster was fully running or not
-        # assume it's already running, and trigger `upgrade` from non-ssl -> ssl
-        # ideally trigger this before any other `certificates_*` step
         self.charm.state.cluster.update({"tls": "enabled", "switching-encryption": "started"})
 
-    def _on_certificates_joined(self, event: RelationJoinedEvent) -> None:
+    def _on_certs_relation_joined(self, event: RelationJoinedEvent) -> None:
         """Handler for `certificates_relation_joined` event."""
         if not self.charm.state.cluster.tls:
             logger.debug(
@@ -109,7 +102,7 @@ class TLSEvents(Object):
             logger.error("Can't use certificate, found unknown CSR")
             return
 
-        # if certificate already exists, this event must be new, flag manual restart
+        # if certificate already exists, this event must be new, flag restart
         if self.charm.state.unit_server.certificate:
             self.charm.on[f"{self.charm.restart.name}"].acquire_lock.emit()
 
@@ -145,18 +138,16 @@ class TLSEvents(Object):
 
         self.charm.state.unit_server.update({"csr": new_csr.decode("utf-8").strip()})
 
-    def _on_certificates_broken(self, _) -> None:
+    def _on_certs_relation_broken(self, _) -> None:
         """Handler for `certificates_relation_broken` event."""
         self.charm.state.unit_server.update({"csr": "", "certificate": "", "ca-cert": ""})
 
         # remove all existing keystores from the unit so we don't preserve certs
-        self.charm.tls_manager.remove_stores()
+        self.charm.tls_manager.remove_cert_files()
 
         if not self.charm.unit.is_leader():
             return
 
-        # if this event fired, trigger `upgrade` from ssl -> non-ssl
-        # ideally trigger this before any other `certificates_*` step
         self.charm.state.cluster.update({"tls": "", "switching-encryption": "started"})
 
     def _set_tls_private_key(self, event: ActionEvent) -> None:

@@ -2,32 +2,45 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Collection of global cluster state for the ZooKeeper quorum."""
+"""Collection of global cluster state."""
 import logging
 from typing import Dict, Optional, Set
 
-from charms.data_platform_libs.v0.data_interfaces import DataPeerOtherUnit
+from charms.data_platform_libs.v0.data_interfaces import (
+    DataPeerData,
+    DataPeerOtherUnitData,
+    DataPeerUnitData,
+    OpenSearchRequiresData,
+)
 from ops.framework import Framework, Object
 from ops.model import Relation, Unit
 
-from core.models import (
-    SUBSTRATES,
-    CharmWithRelationData,
-    ODCluster,
-    ODServer,
-    OpensearchServer,
-)
-from literals import OPENSEARCH_REL_NAME, PEER
+from core.models import SUBSTRATES, ODCluster, ODServer, OpensearchServer
+from literals import OPENSEARCH_REL_NAME, PEER, PEER_APP_SECRETS, PEER_UNIT_SECRETS
 
 logger = logging.getLogger(__name__)
 
 
-class ClusterStateBase(Object):
+class ClusterState(Object):
     """Collection of global cluster state for Framework/Object."""
 
     def __init__(self, charm: Framework | Object, substrate: SUBSTRATES):
         super().__init__(parent=charm, key="charm_state")
         self.substrate: SUBSTRATES = substrate
+        self._servers_data = {}
+
+        self.peer_app_data = DataPeerData(
+            self.model, relation_name=PEER, additional_secret_fields=PEER_APP_SECRETS
+        )
+        self.peer_unit_data = DataPeerUnitData(
+            self.model, relation_name=PEER, additional_secret_fields=PEER_UNIT_SECRETS
+        )
+        self.client_requires_data = OpenSearchRequiresData(
+            self.model,
+            relation_name=OPENSEARCH_REL_NAME,
+            index="admin",
+            extra_user_roles="all_access",
+        )
 
     # --- RAW RELATION ---
 
@@ -39,17 +52,7 @@ class ClusterStateBase(Object):
     @property
     def opensearch_relation(self) -> Optional[Relation]:
         """The Opensearch Server relation."""
-        if self.model.relations.get(OPENSEARCH_REL_NAME):
-            return self.model.relations[OPENSEARCH_REL_NAME][0]
-
-
-class ClusterState(ClusterStateBase):
-    """Collection of global cluster state for the charm."""
-
-    def __init__(self, charm: CharmWithRelationData, substrate: SUBSTRATES):
-        super().__init__(charm, substrate)
-        self.charm = charm
-        self._servers_data = {}
+        return self.model.get_relation(OPENSEARCH_REL_NAME)
 
     # --- CORE COMPONENTS---
 
@@ -58,21 +61,21 @@ class ClusterState(ClusterStateBase):
         """The server state of the current running Unit."""
         return ODServer(
             relation=self.peer_relation,
-            data_interface=self.charm.peer_unit_interface,
+            data_interface=self.peer_unit_data,
             component=self.model.unit,
             substrate=self.substrate,
         )
 
     @property
-    def peer_units_data_interfaces(self) -> Dict[Unit, DataPeerOtherUnit]:
+    def peer_units_data(self) -> Dict[Unit, DataPeerOtherUnitData]:
         """The cluster peer relation."""
         if not self.peer_relation or not self.peer_relation.units:
             return {}
 
         for unit in self.peer_relation.units:
             if unit not in self._servers_data:
-                self._servers_data[unit] = DataPeerOtherUnit(
-                    charm=self.charm, unit=unit, relation_name=PEER
+                self._servers_data[unit] = DataPeerOtherUnitData(
+                    model=self.model, unit=unit, relation_name=PEER
                 )
         return self._servers_data
 
@@ -81,7 +84,7 @@ class ClusterState(ClusterStateBase):
         """The cluster state of the current running App."""
         return ODCluster(
             relation=self.peer_relation,
-            data_interface=self.charm.peer_app_interface,
+            data_interface=self.peer_app_data,
             component=self.model.app,
             substrate=self.substrate,
         )
@@ -97,7 +100,7 @@ class ClusterState(ClusterStateBase):
             return set()
 
         servers = set()
-        for unit, data_interface in self.peer_units_data_interfaces.items():
+        for unit, data_interface in self.peer_units_data.items():
             servers.add(
                 ODServer(
                     relation=self.peer_relation,
@@ -119,18 +122,18 @@ class ClusterState(ClusterStateBase):
         # We assume no more than 1 server relation
         return OpensearchServer(
             relation=self.opensearch_relation,
-            data_interface=self.charm.client_requires_interface,
+            data_interface=self.client_requires_data,
             component=self.opensearch_relation.app,
             substrate=self.substrate,
             local_app=self.cluster.app,
-            tls="enabled" if self.cluster.tls else "disabled",
+            tls=self.cluster.tls,
         )
 
     # --- CLUSTER INIT ---
 
     @property
     def endpoints(self) -> list[str]:
-        """The connection uris for all started ZooKeeper units.
+        """The connection uris for all started units.
 
         Returns:
             List of unit addresses
@@ -158,26 +161,17 @@ class ClusterState(ClusterStateBase):
 
     # --- HEALTH ---
 
-    @property
-    def healthy(self) -> bool:
-        """Flag to check if the cluster is safe to update members."""
-        # TBD
-        return True
+    # @property
+    # def healthy(self) -> bool:
+    #     """Flag to check if the cluster is safe to update members."""
+    #     # TBD
+    #     return True
 
     @property
     def stable(self) -> bool:
         """Flag to check if the quorum is in a stable state, with all members up-to-date."""
         if not self.all_units_related:
             logger.debug("cluster not stable - not all units related")
-            return False
-
-        return True
-
-    @property
-    def ready(self) -> bool:
-        """Flag to check if the charm is ready to handle related applications."""
-        if not self.stable:
-            logger.debug("provider not ready - cluster not stable")
             return False
 
         return True

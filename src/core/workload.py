@@ -24,7 +24,7 @@ class ODPaths:
 
     @property
     def properties(self) -> str:
-        """The main zoo.cfg properties filepath.
+        """The main properties filepath.
 
         Contains all the main configuration for the service.
         """

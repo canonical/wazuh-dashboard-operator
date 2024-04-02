@@ -6,6 +6,7 @@
 import logging
 from typing import TYPE_CHECKING
 
+from charms.data_platform_libs.v0.data_interfaces import OpenSearchRequiresEventHandlers
 from ops.charm import RelationBrokenEvent, RelationEvent
 from ops.framework import Object
 
@@ -24,44 +25,34 @@ class RequirerEvents(Object):
         super().__init__(charm, "provider")
         self.charm: "OpensearchDasboardsCharm" = charm
 
+        self.requirer_events = OpenSearchRequiresEventHandlers(
+            self.charm, self.charm.state.client_requires_data
+        )
+
         self.framework.observe(
-            self.charm.on[OPENSEARCH_REL_NAME].relation_changed, self._on_client_relation_updated
+            self.charm.on[OPENSEARCH_REL_NAME].relation_changed, self._on_client_relation_changed
         )
         self.framework.observe(
             self.charm.on[OPENSEARCH_REL_NAME].relation_broken, self._on_client_relation_broken
         )
 
-    def _on_client_relation_updated(self, event: RelationEvent) -> None:
-        """Updates ACLs while handling `client_relation_updated` events."""
+    def _on_client_relation_changed(self, event: RelationEvent) -> None:
+        """Updates ACLs while handling `client_relation_changed` events."""
         if not self.charm.state.stable:
             event.defer()
             return
 
         if (
-            (
-                self.charm.client_requires_interface.fetch_relation_field(
-                    event.relation.id, "username"
-                )
-            )
-            and (
-                self.charm.client_requires_interface.fetch_relation_field(
-                    event.relation.id, "password"
-                )
-            )
-            and (
-                self.charm.client_requires_interface.fetch_relation_field(
-                    event.relation.id, "endpoints"
-                )
-            )
-            and (
-                opensearch_tls_ca := self.charm.client_requires_interface.fetch_relation_field(
-                    event.relation.id, "tls-ca"
-                )
-            )
+            self.charm.state.opensearch_server
+            and self.charm.state.opensearch_server.username
+            and self.charm.state.opensearch_server.password
+            and self.charm.state.opensearch_server.endpoints
+            and self.charm.state.opensearch_server.tls_ca
         ):
 
             self.charm.workload.write(
-                content=opensearch_tls_ca, path=self.charm.workload.paths.opensearch_ca
+                content=self.charm.state.opensearch_server.tls_ca,
+                path=self.charm.workload.paths.opensearch_ca,
             )
             self.charm.on.config_changed.emit()
 
@@ -76,4 +67,4 @@ class RequirerEvents(Object):
             return
 
         # call normal updated handler
-        self._on_client_relation_updated(event=event)
+        self._on_client_relation_changed(event=event)

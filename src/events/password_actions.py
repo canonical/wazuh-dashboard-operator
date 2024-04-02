@@ -33,7 +33,7 @@ class PasswordActionEvents(Object):
 
     def _get_password_action(self, event: ActionEvent) -> None:
         """Handler for get-super-password action event."""
-        username = event.params.get("username", "admin")
+        username = event.params.get("username", CHARM_USERS[0])
         event.set_results(
             {f"{username}-password": self.charm.state.cluster.internal_user_credentials[username]}
         )

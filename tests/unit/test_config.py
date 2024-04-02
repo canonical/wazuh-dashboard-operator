@@ -27,9 +27,6 @@ opensearch_security.readonly_mode.roles: [kibana_read_only]
 opensearch_security.cookie.secure: true
 
 server.host: '{ip}'
-opensearch.username: kibanaserver
-opensearch.password: kibanaserver
-opensearch.hosts: [http://localhost:9200]
 logging.verbose: true
 path.data: /var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards"""
 

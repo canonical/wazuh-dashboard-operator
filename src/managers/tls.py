@@ -114,7 +114,7 @@ class TLSManager:
     #         logger.error(str(e.stdout))
     #         raise e
 
-    def remove_stores(self) -> None:
+    def remove_cert_files(self) -> None:
         """Removes all certs, keys, stores from the unit."""
         try:
             self.workload.exec(

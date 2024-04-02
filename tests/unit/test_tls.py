@@ -141,7 +141,7 @@ def test_certificates_broken(harness):
     # implicitly tests these method calls
     with patch.multiple(
         "managers.tls.TLSManager",
-        remove_stores=DEFAULT,
+        remove_cert_files=DEFAULT,
     ):
         harness.remove_relation(certs_rel_id)
 

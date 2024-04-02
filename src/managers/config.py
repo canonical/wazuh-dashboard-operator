@@ -88,30 +88,33 @@ class ConfigManager:
         properties = DEFAULT_PROPERTIES.split("\n")
 
         opensearch_user = (
-            self.state.opensearch_server.username
-            if self.state.opensearch_server
-            else "kibanaserver"
+            self.state.opensearch_server.username if self.state.opensearch_server else ""
         )
         opensearch_password = (
-            self.state.opensearch_server.password
-            if self.state.opensearch_server
-            else "kibanaserver"
+            self.state.opensearch_server.password if self.state.opensearch_server else ""
         )
 
-        opensearch_endpoint = (
-            f"https://{self.state.opensearch_server.endpoints[0]}"
+        opensearch_endpoints = (
+            ", ".join(f"https://{endpoint}" for endpoint in self.state.opensearch_server.endpoints)
             if self.state.opensearch_server and len(self.state.opensearch_server.endpoints) > 0
-            else "http://localhost:9200"
+            else ""
         )
 
         opensearch_ca = self.workload.paths.opensearch_ca if self.state.opensearch_server else ""
 
-        properties += [
-            f"server.host: '{self.state.unit_server.private_ip}'",
-            f"opensearch.username: {opensearch_user}",
-            f"opensearch.password: {opensearch_password}",
-            f"opensearch.hosts: [{opensearch_endpoint}]",
-        ]
+        properties += [f"server.host: '{self.state.unit_server.private_ip}'"]
+        properties += (
+            [
+                f"opensearch.username: {opensearch_user}",
+                f"opensearch.password: {opensearch_password}",
+            ]
+            if opensearch_user and opensearch_password
+            else []
+        )
+
+        properties += (
+            [f"opensearch.hosts: [{opensearch_endpoints}]"] if opensearch_endpoints else []
+        )
 
         if opensearch_ca:
             properties += [f'opensearch.ssl.certificateAuthorities: [ "{opensearch_ca}" ]']
@@ -150,7 +153,7 @@ class ConfigManager:
         return self.build_static_properties(self.dashboard_properties)
 
     def set_dashboard_properties(self) -> None:
-        """Writes built zoo.cfg file."""
+        """Writes built config file."""
         self.workload.write(
             content="\n".join(self.dashboard_properties),
             path=self.workload.paths.properties,
@@ -159,10 +162,6 @@ class ConfigManager:
     @staticmethod
     def build_static_properties(properties: list[str]) -> list[str]:
         """Removes dynamic config options from list of properties.
-
-        Running ZooKeeper cluster with `reconfigEnabled` moves dynamic options
-            to a dedicated dynamic file
-        These options are `clientPort` and `secureClientPort`
 
         Args:
             properties: the properties to make static

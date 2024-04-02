@@ -80,7 +80,7 @@ async def recreate_opensearch_kibanaserver(ops_test: OpsTest):
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-@pytest.mark.password_rotation
+@pytest.mark.charm
 async def test_deploy_active(ops_test: OpsTest):
 
     charm = await ops_test.build_charm(".")
@@ -163,8 +163,9 @@ async def test_dashboard_access_https(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_local_password_rotation(ops_test: OpsTest):
     """Test password rotation for local users -- in case we decide to have any."""
-    user = "kibanaserver"
+    user = "monitor"
     password = await get_user_password(ops_test, user)
+    assert len(password) == 32
 
     leader = None
     for unit in ops_test.model.applications[APP_NAME].units:
@@ -186,6 +187,7 @@ async def test_local_password_rotation(ops_test: OpsTest):
     new_password = await get_user_password(ops_test, user)
 
     assert password != new_password
+    assert len(password) == 32
 
 
 @pytest.mark.group(1)

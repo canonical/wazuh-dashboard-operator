@@ -2,24 +2,17 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Collection of state objects for the ZooKeeper relations, apps and units."""
+"""Collection of state objects for relations, apps and units."""
 import logging
 import socket
 import subprocess
-from typing import List, Literal, MutableMapping, Optional, Tuple
+from typing import List, Literal, MutableMapping, Optional
 
-from charms.data_platform_libs.v0.data_interfaces import (
-    Data,
-    DataPeer,
-    DataPeerUnit,
-    OpenSearchRequires,
-)
-from ops import Framework
-from ops.charm import CharmBase
+from charms.data_platform_libs.v0.data_interfaces import Data
 from ops.model import Application, Relation, Unit
 from typing_extensions import override
 
-from literals import CHARM_USERS, DASHBOARD_INDEX, OPENSEARCH_REL_NAME, PEER
+from literals import CHARM_USERS, DASHBOARD_INDEX
 
 logger = logging.getLogger(__name__)
 
@@ -84,15 +77,13 @@ class OpensearchServer(StateBase):
         local_app: Application | None = None,
         password: str = "",
         endpoints: str = "",
-        tls: str = "",
-        uris: str = "",
+        tls: bool = False,
     ):
         super().__init__(relation, data_interface, component, substrate)
         self.app = component
         self._password = password
         self._endpoints = endpoints
         self._tls = tls
-        self._uris = uris
         self._local_app = local_app
 
     @override
@@ -117,18 +108,13 @@ class OpensearchServer(StateBase):
 
     @property
     def endpoints(self) -> List[str]:
-        """The ZooKeeper connection endpoints for the client application to connect with."""
+        """Connection endpoints for the client application to connect with."""
         endpoints_str = self.relation_data.get("endpoints")
         return endpoints_str.split(",") if endpoints_str else []
 
     @property
-    def uris(self) -> List[str]:
-        """The ZooKeeper connection uris for the client application to connect with."""
-        return self.endpoints
-
-    @property
-    def tls(self) -> Optional[str]:
-        """Flag to confirm whether or not ZooKeeper has TLS enabled.
+    def tls(self) -> bool:
+        """Flag to confirm whether or not is TLS enabled.
 
         Returns:
             String of either 'enabled' or 'disabled'
@@ -137,34 +123,12 @@ class OpensearchServer(StateBase):
 
     @property
     def tls_ca(self) -> Optional[str]:
-        """Flag to confirm whether or not ZooKeeper has TLS enabled.
+        """The CA cert in case TLS is enabled.
 
         Returns:
             String of either 'enabled' or 'disabled'
         """
         return self.relation_data.get("tls-ca")
-
-    @property
-    def chroot_acl(self) -> str:
-        """The client defined ACLs for their requested ACL.
-
-        Contains:
-            - 'c' - create
-            - 'd' - delete
-            - 'r' - read
-            - 'w' - write
-            - 'a' - append
-        """
-        return self.relation_data.get("chroot-acl", "cdrwa")
-
-    @property
-    def chroot(self) -> str:
-        """The client requested root zNode path value."""
-        chroot = self.relation_data.get("chroot", "")
-        if not chroot.startswith("/") and chroot:
-            chroot = f"/{chroot}"
-
-        return chroot
 
 
 class ODCluster(StateBase):
@@ -181,32 +145,24 @@ class ODCluster(StateBase):
         self.app = component
 
     @property
-    def internal_user_credentials(self) -> dict[str, Tuple[str, str]]:
+    def internal_user_credentials(self) -> dict[str, str]:
         """The passwords for the internal quorum and super users.
 
         Returns:
             Dict of key username, value password
         """
-        credentials = {
-            user: (username, password)
+        return {
+            user: password
             for user in CHARM_USERS
             if (password := self.relation_data.get(f"{user}-password"))
-            and (username := self.relation_data.get(f"{user}-username", user))
         }
-
-        return credentials
-
-    @property
-    def rotate_passwords(self) -> bool:
-        """Flag to check if the cluster should rotate their internal passwords."""
-        return bool(self.relation_data.get("rotate-passwords", ""))
 
     # -- TLS --
 
     @property
     def tls(self) -> bool:
         """Flag to check if TLS is enabled for the cluster."""
-        return self.relation_data.get("tls", "") == "enabled"
+        return bool(self.relation_data.get("tls", ""))
 
 
 class ODServer(StateBase):
@@ -226,7 +182,7 @@ class ODServer(StateBase):
     def unit_id(self) -> int:
         """The id of the unit from the unit name.
 
-        e.g zookeeper/2 --> 2
+        e.g opensearch-dashboards/2 --> 2
         """
         return int(self.component.name.split("/")[1])
 
@@ -234,7 +190,7 @@ class ODServer(StateBase):
 
     @property
     def started(self) -> bool:
-        """Flag to check if the unit has started the ZooKeeper service."""
+        """Flag to check if the unit has started the service."""
         return self.relation_data.get("state", None) == "started"
 
     @property
@@ -245,18 +201,17 @@ class ODServer(StateBase):
     @property
     def hostname(self) -> str:
         """The hostname for the unit."""
-        return self.relation_data.get("hostname", "")
+        return socket.gethostname()
 
     @property
     def fqdn(self) -> str:
         """The Fully Qualified Domain Name for the unit."""
-        return self.relation_data.get("fqdn", "")
+        return socket.getfqdn()
 
     @property
     def private_ip(self) -> str:
         """The IP for the unit."""
-        hostname = socket.gethostname()
-        return socket.gethostbyname(hostname)
+        return socket.gethostbyname(self.hostname)
 
     @property
     def public_ip(self) -> str:
@@ -291,15 +246,15 @@ class ODServer(StateBase):
         """The private-key contents for the unit to use for TLS."""
         return self.relation_data.get("private-key", "")
 
-    @property
-    def keystore_password(self) -> str:
-        """The Java Keystore password for the unit to use for TLS."""
-        return self.relation_data.get("keystore-password", "")
-
-    @property
-    def truststore_password(self) -> str:
-        """The Java Truststore password for the unit to use for TLS."""
-        return self.relation_data.get("truststore-password", "")
+    # @property
+    # def keystore_password(self) -> str:
+    #     """The Java Keystore password for the unit to use for TLS."""
+    #     return self.relation_data.get("keystore-password", "")
+    #
+    # @property
+    # def truststore_password(self) -> str:
+    #     """The Java Truststore password for the unit to use for TLS."""
+    #     return self.relation_data.get("truststore-password", "")
 
     @property
     def csr(self) -> str:
@@ -326,28 +281,3 @@ class ODServer(StateBase):
             "sans_ip": [self.private_ip],
             "sans_dns": [self.hostname, self.fqdn],
         }
-
-
-class CharmWithRelationData(CharmBase):
-    """Charm base class setting basic Relation Data Interfaces."""
-
-    def __init__(
-        self,
-        framework: Framework,
-        peer_app_secrets: List[str] = [],
-        peer_unit_secrets: List[str] = [],
-        *args,
-    ):
-        super().__init__(framework)
-        self.peer_app_interface = DataPeer(
-            self, relation_name=PEER, additional_secret_fields=peer_app_secrets
-        )
-        self.peer_unit_interface = DataPeerUnit(
-            self, relation_name=PEER, additional_secret_fields=peer_unit_secrets
-        )
-        self.client_requires_interface = OpenSearchRequires(
-            self,
-            relation_name=OPENSEARCH_REL_NAME,
-            index="admin",
-            extra_user_roles="all_access",
-        )

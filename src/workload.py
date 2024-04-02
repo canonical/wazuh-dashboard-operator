@@ -10,8 +10,7 @@ import shutil
 import string
 import subprocess
 
-from charms.operator_libs_linux.v0 import apt
-from charms.operator_libs_linux.v1 import snap
+from charms.operator_libs_linux.v2 import snap
 from tenacity import retry
 from tenacity.retry import retry_if_not_result
 from tenacity.stop import stop_after_attempt
@@ -104,14 +103,12 @@ class ODWorkload(WorkloadBase):
     # --- Charm Specific ---
 
     def install(self) -> bool:
-        """Loads the ZooKeeper snap from LP, returning a StatusBase for the Charm to set.
+        """Loads the snap from LP, returning a StatusBase for the Charm to set.
 
         Returns:
             True if successfully installed. False otherwise.
         """
         try:
-            apt.update()
-            apt.add_package(["snapd"])
             cache = snap.SnapCache()
             dashboards = cache[self.SNAP_NAME]
 
@@ -125,7 +122,7 @@ class ODWorkload(WorkloadBase):
             self.dashboards.hold()
 
             return True
-        except (snap.SnapError, apt.PackageNotFoundError) as e:
+        except snap.SnapError as e:
             logger.error(str(e))
             return False
 
