@@ -16,7 +16,13 @@ from ops.framework import Framework, Object
 from ops.model import Relation, Unit
 
 from core.models import SUBSTRATES, ODCluster, ODServer, OpensearchServer
-from literals import OPENSEARCH_REL_NAME, PEER, PEER_APP_SECRETS, PEER_UNIT_SECRETS
+from literals import (
+    DASHBOARD_INDEX,
+    OPENSEARCH_REL_NAME,
+    PEER,
+    PEER_APP_SECRETS,
+    PEER_UNIT_SECRETS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +44,8 @@ class ClusterState(Object):
         self.client_requires_data = OpenSearchRequiresData(
             self.model,
             relation_name=OPENSEARCH_REL_NAME,
-            index="admin",
-            extra_user_roles="all_access",
+            index=DASHBOARD_INDEX,
+            extra_user_roles="kibanaserver",
         )
 
     # --- RAW RELATION ---

@@ -11,8 +11,7 @@ CHARM_KEY = "opensearch-dashboards"
 
 PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch_client"
-# DASHBOARD_INDEX = ".opensearch-dashboards"
-DASHBOARD_INDEX = "admin-index"
+DASHBOARD_INDEX = ".opensearch-dashboards"
 CONTAINER = "opensearch-dashboards"
 CHARM_USERS = ["monitor"]
 CERTS_REL_NAME = "certificates"

@@ -12,7 +12,7 @@ from charms.data_platform_libs.v0.data_interfaces import Data
 from ops.model import Application, Relation, Unit
 from typing_extensions import override
 
-from literals import CHARM_USERS, DASHBOARD_INDEX
+from literals import CHARM_USERS
 
 logger = logging.getLogger(__name__)
 
