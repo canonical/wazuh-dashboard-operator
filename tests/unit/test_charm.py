@@ -197,34 +197,20 @@ def test_relation_changed_restarts(harness):
         patched_restart.assert_called_once()
 
 
-# def test_relation_changed_defers_switching_encryption_single_unit(harness):
-#     with harness.hooks_disabled():
-#         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-#         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
-#         harness.update_relation_data(peer_rel_id, CHARM_KEY, {"switching-encryption": "started"})
-#
-#     with (
-#         patch("ops.framework.EventBase.defer") as patched,
-#         patch("managers.config.ConfigManager.config_changed"),
-#         patch("core.cluster.ClusterState.all_units_related", return_value=True),
-#     ):
-#         harness.charm.on.config_changed.emit()
-#         patched.assert_called_once()
-#
-#
-# def test_restart_fails_not_related(harness):
-#     with harness.hooks_disabled():
-#         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-#         harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
-#
-#     with (
-#         patch("workload.ODWorkload.restart") as patched,
-#         patch("ops.framework.EventBase.defer"),
-#     ):
-#         harness.charm._restart(EventBase)
-#         patched.assert_not_called()
-#
-#
+def test_restart_fails_not_related(harness):
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.set_planned_units(1)
+
+    with (
+        patch("workload.ODWorkload.restart") as patched,
+        patch("ops.framework.EventBase.defer"),
+    ):
+        harness.charm._restart(EventBase)
+        patched.assert_not_called()
+
+
 def test_restart_fails_not_started(harness):
     with harness.hooks_disabled():
         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
@@ -254,25 +240,25 @@ def test_restart_fails_not_added(harness):
         patched.assert_not_called()
 
 
-# @pytest.mark.parametrize("stable, restarts", [(True, 1), (False, 0)])
-# def test_restart_restarts_with_sleep(harness, stable, restarts):
-#     with harness.hooks_disabled():
-#         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-#         harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
-#         harness.set_planned_units(1)
-#         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
-#         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"0": "added"})
-#
-#     with (
-#         patch("workload.ODWorkload.restart") as patched_restart,
-#         patch("time.sleep") as patched_sleep,
-#         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=stable),
-#     ):
-#         harness.charm._restart(EventBase(harness.charm))
-#         assert patched_restart.call_count == restarts
-#         assert patched_sleep.call_count == restarts
-#
-#
+@pytest.mark.parametrize("stable, restarts", [(True, 1), (False, 0)])
+def test_restart_restarts_with_sleep(harness, stable, restarts):
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.set_planned_units(1)
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"0": "added"})
+
+    with (
+        patch("workload.ODWorkload.restart") as patched_restart,
+        patch("time.sleep") as patched_sleep,
+        patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=stable),
+    ):
+        harness.charm._restart(EventBase(harness.charm))
+        assert patched_restart.call_count == restarts
+        assert patched_sleep.call_count >= restarts
+
+
 def test_restart_restarts_snap_sets_active_status(harness):
     with harness.hooks_disabled():
         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
@@ -290,123 +276,56 @@ def test_restart_restarts_snap_sets_active_status(harness):
         assert isinstance(harness.model.unit.status, ActiveStatus)
 
 
-# def test_init_server_calls_necessary_methods(harness):
-#     with harness.hooks_disabled():
-#         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-#         harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
-#     with (
-#         patch("managers.config.ConfigManager.set_dashboard_properties") as dashboard_properties,
-#         patch("workload.ODWorkload.start") as start,
-#     ):
-#         harness.charm.init_server()
-#
-#         dashboard_properties.assert_called_once()
-#         start.assert_called_once()
-#
-#         assert harness.charm.state.unit_server.quorum == "ssl"
-#         assert harness.charm.state.unit_server.unified
-#         assert harness.charm.state.unit_server.started
-#         assert isinstance(harness.charm.unit.status, ActiveStatus)
-#
-#
-# def test_config_changed_applies_relation_data(harness):
-#     with harness.hooks_disabled():
-#         _ = harness.add_relation(PEER, CHARM_KEY)
-#         harness.set_leader(True)
-#
-#     with (
-#         patch("charm.OpensearchDasboardsCharm.update_client_data", return_value=None) as patched,
-#         patch("core.cluster.ClusterState.stable", return_value=True),
-#         patch("managers.config.ConfigManager.config_changed", return_value=True),
-#         patch("core.cluster.ClusterState.all_units_related", return_value=True),
-#     ):
-#         harness.charm.on.config_changed.emit()
-#
-#         patched.assert_called_once()
-#
-#
-# def test_config_changed_fails_apply_relation_data_not_ready(harness):
-#     with harness.hooks_disabled():
-#         _ = harness.add_relation(PEER, CHARM_KEY)
-#         harness.set_leader(True)
-#
-#     with (
-#         patch("core.models.ODClient.update") as patched_update,
-#         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=True),
-#         patch("core.cluster.ClusterState.ready", new_callable=PropertyMock, return_value=False),
-#         patch("managers.config.ConfigManager.config_changed", return_value=True),
-#     ):
-#         harness.charm.on.config_changed.emit()
-#
-#         patched_update.assert_not_called()
-#
-#
-# def test_config_changed_fails_apply_relation_data_not_stable(harness):
-#     with harness.hooks_disabled():
-#         _ = harness.add_relation(PEER, CHARM_KEY)
-#         harness.set_leader(True)
-#
-#     with (
-#         patch("charm.OpensearchDasboardsCharm.update_client_data", return_value=None) as patched,
-#         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=False),
-#         patch("core.cluster.ClusterState.ready", new_callable=PropertyMock, return_value=True),
-#         patch("managers.config.ConfigManager.config_changed", return_value=True),
-#     ):
-#         harness.charm.on.config_changed.emit()
-#
-#         patched.assert_not_called()
-#
-#
-# def test_restart_defers_if_not_stable(harness):
-#     with harness.hooks_disabled():
-#         _ = harness.add_relation(PEER, CHARM_KEY)
-#         harness.set_leader(True)
-#
-#     with (
-#         patch("charm.OpensearchDasboardsCharm.update_client_data", return_value=None) as patched_apply,
-#         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock(return_value=False)),
-#         patch("core.cluster.ClusterState.ready", return_value=True),
-#         patch("managers.config.ConfigManager.config_changed", return_value=True),
-#         patch("ops.framework.EventBase.defer") as patched_defer,
-#     ):
-#         harness.charm._restart(EventBase)
-#
-#         patched_apply.assert_not_called()
-#         patched_defer.assert_called_once()
-#
-#
-# def test_restart_fails_update_relation_data_if_not_ready(harness):
-#     with harness.hooks_disabled():
-#         _ = harness.add_relation(PEER, CHARM_KEY)
-#         harness.set_leader(True)
-#
-#     with (
-#         patch("core.models.ODClient.update") as patched_update,
-#         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=True),
-#         patch("core.cluster.ClusterState.ready", new_callable=PropertyMock, return_value=False),
-#         patch("managers.config.ConfigManager.config_changed", return_value=True),
-#     ):
-#         harness.charm._restart(EventBase)
-#
-#         patched_update.assert_not_called()
-#
-#
-# def test_restart_fails_update_relation_data_if_not_idle(harness):
-#     with harness.hooks_disabled():
-#         _ = harness.add_relation(PEER, CHARM_KEY)
-#         harness.set_leader(True)
-#
-#     with (
-#         patch("core.models.ODClient.update") as patched_update,
-#         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=True),
-#         patch("core.cluster.ClusterState.ready", new_callable=PropertyMock, return_value=False),
-#         patch("managers.config.ConfigManager.config_changed", return_value=True),
-#     ):
-#         harness.charm._restart(EventBase)
-#
-#         patched_update.assert_not_called()
-#
-#
+def test_init_server_calls_necessary_methods(harness):
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
+
+    with (
+        patch("managers.config.ConfigManager.set_dashboard_properties") as dashboard_properties,
+        patch("workload.ODWorkload.start") as start,
+    ):
+        harness.charm.init_server()
+
+        dashboard_properties.assert_called_once()
+        start.assert_called_once()
+
+        assert harness.charm.state.unit_server.started
+        assert isinstance(harness.charm.unit.status, ActiveStatus)
+
+
+def test_config_changed_applies_relation_data(harness):
+    with harness.hooks_disabled():
+        _ = harness.add_relation(PEER, CHARM_KEY)
+        harness.set_leader(True)
+
+    with (
+        patch("core.cluster.ClusterState.stable", return_value=True),
+        patch("managers.config.ConfigManager.config_changed") as patched,
+        patch("core.cluster.ClusterState.all_units_related", return_value=True),
+    ):
+        harness.charm.on.config_changed.emit()
+
+        patched.assert_called_once()
+
+
+def test_restart_defers_if_not_stable(harness):
+    with harness.hooks_disabled():
+        _ = harness.add_relation(PEER, CHARM_KEY)
+        harness.set_leader(True)
+
+    with (
+        patch("core.cluster.ClusterState.stable", new_callable=PropertyMock(return_value=False)),
+        patch("managers.config.ConfigManager.config_changed") as patched_apply,
+        patch("ops.framework.EventBase.defer") as patched_defer,
+    ):
+        harness.charm._restart(EventBase)
+
+        patched_apply.assert_not_called()
+        patched_defer.assert_called_once()
+
+
 # def test_port_updates_if_tls(harness):
 #     with harness.hooks_disabled():
 #         harness.add_relation(PEER, CHARM_KEY)
