@@ -102,10 +102,6 @@ class TLSEvents(Object):
             logger.error("Can't use certificate, found unknown CSR")
             return
 
-        # if certificate already exists, this event must be new, flag restart
-        if self.charm.state.unit_server.certificate:
-            self.charm.on[f"{self.charm.restart.name}"].acquire_lock.emit()
-
         self.charm.state.unit_server.update(
             {"certificate": event.certificate, "ca-cert": event.ca}
         )
@@ -115,8 +111,6 @@ class TLSEvents(Object):
         self.charm.tls_manager.set_certificate()
         # self.charm.tls_manager.set_truststore()
         # self.charm.tls_manager.set_p12_keystore()
-
-        self.charm.on[f"{self.charm.restart.name}"].acquire_lock.emit()
 
     def _on_certificate_expiring(self, _: EventBase) -> None:
         """Handler for `certificates_expiring` event when certs need renewing."""

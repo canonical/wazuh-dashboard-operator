@@ -11,7 +11,7 @@ from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops.charm import CharmBase, InstallEvent, SecretChangedEvent
 from ops.framework import EventBase
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
+from ops.model import BlockedStatus, MaintenanceStatus, WaitingStatus
 
 from core.cluster import ClusterState
 from events.password_actions import PasswordActionEvents
@@ -19,7 +19,19 @@ from events.requirer import RequirerEvents
 
 # from events.provider import ProviderEvents
 from events.tls import TLSEvents
-from literals import CHARM_KEY, CHARM_USERS, PEER, RESTART_TIMEOUT, SUBSTRATE
+from helpers import clear_status
+from literals import (
+    CHARM_KEY,
+    CHARM_USERS,
+    MSG_INSTALLING,
+    MSG_STARTING,
+    MSG_STARTING_SERVER,
+    MSG_WAITING_FOR_PEER,
+    MSG_WAITING_FOR_USER_CREDENTIALS,
+    PEER,
+    RESTART_TIMEOUT,
+    SUBSTRATE,
+)
 from managers.config import ConfigManager
 from managers.tls import TLSManager
 from workload import ODWorkload
@@ -84,7 +96,7 @@ class OpensearchDasboardsCharm(CharmBase):
 
     def _on_install(self, event: InstallEvent) -> None:
         """Handler for the `on_install` event."""
-        self.unit.status = MaintenanceStatus("installing Opensearch Dashboards...")
+        self.unit.status = MaintenanceStatus(MSG_INSTALLING)
 
         install = self.workload.install()
         if not install:
@@ -92,13 +104,15 @@ class OpensearchDasboardsCharm(CharmBase):
 
         # don't complete install until passwords set
         if not self.state.peer_relation:
-            self.unit.status = WaitingStatus("waiting for peer relation")
+            self.unit.status = WaitingStatus(MSG_WAITING_FOR_PEER)
             event.defer()
             return
+        clear_status(self.unit, MSG_WAITING_FOR_PEER)
 
         if self.unit.is_leader() and not self.state.cluster.internal_user_credentials:
             for user in CHARM_USERS:
                 self.state.cluster.update({f"{user}-password": self.workload.generate_password()})
+        clear_status(self.unit, [MSG_INSTALLING, MSG_WAITING_FOR_USER_CREDENTIALS])
 
     def reconcile(self, event: EventBase) -> None:
         """Generic handler for all 'something changed, update' events across all relations."""
@@ -134,13 +148,8 @@ class OpensearchDasboardsCharm(CharmBase):
             self.state.cluster.relation.id,
             None,  # type:ignore noqa
         ):  # Changes with the soon upcoming new version of DP-libs STILL within this POC
-
-            if (
-                self.config_manager.config_changed()
-                and self.state.unit_server.started
-                # and self.upgrade_events.idle
-            ):
-                logger.info(f"Secret {event.secret.label} changed.")
+            logger.info(f"Secret {event.secret.label} changed.")
+            self.reconcile(event)
 
     def _start(self, event: EventBase) -> None:
         """Forces a rolling-restart event.
@@ -148,33 +157,31 @@ class OpensearchDasboardsCharm(CharmBase):
         Necessary for ensuring that `on_start` restarts roll.
         """
         # if not self.state.peer_relation or not self.state.stable or not self.upgrade_events.idle:
-        self.unit.status = MaintenanceStatus("Starting...")
+        self.unit.status = MaintenanceStatus(MSG_STARTING)
         if not self.state.peer_relation or not self.state.stable:
             event.defer()
             return
 
-        # not needed during application init
-        # only needed for scenarios where the LXD goes down (e.g PC shutdown)
-        if not self.workload.alive():
-            self.on[f"{self.restart.name}"].acquire_lock.emit()
-        else:
-            self.unit.status = ActiveStatus()
+        self.reconcile(event)
+        clear_status(self.unit, MSG_STARTING)
 
     def _restart(self, event: EventBase) -> None:
         """Handler for emitted restart events."""
         # if not self.state.stable or not self.upgrade_events.idle:
-        if not self.state.stable:
-            event.defer()
+        #     event.defer()
+        #     return
+        if not self.state.unit_server.started:
+            self.reconcile(event)
             return
 
-        logger.info(f"{self.unit.name} (re)starting...")
+        logger.info(f"{self.unit.name} restarting...")
         self.workload.restart()
 
         start_time = time.time()
         while not self.workload.alive() and time.time() - start_time < RESTART_TIMEOUT:
             time.sleep(5)
 
-        self.unit.status = ActiveStatus()
+        clear_status(self.unit, [MSG_STARTING, MSG_STARTING_SERVER])
 
     # --- CONVENIENCE METHODS ---
 
@@ -182,10 +189,10 @@ class OpensearchDasboardsCharm(CharmBase):
         """Calls startup functions for server start."""
         # don't run if leader has not yet created passwords
         if not self.state.cluster.internal_user_credentials:
-            self.unit.status = MaintenanceStatus("waiting for passwords to be created")
+            self.unit.status = MaintenanceStatus(MSG_WAITING_FOR_USER_CREDENTIALS)
             return
 
-        self.unit.status = MaintenanceStatus("starting Opensearch Dashboards server")
+        self.unit.status = MaintenanceStatus(MSG_STARTING_SERVER)
         logger.info(f"{self.unit.name} initializing...")
 
         logger.debug("setting properties")
@@ -193,7 +200,6 @@ class OpensearchDasboardsCharm(CharmBase):
 
         logger.debug("starting Opensearch Dashboards service")
         self.workload.start()
-        self.unit.status = ActiveStatus()
 
         # unit flags itself as 'started' so it can be retrieved by the leader
         logger.info(f"{self.unit.name} started")
@@ -204,6 +210,7 @@ class OpensearchDasboardsCharm(CharmBase):
                 "state": "started",
             }
         )
+        clear_status(self.unit, MSG_STARTING_SERVER)
 
 
 if __name__ == "__main__":

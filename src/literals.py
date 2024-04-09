@@ -33,3 +33,12 @@ PEER_APP_SECRETS = [
 PEER_UNIT_SECRETS = ["ca-cert", "csr", "certificate", "private-key"]
 
 RESTART_TIMEOUT = 30
+
+
+# Status messages
+
+MSG_INSTALLING = "installing Opensearch Dashboards..."
+MSG_STARTING = "starting..."
+MSG_STARTING_SERVER = "starting Opensearch Dashboards server..."
+MSG_WAITING_FOR_USER_CREDENTIALS = "waiting for passwords to be created"
+MSG_WAITING_FOR_PEER = "waiting for peer relation"
