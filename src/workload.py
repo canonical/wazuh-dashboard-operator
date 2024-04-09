@@ -26,31 +26,30 @@ logger = logging.getLogger(__name__)
 class ODWorkload(WorkloadBase):
     """Implementation of WorkloadBase for running on VMs."""
 
-    # SNAP_NAME = "opensearch-dashboards"
     SNAP_NAME = "opensearch-dashboards"
     SNAP_SERVICE = "daemon"
 
     def __init__(self):
-        self.dasbhoards = snap.SnapCache()[self.SNAP_NAME]
+        self.dashboards = snap.SnapCache()[self.SNAP_NAME]
 
     @override
     def start(self) -> None:
         try:
-            self.dasbhoards.start(services=[self.SNAP_SERVICE])
+            self.dashboards.start(services=[self.SNAP_SERVICE])
         except snap.SnapError as e:
             logger.exception(str(e))
 
     @override
     def stop(self) -> None:
         try:
-            self.dasbhoards.stop(services=[self.SNAP_SERVICE])
+            self.dashboards.stop(services=[self.SNAP_SERVICE])
         except snap.SnapError as e:
             logger.exception(str(e))
 
     @override
     def restart(self) -> None:
         try:
-            self.dasbhoards.restart(services=[self.SNAP_SERVICE])
+            self.dashboards.restart(services=[self.SNAP_SERVICE])
         except snap.SnapError as e:
             logger.exception(str(e))
 
@@ -92,7 +91,7 @@ class ODWorkload(WorkloadBase):
     )
     def alive(self) -> bool:
         try:
-            return bool(self.dasbhoards.services[self.SNAP_SERVICE]["active"])
+            return bool(self.dashboards.services[self.SNAP_SERVICE]["active"])
         except KeyError:
             return False
 

@@ -40,6 +40,9 @@ OPENSEARCH_CONFIG = {
 }
 TLS_CERTIFICATES_APP_NAME = "self-signed-certificates"
 
+NUM_UNITS_APP = 3
+NUM_UNITS_DB = 2
+
 
 async def recreate_opensearch_kibanaserver(ops_test: OpsTest):
     """Temporary helper function."""
@@ -84,11 +87,11 @@ async def recreate_opensearch_kibanaserver(ops_test: OpsTest):
 async def test_deploy_active(ops_test: OpsTest):
 
     charm = await ops_test.build_charm(".")
-    await ops_test.model.deploy(charm, application_name=APP_NAME, num_units=3)
+    await ops_test.model.deploy(charm, application_name=APP_NAME, num_units=NUM_UNITS_APP)
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     # Pinning down opensearch revision to the last 2.10 one
     # NOTE: can't access 2/stable from the tests, only 'edge' available
-    await ops_test.model.deploy(OPENSEARCH_CHARM, channel="2/edge", num_units=2)
+    await ops_test.model.deploy(OPENSEARCH_CHARM, channel="2/edge", num_units=NUM_UNITS_DB)
 
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config)
@@ -105,7 +108,7 @@ async def test_deploy_active(ops_test: OpsTest):
 
     async with ops_test.fast_forward():
         await ops_test.model.block_until(
-            lambda: len(ops_test.model.applications[APP_NAME].units) == 3
+            lambda: len(ops_test.model.applications[APP_NAME].units) == NUM_UNITS_APP
         )
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME], status="active", timeout=1000, idle_period=30
@@ -203,7 +206,7 @@ async def test_log_level_change(ops_test: OpsTest):
             "debug",
         )
 
-        await ops_test.model.applications[APP_NAME].set_config({"log-level": "ERROR"})
+        await ops_test.model.applications[APP_NAME].set_config({"log_level": "ERROR"})
 
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME], status="active", timeout=1000, idle_period=30
@@ -227,7 +230,7 @@ async def test_log_level_change(ops_test: OpsTest):
         )
 
     # Reset default loglevel
-    await ops_test.model.applications[APP_NAME].set_config({"log-level": "INFO"})
+    await ops_test.model.applications[APP_NAME].set_config({"log_level": "INFO"})
 
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME], status="active", timeout=1000, idle_period=30

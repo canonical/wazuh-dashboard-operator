@@ -6,7 +6,7 @@
 import logging
 import socket
 import subprocess
-from typing import List, Literal, MutableMapping, Optional
+from typing import Literal, MutableMapping
 
 from charms.data_platform_libs.v0.data_interfaces import Data
 from ops.model import Application, Relation, Unit
@@ -95,19 +95,19 @@ class OpensearchServer(StateBase):
         self.data_interface.update_relation_data(self.relation.id, items)
 
     @property
-    def username(self) -> Optional[str]:
+    def username(self) -> str | None:
         """The generated username for the client application."""
         # Until we settle user credential questions we statically return 'kibanaserver'
         # return self.relation_data.get("username")
         return "kibanaserver"
 
     @property
-    def password(self) -> Optional[str]:
+    def password(self) -> str | None:
         """The generated password for the client application."""
         return self.relation_data.get("password")
 
     @property
-    def endpoints(self) -> List[str]:
+    def endpoints(self) -> list[str]:
         """Connection endpoints for the client application to connect with."""
         endpoints_str = self.relation_data.get("endpoints")
         return endpoints_str.split(",") if endpoints_str else []
@@ -122,7 +122,7 @@ class OpensearchServer(StateBase):
         return self._tls
 
     @property
-    def tls_ca(self) -> Optional[str]:
+    def tls_ca(self) -> str | None:
         """The CA cert in case TLS is enabled.
 
         Returns:

@@ -4,7 +4,6 @@
 
 """Collection of global cluster state."""
 import logging
-from typing import Dict, Optional, Set
 
 from charms.data_platform_libs.v0.data_interfaces import (
     DataPeerData,
@@ -56,7 +55,7 @@ class ClusterState(Object):
         return self.model.get_relation(PEER)
 
     @property
-    def opensearch_relation(self) -> Optional[Relation]:
+    def opensearch_relation(self) -> Relation | None:
         """The Opensearch Server relation."""
         return self.model.get_relation(OPENSEARCH_REL_NAME)
 
@@ -73,7 +72,7 @@ class ClusterState(Object):
         )
 
     @property
-    def peer_units_data(self) -> Dict[Unit, DataPeerOtherUnitData]:
+    def peer_units_data(self) -> dict[Unit, DataPeerOtherUnitData]:
         """The cluster peer relation."""
         if not self.peer_relation or not self.peer_relation.units:
             return {}
@@ -96,7 +95,7 @@ class ClusterState(Object):
         )
 
     @property
-    def servers(self) -> Set[ODServer]:
+    def servers(self) -> set[ODServer]:
         """Grabs all servers in the current peer relation, including the running unit server.
 
         Returns:
@@ -120,7 +119,7 @@ class ClusterState(Object):
         return servers
 
     @property
-    def opensearch_server(self) -> Optional[OpensearchServer]:
+    def opensearch_server(self) -> OpensearchServer | None:
         """The state for all related client Applications."""
         if not self.opensearch_relation or not self.opensearch_relation.app:
             return None
@@ -152,7 +151,7 @@ class ClusterState(Object):
         )
 
     @property
-    def started_servers(self) -> Set[ODServer]:
+    def started_servers(self) -> set[ODServer]:
         """The server states of all started peer-related Units."""
         return {server for server in self.servers if server.started}
 

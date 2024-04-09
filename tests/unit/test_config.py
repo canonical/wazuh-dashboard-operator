@@ -40,7 +40,7 @@ def harness():
 
     harness.add_relation("restart", CHARM_KEY)
     harness.add_relation(PEER, CHARM_KEY)
-    harness._update_config({"log-level": "INFO"})
+    harness._update_config({"log_level": "INFO"})
     harness.begin()
     return harness
 
@@ -49,11 +49,11 @@ def test_log_level_changed(harness):
     with (
         patch(
             "managers.config.ConfigManager.build_static_properties",
-            return_value=["log-level=logging.verbose"],
+            return_value=["log_level=logging.verbose"],
         ),
         patch(
             "managers.config.ConfigManager.static_properties",
-            return_value="log-level=logging.silent",
+            return_value="log_level=logging.silent",
         ),
         patch("managers.config.ConfigManager.set_dashboard_properties") as set_props,
     ):
@@ -61,8 +61,8 @@ def test_log_level_changed(harness):
         set_props.assert_called_once()
 
     with (
-        patch("workload.ODWorkload.read", return_value=["log-level=logging.silent"]),
-        patch("managers.config.ConfigManager.current_env", return_value=["log-level"]),
+        patch("workload.ODWorkload.read", return_value=["log_level=logging.silent"]),
+        patch("managers.config.ConfigManager.current_env", return_value=["log_level"]),
         patch("workload.ODWorkload.write") as write,
     ):
         assert harness.charm.config_manager.config_changed()

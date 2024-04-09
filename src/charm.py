@@ -70,25 +70,13 @@ class OpensearchDasboardsCharm(CharmBase):
 
         self.framework.observe(getattr(self.on, "start"), self._start)
 
-        self.framework.observe(
-            getattr(self.on, "update_status"), self._on_cluster_relation_changed
-        )
-        self.framework.observe(
-            getattr(self.on, "leader_elected"), self._on_cluster_relation_changed
-        )
-        self.framework.observe(
-            getattr(self.on, "config_changed"), self._on_cluster_relation_changed
-        )
+        self.framework.observe(getattr(self.on, "update_status"), self.reconcile)
+        self.framework.observe(getattr(self.on, "leader_elected"), self.reconcile)
+        self.framework.observe(getattr(self.on, "config_changed"), self.reconcile)
 
-        self.framework.observe(
-            getattr(self.on, f"{PEER}_relation_changed"), self._on_cluster_relation_changed
-        )
-        self.framework.observe(
-            getattr(self.on, f"{PEER}_relation_joined"), self._on_cluster_relation_changed
-        )
-        self.framework.observe(
-            getattr(self.on, f"{PEER}_relation_departed"), self._on_cluster_relation_changed
-        )
+        self.framework.observe(getattr(self.on, f"{PEER}_relation_changed"), self.reconcile)
+        self.framework.observe(getattr(self.on, f"{PEER}_relation_joined"), self.reconcile)
+        self.framework.observe(getattr(self.on, f"{PEER}_relation_departed"), self.reconcile)
 
         self.framework.observe(getattr(self.on, "secret_changed"), self._on_secret_changed)
 
@@ -112,7 +100,7 @@ class OpensearchDasboardsCharm(CharmBase):
             for user in CHARM_USERS:
                 self.state.cluster.update({f"{user}-password": self.workload.generate_password()})
 
-    def _on_cluster_relation_changed(self, event: EventBase) -> None:
+    def reconcile(self, event: EventBase) -> None:
         """Generic handler for all 'something changed, update' events across all relations."""
         # not all methods called
         if not self.state.peer_relation:

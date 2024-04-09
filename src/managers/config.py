@@ -59,11 +59,11 @@ class ConfigManager:
         """
         # FIXME: use pydantic config models for this validation instead
         permitted_levels = ["INFO", "WARNING", "ERROR"]
-        config_log_level = self.config["log-level"]
+        config_log_level = self.config["log_level"]
 
         if config_log_level not in permitted_levels:
             logger.error(
-                f"Invalid log-level config value of {config_log_level}. "
+                f"Invalid log_level config value of {config_log_level}. "
                 f"Must be one of {','.join(permitted_levels)}. Defaulting to 'INFO'"
             )
             config_log_level = "INFO"
