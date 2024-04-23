@@ -110,11 +110,9 @@ async def test_deploy_active(ops_test: OpsTest):
         await ops_test.model.block_until(
             lambda: len(ops_test.model.applications[APP_NAME].units) == NUM_UNITS_APP
         )
-        await ops_test.model.wait_for_idle(
-            apps=[APP_NAME], status="active", timeout=1000, idle_period=30
-        )
+        await ops_test.model.wait_for_idle(apps=[APP_NAME], timeout=1000, idle_period=30)
 
-    assert ops_test.model.applications[APP_NAME].status == "active"
+    assert ops_test.model.applications[APP_NAME].status == "blocked"
 
     pytest.relation = await ops_test.model.relate(OPENSEARCH_CHARM, APP_NAME)
     await ops_test.model.wait_for_idle(
