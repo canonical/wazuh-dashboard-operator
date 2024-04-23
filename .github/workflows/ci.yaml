@@ -67,7 +67,6 @@ jobs:
       matrix:
         path:
           - .
-          # - tests/integration/app-charm
     name: Build charm
     uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v11.0.1
     with:
@@ -86,6 +85,3 @@ jobs:
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
       cloud: lxd
       juju-agent-version: 3.1.6
-      _beta_allure_report: false
-    permissions:
-      contents: write # Needed for Allure Report beta
