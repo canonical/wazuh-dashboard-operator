@@ -23,6 +23,7 @@ from helpers import clear_status
 from literals import (
     CHARM_KEY,
     CHARM_USERS,
+    MSG_DB_MISSING,
     MSG_INSTALLING,
     MSG_STARTING,
     MSG_STARTING_SERVER,
@@ -135,6 +136,9 @@ class OpensearchDasboardsCharm(CharmBase):
         ):
             self.on[f"{self.restart.name}"].acquire_lock.emit()
 
+        if self.unit.is_leader() and self.state.opensearch_server:
+            clear_status(self.app, MSG_DB_MISSING)
+
     def _on_secret_changed(self, event: SecretChangedEvent):
         """Reconfigure services on a secret changed event."""
         if not event.secret.label:
@@ -205,12 +209,11 @@ class OpensearchDasboardsCharm(CharmBase):
         logger.info(f"{self.unit.name} started")
 
         # added here in case a `restart` was missed
-        self.state.unit_server.update(
-            {
-                "state": "started",
-            }
-        )
+        self.state.unit_server.update({"state": "started"})
         clear_status(self.unit, MSG_STARTING_SERVER)
+
+        if self.unit.is_leader() and not self.state.opensearch_server:
+            self.app.status = BlockedStatus(MSG_DB_MISSING)
 
 
 if __name__ == "__main__":
