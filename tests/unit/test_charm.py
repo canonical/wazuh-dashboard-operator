@@ -250,7 +250,7 @@ def test_restart_restarts_with_sleep(harness):
         assert patched_sleep.call_count >= 1
 
 
-def test_init_server_calls_necessary_methods(harness):
+def test_init_server_calls_necessary_methods_non_leader(harness):
     with harness.hooks_disabled():
         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
         harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
@@ -266,6 +266,27 @@ def test_init_server_calls_necessary_methods(harness):
         start.assert_called_once()
 
         assert harness.charm.state.unit_server.started
+        assert isinstance(harness.charm.unit.status, ActiveStatus)
+
+
+def test_init_server_calls_necessary_methods_leader(harness):
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.set_leader(True)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
+
+    with (
+        patch("managers.config.ConfigManager.set_dashboard_properties") as dashboard_properties,
+        patch("workload.ODWorkload.start") as start,
+    ):
+        harness.charm.init_server()
+
+        dashboard_properties.assert_called_once()
+        start.assert_called_once()
+
+        assert harness.charm.state.unit_server.started
+        assert isinstance(harness.charm.app.status, BlockedStatus)
         assert isinstance(harness.charm.unit.status, ActiveStatus)
 
 
