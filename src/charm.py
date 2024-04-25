@@ -150,7 +150,7 @@ class OpensearchDasboardsCharm(CharmBase):
         if event.secret.label == self.state.cluster.data_interface._generate_secret_label(
             PEER,
             self.state.cluster.relation.id,
-            None,  # type:ignore noqa
+            'extra',  # type:ignore noqa
         ):  # Changes with the soon upcoming new version of DP-libs STILL within this POC
             logger.info(f"Secret {event.secret.label} changed.")
             self.reconcile(event)
