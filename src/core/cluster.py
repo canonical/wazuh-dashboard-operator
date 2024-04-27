@@ -16,6 +16,7 @@ from ops.model import Relation, Unit
 
 from core.models import SUBSTRATES, ODCluster, ODServer, OpensearchServer
 from literals import (
+    CERTS_REL_NAME,
     DASHBOARD_INDEX,
     DASHBOARD_ROLE,
     OPENSEARCH_REL_NAME,
@@ -60,6 +61,11 @@ class ClusterState(Object):
         """The Opensearch Server relation."""
         return self.model.get_relation(OPENSEARCH_REL_NAME)
 
+    @property
+    def tls_relation(self) -> Relation | None:
+        """The cluster peer relation."""
+        return self.model.get_relation(CERTS_REL_NAME)
+
     # --- CORE COMPONENTS---
 
     @property
@@ -93,6 +99,7 @@ class ClusterState(Object):
             data_interface=self.peer_app_data,
             component=self.model.app,
             substrate=self.substrate,
+            tls=bool(self.tls_relation),
         )
 
     @property
@@ -132,7 +139,6 @@ class ClusterState(Object):
             component=self.opensearch_relation.app,
             substrate=self.substrate,
             local_app=self.cluster.app,
-            tls=self.cluster.tls,
         )
 
     # --- CLUSTER INIT ---

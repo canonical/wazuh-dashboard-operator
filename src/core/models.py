@@ -8,7 +8,7 @@ import socket
 import subprocess
 from typing import Literal, MutableMapping
 
-from charms.data_platform_libs.v0.data_interfaces import Data
+from charms.data_platform_libs.v0.data_interfaces import Data, DataDict
 from ops.model import Application, Relation, Unit
 from typing_extensions import override
 
@@ -33,24 +33,14 @@ class StateBase:
         self.data_interface = data_interface
         self.component = component
         self.substrate = substrate
+        self._relation_data = (
+            self.data_interface.as_dict(self.relation.id) if self.relation else {}
+        )
 
     @property
     def relation_data(self) -> MutableMapping[str, str]:
         """The raw relation data."""
-        if not self.relation or not self.data_interface:
-            return {}
-
-        my_data = {}
-        if my_data_dict := self.data_interface.fetch_my_relation_data([self.relation.id]):
-            my_data = my_data_dict.get(self.relation.id, {})
-
-        try:
-            other_data = self.data_interface.fetch_relation_data([self.relation.id])[
-                self.relation.id
-            ]
-        except NotImplementedError:
-            other_data = {}
-        return my_data | other_data
+        return self._relation_data.data if isinstance(self._relation_data, DataDict) else {}
 
     def update(self, items: dict[str, str]) -> None:
         """Writes to relation_data."""
@@ -59,10 +49,11 @@ class StateBase:
 
         delete_fields = [key for key in items if not items[key]]
         update_fields = {k: items[k] for k in items if k not in delete_fields}
+
         if update_fields:
-            self.data_interface.update_relation_data(self.relation.id, update_fields)
-        if delete_fields:
-            self.data_interface.delete_relation_data(self.relation.id, delete_fields)
+            self._relation_data.update(update_fields)
+        for field in delete_fields:
+            del self._relation_data[field]
 
 
 class OpensearchServer(StateBase):
@@ -77,13 +68,11 @@ class OpensearchServer(StateBase):
         local_app: Application | None = None,
         password: str = "",
         endpoints: str = "",
-        tls: bool = False,
     ):
         super().__init__(relation, data_interface, component, substrate)
         self.app = component
         self._password = password
         self._endpoints = endpoints
-        self._tls = tls
         self._local_app = local_app
 
     @override
@@ -113,15 +102,6 @@ class OpensearchServer(StateBase):
         return endpoints_str.split(",") if endpoints_str else []
 
     @property
-    def tls(self) -> bool:
-        """Flag to confirm whether or not is TLS enabled.
-
-        Returns:
-            String of either 'enabled' or 'disabled'
-        """
-        return self._tls
-
-    @property
     def tls_ca(self) -> str | None:
         """The CA cert in case TLS is enabled.
 
@@ -140,8 +120,10 @@ class ODCluster(StateBase):
         data_interface: Data,
         component: Application,
         substrate: SUBSTRATES,
+        tls: bool | None = False,
     ):
         super().__init__(relation, data_interface, component, substrate)
+        self._tls = tls
         self.app = component
 
     @property
@@ -162,7 +144,7 @@ class ODCluster(StateBase):
     @property
     def tls(self) -> bool:
         """Flag to check if TLS is enabled for the cluster."""
-        return bool(self.relation_data.get("tls", ""))
+        return bool(self._tls)
 
 
 class ODServer(StateBase):
@@ -270,6 +252,11 @@ class ODServer(StateBase):
     def ca(self) -> str:
         """The root CA contents for the unit to use for TLS."""
         return self.relation_data.get("ca-cert", "")
+
+    @property
+    def tls(self) -> bool:
+        """Flag to check if TLS is enabled for the cluster."""
+        return bool(self.ca) and bool(self.certificate) and bool(self.private_key)
 
     @property
     def sans(self) -> dict[str, list[str]]:

@@ -119,7 +119,7 @@ class ConfigManager:
         if opensearch_ca:
             properties += [f'opensearch.ssl.certificateAuthorities: [ "{opensearch_ca}" ]']
 
-        if self.state.cluster.tls:
+        if self.state.unit_server.tls:
             properties += TLS_PROPERTIES.split("\n") + [
                 f"server.ssl.certificate: {self.workload.paths.certificate}",
                 f"server.ssl.key: {self.workload.paths.server_key}",

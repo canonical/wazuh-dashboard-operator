@@ -144,14 +144,22 @@ class OpensearchDasboardsCharm(CharmBase):
         if not event.secret.label:
             return
 
-        if not self.state.cluster.relation:
+        if not self.state.peer_relation:
             return
 
-        if event.secret.label == self.state.cluster.data_interface._generate_secret_label(
+        cluster_secret_label = self.state.cluster.data_interface._generate_secret_label(
             PEER,
-            self.state.cluster.relation.id,
-            'extra',  # type:ignore noqa
-        ):  # Changes with the soon upcoming new version of DP-libs STILL within this POC
+            self.state.peer_relation.id,
+            "extra",  # type:ignore noqa
+        )  # Changes with the soon upcoming new version of DP-libs STILL within this POC
+
+        server_secret_label = self.state.unit_server.data_interface._generate_secret_label(
+            PEER,
+            self.state.peer_relation.id,
+            "extra",  # type:ignore noqa
+        )  # Changes with the soon upcoming new version of DP-libs STILL within this POC
+
+        if event.secret.label in [cluster_secret_label, server_secret_label]:
             logger.info(f"Secret {event.secret.label} changed.")
             self.reconcile(event)
 

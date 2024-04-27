@@ -11,11 +11,11 @@ CHARM_KEY = "opensearch-dashboards"
 
 PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch_client"
+CERTS_REL_NAME = "certificates"
 DASHBOARD_INDEX = ".opensearch-dashboards"
 DASHBOARD_ROLE = "kibana_server"
 CONTAINER = "opensearch-dashboards"
 CHARM_USERS = ["monitor"]
-CERTS_REL_NAME = "certificates"
 SERVER_PORT = 5601
 
 PATHS = {
