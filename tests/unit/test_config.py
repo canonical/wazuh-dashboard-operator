@@ -3,7 +3,7 @@
 # See LICENSE file for licensing details.
 import logging
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 import pytest
 import yaml
@@ -76,9 +76,13 @@ def test_tls_disabled(harness):
 
 
 def test_tls_enabled(harness):
-    with harness.hooks_disabled():
-        harness.update_relation_data(
-            harness.charm.state.peer_relation.id, CHARM_KEY, {"tls": "enabled"}
+    with (
+        patch("ops.framework.EventBase.defer"),
+        patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=True),
+    ):
+        harness.charm.unit.add_secret(
+            {"private-key": "key", "certificate": "cert", "ca-cert": "exists"},
+            label=f"{PEER}.opensearch-dashboards.unit",
         )
 
     assert "server.ssl.enabled: true" in harness.charm.config_manager.dashboard_properties

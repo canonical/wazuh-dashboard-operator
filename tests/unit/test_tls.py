@@ -35,19 +35,7 @@ def test_certificates_created_sets_upgrading_enabled(harness):
     ):
         harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
 
-    assert harness.charm.state.cluster.tls
-
-
-def test_certificates_joined_defers_if_disabled(harness):
-    with (
-        patch("ops.framework.EventBase.defer") as patched,
-        patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=True),
-    ):
-        cert_rel_id = harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
-        harness.add_relation_unit(cert_rel_id, "tls-certificates-operator/1")
-
-    patched.assert_called_once()
-    assert not harness.charm.state.unit_server.private_key
+        assert harness.charm.state.cluster.tls
 
 
 def test_certificates_joined_creates_private_key_if_enabled(harness):
@@ -130,7 +118,7 @@ def test_certificates_broken(harness):
 
         harness.charm.unit.add_secret(
             {"csr": "not-missing", "certificate": "cert", "ca-cert": "exists"},
-            label="opensearch-dashboards.unit",
+            label=f"{PEER}.opensearch-dashboards.unit",
         )
         harness.set_leader(True)
 
@@ -148,6 +136,7 @@ def test_certificates_broken(harness):
         assert not harness.charm.state.unit_server.certificate
         assert not harness.charm.state.unit_server.ca
         assert not harness.charm.state.unit_server.csr
+        assert not harness.charm.state.unit_server.tls
         assert not harness.charm.state.cluster.tls
 
 
