@@ -3,7 +3,7 @@
 # See LICENSE file for licensing details.
 
 import json
-import re
+import logging
 import socket
 import subprocess
 from pathlib import Path
@@ -12,6 +12,7 @@ from typing import Dict, List, Optional
 
 import requests
 import yaml
+from ops.model import Unit
 from pytest_operator.plugin import OpsTest
 
 from core.workload import ODPaths
@@ -20,17 +21,7 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 
 
-def application_active(ops_test: OpsTest, expected_units: int) -> bool:
-    units = ops_test.model.applications[APP_NAME].units
-
-    if len(units) != expected_units:
-        return False
-
-    for unit in units:
-        if unit.workload_status != "active":
-            return False
-
-    return True
+logger = logging.getLogger(__name__)
 
 
 async def get_password(ops_test) -> str:
@@ -144,25 +135,35 @@ def access_dashboard(
 
 def access_dashboard_https(host: str, password: str):
     """This function should be rather replaced by a 'requests' call, if we can figure out the source of discrepancy."""
-    curl_cmd = check_output(
-        [
-            "bash",
-            "-c",
-            'curl  -XPOST -H "Content-Type: application/json" -H "osd-xsrf: true" -H "Accept: application/json" '
-            + f"https://{host}:5601/auth/login -d "
-            + "'"
-            + '{"username":"kibanaserver","password": "'
-            + f"{password}"
-            + '"'
-            + "}' --cacert ca.pem",
-        ],
-        text=True,
-    )
+    try:
+        curl_cmd = check_output(
+            [
+                "bash",
+                "-c",
+                'curl  -XPOST -H "Content-Type: application/json" -H "osd-xsrf: true" -H "Accept: application/json" '
+                + f"https://{host}:5601/auth/login -d "
+                + "'"
+                + '{"username":"kibanaserver","password": "'
+                + f"{password}"
+                + '"'
+                + "}' --cacert ca.pem --verbose",
+            ],
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+    except subprocess.CalledProcessError as err:
+        logger.error(f"{err}, {err.output}")
+        return False
     return "roles" in curl_cmd
 
 
-async def access_all_dashboards(ops_test: OpsTest, relation_id: int, https: bool = False):
+async def access_all_dashboards(
+    ops_test: OpsTest, relation_id: int | None = None, https: bool = False, skip: list[str] = []
+):
     """Check if all dashboard instances are accessible."""
+
+    if not relation_id:
+        relation_id = get_relation(ops_test).id
 
     dashboard_credentials = await get_secret_by_label(
         ops_test, f"opensearch-client.{relation_id}.user.secret"
@@ -173,54 +174,24 @@ async def access_all_dashboards(ops_test: OpsTest, relation_id: int, https: bool
     # We only get it once for pipeline efficiency, as it's the same on all units
     if https:
         unit = ops_test.model.applications[APP_NAME].units[0].name
-        assert get_dashboard_ca_cert(ops_test.model.name, unit), "CA certificates missing."
+        if unit not in skip and not get_dashboard_ca_cert(ops_test.model.name, unit):
+            return False
 
     function = access_dashboard if not https else access_dashboard_https
     result = True
     for unit in ops_test.model.applications[APP_NAME].units:
+        if unit.name in skip:
+            continue
         host = get_private_address(ops_test.model.name, unit.name)
+        if not host:
+            logger.debug(f"Couldn't determine hostname for unit {unit.name}")
+            return False
         result &= function(host=host, password=dashboard_password)
+        if result:
+            logger.info(f"Host {unit.name}, {host} passed access check")
+        else:
+            dump_all(ops_test, unit)
     return result
-
-
-def srvr(host: str) -> Dict:
-    """Retrieves attributes returned from the 'srvr' 4lw command.
-
-    Specifically for this test, we are interested in the "Mode" of the OD server,
-    which allows checking quorum leadership and follower active status.
-    """
-    response = check_output(
-        f"echo srvr | nc {host} 2181", stderr=PIPE, shell=True, universal_newlines=True
-    )
-
-    assert response, "Opensearch Dashboards not running"
-
-    result = {}
-    for item in response.splitlines():
-        k = re.split(": ", item)[0]
-        v = re.split(": ", item)[1]
-        result[k] = v
-
-    return result
-
-
-async def ping_servers(ops_test: OpsTest) -> bool:
-    for unit in ops_test.model.applications[APP_NAME].units:
-        host = unit.public_address
-        mode = srvr(host)["Mode"]
-        if mode not in ["leader", "follower"]:
-            return False
-
-    return True
-
-
-async def correct_version_running(ops_test: OpsTest, expected_version: str) -> bool:
-    for unit in ops_test.model.applications[APP_NAME].units:
-        host = unit.public_address
-        if expected_version not in srvr(host)["Opensearch Dashboards version"]:
-            return False
-
-    return True
 
 
 def get_dashboard_ca_cert(model_full_name: str, unit: str):
@@ -237,27 +208,36 @@ def get_dashboard_ca_cert(model_full_name: str, unit: str):
     return False
 
 
-def check_jaas_config(model_full_name: str, unit: str):
-    config = check_output(
-        f"JUJU_MODEL={model_full_name} juju ssh {unit} sudo -i 'cat {ODPaths().jaas}'",
-        stderr=PIPE,
-        shell=True,
-        universal_newlines=True,
-    )
-
-    user_lines = {}
-    for line in config.splitlines():
-        matched = re.search(pattern=r"user_([a-zA-Z\-\d]+)=\"([a-zA-Z0-9]+)\"", string=line)
-        if matched:
-            user_lines[matched[1]] = matched[2]
-
-    return user_lines
+def get_file_contents(ops_test: OpsTest, unit: Unit, filename: str) -> str:
+    try:
+        output = subprocess.check_output(
+            [
+                "bash",
+                "-c",
+                f"JUJU_MODEL={ops_test.model.name} juju ssh {unit.name} sudo cat {filename}",
+            ]
+        )
+    except subprocess.CalledProcessError as err:
+        logger.error(f"{err}")
+        output = ""
+    return output
 
 
-async def get_address(ops_test: OpsTest, app_name=APP_NAME, unit_num=0) -> str:
+def dump_all(ops_test: OpsTest, unit: Unit):
+    for file in [
+        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/ca.pem",
+        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/opensearch_dashboards.yml",
+        "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
+    ]:
+        output = get_file_contents(ops_test, unit, file)
+        if output:
+            print(output)
+
+
+async def get_address(ops_test: OpsTest, unit_name: str) -> str:
     """Get the address for a unit."""
     status = await ops_test.model.get_status()  # noqa: F821
-    address = status["applications"][app_name]["units"][f"{app_name}/{unit_num}"]["public-address"]
+    address = status["applications"][APP_NAME]["units"][f"{unit_name}"]["public-address"]
     return address
 
 
@@ -477,3 +457,23 @@ async def get_leader_id(ops_test: OpsTest, app_name: str = APP_NAME) -> str:
     """Get the leader unit id."""
     leader_name = await get_leader_name(ops_test, app_name)
     return leader_name.split("/")[-1]
+
+
+def get_unit(ops_test: OpsTest, unit_name: str) -> str:
+    """Get unit by name."""
+    for unit in ops_test.model.units:
+        if unit.name == unit_name:
+            return unit
+
+
+def get_hostname(ops_test: OpsTest, unit_name: str) -> str:
+    """Get hostname for a unit."""
+    unit = get_unit(ops_test, unit_name)
+    return unit.machine.hostname
+
+
+def get_relation(ops_test: OpsTest, relation: str = "opensearch_client"):
+    relations = ops_test.model.relations
+    for relation in relations:
+        if relation.endpoints[0].interface == "opensearch_client":
+            return relation

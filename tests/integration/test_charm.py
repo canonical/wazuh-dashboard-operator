@@ -18,7 +18,6 @@ from .helpers import (
     get_private_address,
     get_secret_by_label,
     get_user_password,
-    ping_servers,
     set_password,
 )
 
@@ -46,7 +45,8 @@ NUM_UNITS_DB = 2
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 @pytest.mark.charm
-async def test_deploy_active(ops_test: OpsTest):
+async def test_build_and_deploy(ops_test: OpsTest):
+    """Deploying all charms required for the tests, and wait for their complete setup to be done."""
 
     charm = await ops_test.build_charm(".")
     await ops_test.model.deploy(charm, application_name=APP_NAME, num_units=NUM_UNITS_APP)
@@ -146,7 +146,6 @@ async def test_local_password_rotation(ops_test: OpsTest):
         apps=[APP_NAME], status="active", timeout=1000, idle_period=30
     )
     assert ops_test.model.applications[APP_NAME].status == "active"
-    assert ping_servers(ops_test)
 
     new_password = await get_user_password(ops_test, user)
 
