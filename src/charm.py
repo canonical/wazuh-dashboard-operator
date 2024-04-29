@@ -25,7 +25,6 @@ from literals import (
     CHARM_USERS,
     MSG_DB_MISSING,
     MSG_INSTALLING,
-    MSG_RECONFIGURING,
     MSG_STARTING,
     MSG_STARTING_SERVER,
     MSG_TLS_CONFIG,
@@ -131,24 +130,23 @@ class OpensearchDasboardsCharm(CharmBase):
         if getattr(event, "departing_unit", None) == self.unit:
             return
 
-        # Maintain the correct status
+        # Maintain the correct app status
         if self.unit.is_leader():
             if self.state.opensearch_server:
                 clear_status(self.app, MSG_DB_MISSING)
 
-            if self.state.cluster.tls and not self.state.unit_server.tls:
-                self.unit.status = MaintenanceStatus(MSG_TLS_CONFIG)
-            else:
-                clear_status(self.unit, MSG_TLS_CONFIG)
+        # Maintain the correct unit status
+        if self.state.cluster.tls and not self.state.unit_server.tls:
+            self.unit.status = MaintenanceStatus(MSG_TLS_CONFIG)
+        else:
+            clear_status(self.unit, MSG_TLS_CONFIG)
 
-        self.unit.status = MaintenanceStatus(MSG_RECONFIGURING)
         if (
             self.config_manager.config_changed()
             and self.state.unit_server.started
             # and self.upgrade_events.idle
         ):
             self.on[f"{self.restart.name}"].acquire_lock.emit()
-        clear_status(self.unit, MSG_RECONFIGURING)
 
     def _on_secret_changed(self, event: SecretChangedEvent):
         """Reconfigure services on a secret changed event."""
