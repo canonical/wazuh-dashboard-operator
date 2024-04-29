@@ -6,6 +6,7 @@
 import logging
 import socket
 import subprocess
+import uuid
 from typing import Literal, MutableMapping
 
 from charms.data_platform_libs.v0.data_interfaces import Data, DataDict
@@ -52,6 +53,9 @@ class StateBase:
 
         if update_fields:
             self._relation_data.update(update_fields)
+            # Hack to ensure a relation-changed event -- no problem if secret-changed is unreliable
+            # see https://bugs.launchpad.net/juju/+bug/2064876
+            self._relation_data.update({"_relation_data_updated": str(uuid.uuid4())})
         for field in delete_fields:
             del self._relation_data[field]
 

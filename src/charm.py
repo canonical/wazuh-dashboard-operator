@@ -25,6 +25,7 @@ from literals import (
     CHARM_USERS,
     MSG_DB_MISSING,
     MSG_INSTALLING,
+    MSG_RECONFIG,
     MSG_STARTING,
     MSG_STARTING_SERVER,
     MSG_TLS_CONFIG,
@@ -118,6 +119,7 @@ class OpensearchDasboardsCharm(CharmBase):
 
     def reconcile(self, event: EventBase) -> None:
         """Generic handler for all 'something changed, update' events across all relations."""
+
         # not all methods called
         if not self.state.peer_relation:
             return
@@ -130,23 +132,36 @@ class OpensearchDasboardsCharm(CharmBase):
         if getattr(event, "departing_unit", None) == self.unit:
             return
 
+        outdated_status = []
         # Maintain the correct app status
         if self.unit.is_leader():
             if self.state.opensearch_server:
-                clear_status(self.app, MSG_DB_MISSING)
+                outdated_status.append(MSG_DB_MISSING)
 
         # Maintain the correct unit status
-        if self.state.cluster.tls and not self.state.unit_server.tls:
-            self.unit.status = MaintenanceStatus(MSG_TLS_CONFIG)
-        else:
-            clear_status(self.unit, MSG_TLS_CONFIG)
 
+        # Request new certificates if IP changed
+        if self.state.cluster.tls:
+            if self.state.unit_server.tls and self.tls_manager.certificate_valid():
+                outdated_status.append(MSG_TLS_CONFIG)
+            else:
+                self.unit.status = MaintenanceStatus(MSG_TLS_CONFIG)
+
+        # Restart on config change
         if (
             self.config_manager.config_changed()
             and self.state.unit_server.started
             # and self.upgrade_events.idle
         ):
+            # NOTE: We never clean up MSG_RECONFIG, as it MUST be replaced by rolling_ops statuses
+            # (Otherwise the server is out-of-date)
+            # It is to ensure continuality of non-active status as needed
+            self.unit.status = MaintenanceStatus(MSG_RECONFIG)
             self.on[f"{self.restart.name}"].acquire_lock.emit()
+
+        # Clear all possible irrelevant statuses
+        for status in outdated_status:
+            clear_status(self.unit, status)
 
     def _on_secret_changed(self, event: SecretChangedEvent):
         """Reconfigure services on a secret changed event."""
