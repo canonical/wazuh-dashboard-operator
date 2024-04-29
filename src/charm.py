@@ -136,7 +136,7 @@ class OpensearchDasboardsCharm(CharmBase):
             if self.state.opensearch_server:
                 clear_status(self.app, MSG_DB_MISSING)
 
-            if self.state.cluster.tls and not self.state.cluster.tls:
+            if self.state.cluster.tls and not self.state.unit_server.tls:
                 self.unit.status = MaintenanceStatus(MSG_TLS_CONFIG)
             else:
                 clear_status(self.unit, MSG_TLS_CONFIG)

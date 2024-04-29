@@ -8,15 +8,12 @@ from pathlib import Path
 import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
-from tenacity import Retrying, retry_if_not_result, stop_after_attempt, wait_fixed
 
 from .helpers import (
     access_all_dashboards,
     access_dashboard,
-    access_dashboard_https,
     count_lines_with,
     get_application_relation_data,
-    get_dashboard_ca_cert,
     get_leader_id,
     get_leader_name,
     get_private_address,
@@ -169,24 +166,10 @@ async def test_dashboard_password_rotation(ops_test: OpsTest):
     await action.wait()
 
     await ops_test.model.wait_for_idle(
-        apps=[APP_NAME, OPENSEARCH_APP_NAME], status="active", timeout=1000
+        apps=[APP_NAME, OPENSEARCH_APP_NAME], status="active", timeout=1000, idle_period=30
     )
 
-    # We need to face it:
-    # 1. updating a credential in a charm (Opensearch)
-    # 2. that has to be updated on a relation (Opensearch <-> Dashboards)
-    # 3. so that another charm could take it over it its configuration
-    # ...takes time...
-    # And 'active' status is not a reliable indicator, given the elaborate
-    # chain of actions to be invoked (where in-between events processing it
-    # seems like there IS a moment where everyone may be idle and active
-    # before/after various handler executions, as part of the chain).
-    retryer = Retrying(
-        stop=stop_after_attempt(3),
-        wait=wait_fixed(10),
-        retry=retry_if_not_result(lambda result: True if result else False),
-    )
-    assert retryer(access_all_dashboards, ops_test, pytest.relation, https=True)
+    assert access_all_dashboards(ops_test, pytest.relation, https=True)
 
 
 @pytest.mark.group(1)

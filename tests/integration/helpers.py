@@ -173,7 +173,7 @@ async def access_all_dashboards(ops_test: OpsTest, relation_id: int, https: bool
     # We only get it once for pipeline efficiency, as it's the same on all units
     if https:
         unit = ops_test.model.applications[APP_NAME].units[0].name
-        get_dashboard_ca_cert(ops_test.model.name, unit)
+        assert get_dashboard_ca_cert(ops_test.model.name, unit), "CA certificates missing."
 
     function = access_dashboard if not https else access_dashboard_https
     result = True
