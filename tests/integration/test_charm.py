@@ -10,11 +10,10 @@ import yaml
 from pytest_operator.plugin import OpsTest
 
 from .helpers import (
+    access_all_dashboards,
     access_dashboard,
-    access_dashboard_https,
     count_lines_with,
     get_application_relation_data,
-    get_dashboard_ca_cert,
     get_leader_id,
     get_leader_name,
     get_private_address,
@@ -93,11 +92,10 @@ async def test_deploy_active(ops_test: OpsTest):
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     # Pinning down opensearch revision to the last 2.10 one
     # NOTE: can't access 2/stable from the tests, only 'edge' available
-    # await ops_test.model.deploy(opensearch_new_charm, application_name=OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB)
     test_charm_path = "./tests/integration/opensearch-operator"
     opensearch_new_charm = await ops_test.build_charm(test_charm_path)
     await ops_test.model.deploy(
-            opensearch_new_charm, application_name=OPENSEARCH_APP_NAME, num_units=NUM_UNITS_DB
+        opensearch_new_charm, application_name=OPENSEARCH_APP_NAME, num_units=NUM_UNITS_DB
     )
 
     config = {"ca-common-name": "CN_CA"}
@@ -147,24 +145,13 @@ async def test_dashboard_access(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_dashboard_access_https(ops_test: OpsTest):
     """Test HTTPS access to each dashboard unit."""
-    dashboard_credentials = await get_secret_by_label(
-        ops_test, f"opensearch-client.{pytest.relation.id}.user.secret"
-    )
-    dashboard_password = dashboard_credentials["password"]
-
     # Relate it to OpenSearch to set up TLS.
     await ops_test.model.relate(APP_NAME, TLS_CERTIFICATES_APP_NAME)
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
     )
 
-    # Copying the Dashboard's CA cert locally to use it for SSL verification
-    # We only get it once for pipeline efficiency, as it's the same on all units
-    get_dashboard_ca_cert(ops_test.model.name, f"{APP_NAME}/0")
-
-    for unit in ops_test.model.applications[APP_NAME].units:
-        host = get_private_address(ops_test.model.name, unit.name)
-        assert access_dashboard_https(host=host, password=dashboard_password)
+    assert access_all_dashboards(ops_test, pytest.relation, https=True)
 
 
 @pytest.mark.group(1)
@@ -176,16 +163,13 @@ async def test_dashboard_password_rotation(ops_test: OpsTest):
     user = "kibanaserver"
 
     action = await db_leader_unit.run_action("set-password", **{"username": user})
-    password = await action.wait()
-    new_password = password.results[f"{user}-password"]
+    await action.wait()
 
-    # Copying the Dashboard's CA cert locally to use it for SSL verification
-    # We only get it once for pipeline efficiency, as it's the same on all units
-    get_dashboard_ca_cert(ops_test.model.name, f"{APP_NAME}/0")
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, OPENSEARCH_APP_NAME], status="active", timeout=1000, idle_period=30
+    )
 
-    for unit in ops_test.model.applications[APP_NAME].units:
-        host = get_private_address(ops_test.model.name, unit.name)
-        assert access_dashboard_https(host=host, password=new_password)
+    assert access_all_dashboards(ops_test, pytest.relation, https=True)
 
 
 @pytest.mark.group(1)

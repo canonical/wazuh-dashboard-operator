@@ -82,6 +82,7 @@ optional = true
 ops = "^2.4.1"
 pytest = ">=7.2"
 juju = "^3.2.0"
+tenacity = ">=8.0.1"
 coverage = {extras = ["toml"], version = ">7.0"}
 pytest-operator = ">0.20"
 pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v11.0.1", subdirectory = "python/pytest_plugins/pytest_operator_cache"}

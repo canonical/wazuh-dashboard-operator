@@ -27,6 +27,7 @@ from literals import (
     MSG_INSTALLING,
     MSG_STARTING,
     MSG_STARTING_SERVER,
+    MSG_TLS_CONFIG,
     MSG_WAITING_FOR_PEER,
     MSG_WAITING_FOR_USER_CREDENTIALS,
     PEER,
@@ -129,6 +130,17 @@ class OpensearchDasboardsCharm(CharmBase):
         if getattr(event, "departing_unit", None) == self.unit:
             return
 
+        # Maintain the correct app status
+        if self.unit.is_leader():
+            if self.state.opensearch_server:
+                clear_status(self.app, MSG_DB_MISSING)
+
+        # Maintain the correct unit status
+        if self.state.cluster.tls and not self.state.unit_server.tls:
+            self.unit.status = MaintenanceStatus(MSG_TLS_CONFIG)
+        else:
+            clear_status(self.unit, MSG_TLS_CONFIG)
+
         if (
             self.config_manager.config_changed()
             and self.state.unit_server.started
@@ -136,22 +148,27 @@ class OpensearchDasboardsCharm(CharmBase):
         ):
             self.on[f"{self.restart.name}"].acquire_lock.emit()
 
-        if self.unit.is_leader() and self.state.opensearch_server:
-            clear_status(self.app, MSG_DB_MISSING)
-
     def _on_secret_changed(self, event: SecretChangedEvent):
         """Reconfigure services on a secret changed event."""
         if not event.secret.label:
             return
 
-        if not self.state.cluster.relation:
+        if not self.state.peer_relation:
             return
 
-        if event.secret.label == self.state.cluster.data_interface._generate_secret_label(
+        cluster_secret_label = self.state.cluster.data_interface._generate_secret_label(
             PEER,
-            self.state.cluster.relation.id,
-            'extra',  # type:ignore noqa
-        ):  # Changes with the soon upcoming new version of DP-libs STILL within this POC
+            self.state.peer_relation.id,
+            "extra",  # type:ignore noqa
+        )  # Changes with the soon upcoming new version of DP-libs STILL within this POC
+
+        server_secret_label = self.state.unit_server.data_interface._generate_secret_label(
+            PEER,
+            self.state.peer_relation.id,
+            "extra",  # type:ignore noqa
+        )  # Changes with the soon upcoming new version of DP-libs STILL within this POC
+
+        if event.secret.label in [cluster_secret_label, server_secret_label]:
             logger.info(f"Secret {event.secret.label} changed.")
             self.reconcile(event)
 

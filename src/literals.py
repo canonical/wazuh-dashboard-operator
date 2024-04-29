@@ -11,11 +11,11 @@ CHARM_KEY = "opensearch-dashboards"
 
 PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch_client"
+CERTS_REL_NAME = "certificates"
 DASHBOARD_INDEX = ".opensearch-dashboards"
 DASHBOARD_ROLE = "kibana_server"
 CONTAINER = "opensearch-dashboards"
 CHARM_USERS = ["monitor"]
-CERTS_REL_NAME = "certificates"
 SERVER_PORT = 5601
 
 PATHS = {
@@ -44,3 +44,4 @@ MSG_STARTING_SERVER = "starting Opensearch Dashboards server..."
 MSG_WAITING_FOR_USER_CREDENTIALS = "waiting for passwords to be created"
 MSG_WAITING_FOR_PEER = "waiting for peer relation"
 MSG_DB_MISSING = "Opensearch connection is missing"
+MSG_TLS_CONFIG = "Waiting for TLS to be fully configured..."

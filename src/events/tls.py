@@ -14,8 +14,10 @@ from charms.tls_certificates_interface.v3.tls_certificates import (
     generate_csr,
     generate_private_key,
 )
-from ops.charm import ActionEvent, RelationCreatedEvent, RelationJoinedEvent
+from ops.charm import ActionEvent, RelationJoinedEvent
 from ops.framework import EventBase, Object
+
+from literals import CERTS_REL_NAME
 
 if TYPE_CHECKING:
     from charm import OpensearchDasboardsCharm
@@ -29,12 +31,8 @@ class TLSEvents(Object):
     def __init__(self, charm):
         super().__init__(charm, "tls")
         self.charm: "OpensearchDasboardsCharm" = charm
-        self.certificates = TLSCertificatesRequiresV3(self.charm, "certificates")
+        self.certificates = TLSCertificatesRequiresV3(self.charm, CERTS_REL_NAME)
 
-        self.framework.observe(
-            getattr(self.charm.on, "certificates_relation_created"),
-            self._on_certs_relation_created,
-        )
         self.framework.observe(
             getattr(self.charm.on, "certificates_relation_joined"), self._on_certs_relation_joined
         )
@@ -52,22 +50,8 @@ class TLSEvents(Object):
             getattr(self.charm.on, "set_tls_private_key_action"), self._set_tls_private_key
         )
 
-    def _on_certs_relation_created(self, event: RelationCreatedEvent) -> None:
-        """Handler for `certificates_relation_created` event."""
-        if not self.charm.unit.is_leader():
-            return
-
-        self.charm.state.cluster.update({"tls": "enabled", "switching-encryption": "started"})
-
     def _on_certs_relation_joined(self, event: RelationJoinedEvent) -> None:
         """Handler for `certificates_relation_joined` event."""
-        if not self.charm.state.cluster.tls:
-            logger.debug(
-                "certificates relation joined - tls not enabled and not switching encryption - deferring"
-            )
-            event.defer()
-            return
-
         # generate unit private key if not already created by action
         if not self.charm.state.unit_server.private_key:
             self.charm.state.unit_server.update(
@@ -138,11 +122,6 @@ class TLSEvents(Object):
 
         # remove all existing keystores from the unit so we don't preserve certs
         self.charm.tls_manager.remove_cert_files()
-
-        if not self.charm.unit.is_leader():
-            return
-
-        self.charm.state.cluster.update({"tls": "", "switching-encryption": "started"})
 
     def _set_tls_private_key(self, event: ActionEvent) -> None:
         """Handler for `set-tls-privat-key` event when user manually specifies private-keys for a unit."""

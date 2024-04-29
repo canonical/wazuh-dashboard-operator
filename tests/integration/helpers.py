@@ -161,6 +161,28 @@ def access_dashboard_https(host: str, password: str):
     return "roles" in curl_cmd
 
 
+async def access_all_dashboards(ops_test: OpsTest, relation_id: int, https: bool = False):
+    """Check if all dashboard instances are accessible."""
+
+    dashboard_credentials = await get_secret_by_label(
+        ops_test, f"opensearch-client.{relation_id}.user.secret"
+    )
+    dashboard_password = dashboard_credentials["password"]
+
+    # Copying the Dashboard's CA cert locally to use it for SSL verification
+    # We only get it once for pipeline efficiency, as it's the same on all units
+    if https:
+        unit = ops_test.model.applications[APP_NAME].units[0].name
+        assert get_dashboard_ca_cert(ops_test.model.name, unit), "CA certificates missing."
+
+    function = access_dashboard if not https else access_dashboard_https
+    result = True
+    for unit in ops_test.model.applications[APP_NAME].units:
+        host = get_private_address(ops_test.model.name, unit.name)
+        result &= function(host=host, password=dashboard_password)
+    return result
+
+
 def srvr(host: str) -> Dict:
     """Retrieves attributes returned from the 'srvr' 4lw command.
 
