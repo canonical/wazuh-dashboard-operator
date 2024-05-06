@@ -25,7 +25,6 @@ from literals import (
     CHARM_USERS,
     MSG_DB_MISSING,
     MSG_INSTALLING,
-    MSG_RECONFIG,
     MSG_STARTING,
     MSG_STARTING_SERVER,
     MSG_TLS_CONFIG,
@@ -153,10 +152,6 @@ class OpensearchDasboardsCharm(CharmBase):
             and self.state.unit_server.started
             # and self.upgrade_events.idle
         ):
-            # NOTE: We never clean up MSG_RECONFIG, as it MUST be replaced by rolling_ops statuses
-            # (Otherwise the server is out-of-date)
-            # It is to ensure continuality of non-active status as needed
-            self.unit.status = MaintenanceStatus(MSG_RECONFIG)
             self.on[f"{self.restart.name}"].acquire_lock.emit()
 
         # Clear all possible irrelevant statuses

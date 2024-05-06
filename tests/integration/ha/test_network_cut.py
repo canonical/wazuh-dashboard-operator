@@ -192,6 +192,10 @@ async def network_throttle_leader(ops_test: OpsTest, https: bool = False):
         wait_period=LONG_WAIT,
     )
 
+    # Double-checking that the network throttle didn't change the IP
+    current_ip = await get_address(ops_test, old_leader_name)
+    assert old_ip == current_ip
+
     logger.info("Checking Dashboard access...")
     assert await access_all_dashboards(ops_test, https=https)
 
@@ -201,8 +205,7 @@ async def network_cut_application(ops_test: OpsTest, https: bool = False):
     logger.info("Cutting all units from network...")
 
     machines = []
-    units = []
-    ips = []
+    unit_ip_map = {}
     for unit in ops_test.model.applications[APP_NAME].units:
         machine_name = await ha_helpers.get_unit_machine_name(ops_test, unit.name)
         ip = await get_address(ops_test, unit.name)
@@ -211,8 +214,10 @@ async def network_cut_application(ops_test: OpsTest, https: bool = False):
         ha_helpers.cut_unit_network(machine_name)
 
         machines.append(machine_name)
-        units.append(unit.name)
-        ips.append(ip)
+        unit_ip_map[unit.name] = ip
+
+    units = list(unit_ip_map.keys())
+    ips = list(unit_ip_map.values())
 
     logger.info(f"Waiting until units {units} are not reachable")
     await ops_test.model.block_until(
@@ -243,7 +248,11 @@ async def network_cut_application(ops_test: OpsTest, https: bool = False):
 
     logger.info("Waiting for Juju to detect new IPs...")
     await ops_test.model.block_until(
-        lambda: not any(ip in ha_helpers.get_hosts_from_status(ops_test).values() for ip in ips),
+        lambda: all(
+            ha_helpers.get_hosts_from_status(ops_test).get(unit)
+            and ha_helpers.get_hosts_from_status(ops_test)[unit] != unit_ip_map[unit]
+            for unit in unit_ip_map
+        ),
         timeout=LONG_TIMEOUT,
         wait_period=LONG_WAIT,
     )
@@ -257,8 +266,7 @@ async def network_throttle_application(ops_test: OpsTest, https: bool = False):
     logger.info("Cutting all units from network...")
 
     machines = []
-    units = []
-    ips = []
+    unit_ip_map = {}
     for unit in ops_test.model.applications[APP_NAME].units:
         machine_name = await ha_helpers.get_unit_machine_name(ops_test, unit.name)
         ip = await get_address(ops_test, unit.name)
@@ -267,8 +275,10 @@ async def network_throttle_application(ops_test: OpsTest, https: bool = False):
         ha_helpers.network_throttle(machine_name)
 
         machines.append(machine_name)
-        units.append(unit.name)
-        ips.append(ip)
+        unit_ip_map[unit.name] = ip
+
+    units = list(unit_ip_map.keys())
+    ips = list(unit_ip_map.values())
 
     logger.info(f"Waiting until units {units} are not reachable")
     await ops_test.model.block_until(
@@ -302,6 +312,13 @@ async def network_throttle_application(ops_test: OpsTest, https: bool = False):
         lambda: all(ha_helpers.reachable(ip, SERVER_PORT) for ip in ips),
         timeout=LONG_TIMEOUT,
         wait_period=LONG_WAIT,
+    )
+
+    # Double-checking that the network throttle didn't change the IP
+    assert all(
+        ha_helpers.get_hosts_from_status(ops_test).get(unit)
+        and ha_helpers.get_hosts_from_status(ops_test)[unit] == unit_ip_map[unit]
+        for unit in unit_ip_map
     )
 
     logger.info("Checking Dashboard access...")
