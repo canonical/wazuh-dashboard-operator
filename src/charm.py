@@ -32,7 +32,7 @@ from literals import (
     MSG_WAITING_FOR_USER_CREDENTIALS,
     PEER,
     RESTART_TIMEOUT,
-    SUBSTRATE,
+    SUBSTRATE, SERVER_PORT,
 )
 from managers.config import ConfigManager
 from managers.tls import TLSManager
@@ -231,6 +231,9 @@ class OpensearchDasboardsCharm(CharmBase):
 
         logger.debug("starting Opensearch Dashboards service")
         self.workload.start()
+
+        # open port
+        self.unit.open_port("tcp", port=SERVER_PORT)
 
         # unit flags itself as 'started' so it can be retrieved by the leader
         logger.info(f"{self.unit.name} started")
