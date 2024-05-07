@@ -32,7 +32,8 @@ from literals import (
     MSG_WAITING_FOR_USER_CREDENTIALS,
     PEER,
     RESTART_TIMEOUT,
-    SUBSTRATE, SERVER_PORT,
+    SUBSTRATE,
+    SERVER_PORT,
 )
 from managers.config import ConfigManager
 from managers.tls import TLSManager
