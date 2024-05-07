@@ -13,6 +13,7 @@ PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch_client"
 CERTS_REL_NAME = "certificates"
 DASHBOARD_INDEX = ".opensearch-dashboards"
+DASHBOARD_USER = "kibanaserver"
 DASHBOARD_ROLE = "kibana_server"
 CONTAINER = "opensearch-dashboards"
 CHARM_USERS = ["monitor"]
