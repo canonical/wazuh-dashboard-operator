@@ -162,6 +162,9 @@ async def access_all_dashboards(
 ):
     """Check if all dashboard instances are accessible."""
 
+    if not ops_test.model.applications[APP_NAME].units:
+        return False
+
     if not relation_id:
         relation_id = get_relation(ops_test).id
 
@@ -184,8 +187,9 @@ async def access_all_dashboards(
             continue
         host = get_private_address(ops_test.model.name, unit.name)
         if not host:
-            logger.debug(f"Couldn't determine hostname for unit {unit.name}")
+            logger.debug(f"No hostname found for {unit.name}, can't check connection.")
             return False
+
         result &= function(host=host, password=dashboard_password)
         if result:
             logger.info(f"Host {unit.name}, {host} passed access check")
