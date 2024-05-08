@@ -35,7 +35,7 @@ The charm supports access via:
 
 ### Juju
 
-Opensearch Dashboard is a Juju charm. Which means that an existing Juju environment is necessary.
+Opensearch Dashboard is a Juju charm. This means that an existing Juju environment is necessary.
 
 Install and initialize the [LXD](https://canonical.com/lxd) 
 lightweight container hypervisor and Juju from the [Snap Store](https://snapcraft.io/store):
@@ -53,8 +53,8 @@ juju bootstrap localhost
 
 ### Opensearch
 
-Opensearch Dashboards is visualizing an underlying Opensearch database. 
-Which means that a [Charmed Opensearch](https://charmhub.io/opensearch/)
+Opensearch Dashboards visualizes an underlying OpenSearch database.
+This means that a [Charmed Opensearch](https://charmhub.io/opensearch/)
 instance also has to be ready and available.
 
 A straightforward installation guide is available in the charm's 
@@ -73,6 +73,23 @@ juju deploy openserach-dashboards --channel=2/edge
 and relate it to the Opensearch charm:
 ```
 juju relate opensearch opensearch-dashboards-operator
+```
+
+### TLS encryption
+
+Switching to TLS support for the Opensearch Dashboards charms goes identical to
+how it goes for Opensearch.
+
+Install the 
+[self-signed-certificats Operator](https://github.com/canonical/self-signed-certificates-operator)
+
+```
+juju deploy self-signed-certificates --channel=latest/stable
+```
+and relate it to the Dashboards charm
+
+```
+juju relate opensearch-dashboards self-sigend-certificates
 ```
 
 ## Testing interactive access
@@ -95,61 +112,46 @@ opensearch-dashboards/0*     active    idle   1        10.4.151.209
 
 Using the example, the Dashboard URL is `http://10.4.151.209:5601`.
 
+
 ### Authentication
 
-There is a pre-defined user Opensearch dedicated to Opensearch Dashboards access
-called `kibanaserver`. Even on an empty Charmed Opensearch database the `kibanaserver`
-user will be present and available to test Dashboards connection.
-
-The following command displays the current `kibanaserver` password.
+Set up a user using the `data-integrator` [charm](https://charmhub.io/data-integrator)
+that has to be related to `opensearch` to create a new database user.
 
 ```
-juju run opensearch/0 get-password username=kibanaserver
+$ juju deploy data-integrator
+$ juju deploy data-integrator --config index-name=<index_name>
 ```
 
-### TLS encryption
-
-Switching to TLS support for the Opensearch Dashboards charms goes identical to
-how it goes for Opensearch.
-
-Install the 
-[self-signed-certificats Operator](https://github.com/canonical/self-signed-certificates-operator)
+Retrieve user credentials running
 
 ```
-juju deploy self-signed-certificates --channel=latest/stable
+juju run data-integrator/0 get-credentials
 ```
-and relate it to the Dashboards charm
+at the bottom of the output you should see something like:
 
 ```
-juju relate opensearch-dashboards self-sigend-certificates
+  password: 8kubD7nbWYZFHPVEzIVmTyqV42I7wHb4
+  <CA certificate here>
+  username: opensearch-client_15
 ```
 
 ## Accessing the Dashboard
 
-Now all we either open the URL in a browser, or access the Dashboard from the command line.
+Using information from above, the dasboard URI consists is construted as `https://<IP>:5601
 
-For the latter, fetch the certificate file from the Dashboard (to pass certificate verificaton).
-
-```
-juju scp opensearch-dashboards/0:/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/ca.pem ./
-```
-
-Now issue the following `curl` command:
-
-```
-curl -XPOST https://<IP>:5601/auth/login -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'osd-xsrf:true' \
--d '{"username":"kibanaserver","password":"<PW>"}' --cacert ca.pem
-```
-
-The output should look like this 
-
-```
-{"username":"kibanaserver","tenants":{"kibanaserver":true},"roles":["own_index","kibana_server"],"backendroles":[]}
-```
-
-In case of a browser, a successful login is expected.
+You should log in with the credentials of the new user.
 
 ![Opensearch Dashboards login](./docs/opensearch_dashboard_login.png)
+
+You must create an "intex pattern" that enables the Dasboard to access the user's data.
+It should specify `index_name` that was used to create the user with `data-integrator`
+
+Follow instructions from Opensearch documentation on 
+[How to create an index pattern](https://opensearch.org/docs/latest/dashboards/management/index-patterns/#creating-an-index-pattern)
+
+When the index pattern is defined, data that belongs to the user will dispaly in the Dasboards.
+
 
 # License
 
