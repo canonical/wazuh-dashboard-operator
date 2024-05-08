@@ -15,11 +15,10 @@
 
 # Description
 
-
-[Opensearch Dashboards](https://opensearch.org/docs/latest/dashboards/) 
-is a frontend application that lets you visualize data stored in an Opensearch
-database. Charmed Opensearch Dashboard is the adaptation of the 
-[Opensearch Dashboards](https://opensearch.org/docs/latest/dashboards/) 
+[OpenSearch Dashboards](https://opensearch.org/docs/latest/dashboards/) 
+is a frontend application that for visualizing data stored in an OpenSearch
+database. Charmed OpenSearch Dashboard is the adaptation of the 
+[OpenSearch Dashboards](https://opensearch.org/docs/latest/dashboards/) 
 user interface to the [Juju](https://juju.is/) environment.
 
 The charm supports access via:
@@ -27,7 +26,7 @@ The charm supports access via:
  - HTTPS (typically for direct access)
  - HTTP (load-balancing) 
 
-![Opensearch Dashboards](./docs/opensearch_dashboard.png)
+![OpenSearch Dashboards](./docs/opensearch_dashboard.png)
 
 # Usage
 
@@ -35,7 +34,7 @@ The charm supports access via:
 
 ### Juju
 
-Opensearch Dashboard is a Juju charm. This means that an existing Juju environment is necessary.
+OpenSearch Dashboard is a Juju charm. This means that an existing Juju environment is necessary.
 
 Install and initialize the [LXD](https://canonical.com/lxd) 
 lightweight container hypervisor and Juju from the [Snap Store](https://snapcraft.io/store):
@@ -45,54 +44,52 @@ sudo snap install juju --classic --channel=3.1/stable
 sudo snap install lxd
 lxd init --auto
 ```
-Then boostrap Juju over LXD:
+Then, boostrap Juju over LXD:
 ```
 juju bootstrap localhost
 ```
 
+### Charmed OpenSearch
 
-### Opensearch
-
-Opensearch Dashboards visualizes an underlying OpenSearch database.
-This means that a [Charmed Opensearch](https://charmhub.io/opensearch/)
+OpenSearch Dashboards visualizes an underlying OpenSearch database.
+This means that a [Charmed OpenSearch](https://charmhub.io/opensearch/)
 instance also has to be ready and available.
 
 A straightforward installation guide is available in the charm's 
-[Github repository](https://github.com/canonical/opensearch-operator?tab=readme-ov-file#usage):
+[Github repository](https://github.com/canonical/opensearch-operator?tab=readme-ov-file#usage).
 
 
-
-## Opensearch Dashboards charm installation
+## Install Charmed OpenSearch Dashboards
 
 The Dashboards charm requires no specific environment adjustments.
-Therefore all we need to do to deploy the charm from [Charmhub](https://charmhub.io/opensearch-dashboards)
+Therefore all we need to do to deploy the charm from [Charmhub](https://charmhub.io/opensearch-dashboards) is 
 
 ```
-juju deploy openserach-dashboards --channel=2/edge
+juju deploy opensearch-dashboards --channel=2/edge
 ```
-and relate it to the Opensearch charm:
+and integrate it with the OpenSearch charm:
 ```
-juju relate opensearch opensearch-dashboards-operator
+juju integrate opensearch opensearch-dashboards-operator
 ```
 
-### TLS encryption
+### Enable TLS encryption
 
-Switching to TLS support for the Opensearch Dashboards charms goes identical to
-how it goes for Opensearch.
+Switching to TLS support for the OpenSearch Dashboards charms goes identically to
+how it goes for OpenSearch.
 
 Install the 
-[self-signed-certificats Operator](https://github.com/canonical/self-signed-certificates-operator)
+[self-signed-certificates operator](https://github.com/canonical/self-signed-certificates-operator)
 
 ```
 juju deploy self-signed-certificates --channel=latest/stable
 ```
-and relate it to the Dashboards charm
+and integrate it with the Dashboards charm
 
 ```
-juju relate opensearch-dashboards self-sigend-certificates
+juju integrate opensearch-dashboards self-signed-certificates
 ```
 
-## Testing interactive access
+## Test interactive access
 
 Functionality of the service can be tested by making an attempt to access the
 portal either from the command-line or a web browser.
@@ -110,13 +107,13 @@ retrieve the IP of each unit:
 opensearch-dashboards/0*     active    idle   1        10.4.151.209              
 ```
 
-Using the example, the Dashboard URL is `http://10.4.151.209:5601`.
+Using the example above, the Dashboard URL is `http://10.4.151.209:5601`.
 
 
 ### Authentication
 
-Set up a user using the `data-integrator` [charm](https://charmhub.io/data-integrator)
-that has to be related to `opensearch` to create a new database user.
+Set up a database user by deploying the `data-integrator` [charm](https://charmhub.io/data-integrator)
+and integrating it with `opensearch`. The user is created automatically as a result of the integration.
 
 ```
 $ juju deploy data-integrator
@@ -136,25 +133,29 @@ at the bottom of the output you should see something like:
   username: opensearch-client_15
 ```
 
-## Accessing the Dashboard
+## Access the Dashboard
 
-Using information from above, the dasboard URI consists is construted as `https://<IP>:5601
+Using information from above, the dashboard URI is construted as 
 
-You should log in with the credentials of the new user.
+```text
+https://<IP>:5601
+```
 
-![Opensearch Dashboards login](./docs/opensearch_dashboard_login.png)
+Log in with the credentials of the new user.
 
-You must create an "intex pattern" that enables the Dasboard to access the user's data.
-It should specify `index_name` that was used to create the user with `data-integrator`
+![OpenSearch Dashboards login](./docs/opensearch_dashboard_login.png)
 
-Follow instructions from Opensearch documentation on 
+You must create an "index pattern" that enables the Dasboard to access the user's data.
+It should specify the `index_name` that was used to create the user with `data-integrator`.
+
+Follow instructions from OpenSearch documentation on 
 [How to create an index pattern](https://opensearch.org/docs/latest/dashboards/management/index-patterns/#creating-an-index-pattern)
 
-When the index pattern is defined, data that belongs to the user will dispaly in the Dasboards.
+When the index pattern is defined, data that belongs to the user will display in the Dasboards.
 
 
 # License
 
-The Charmed Opensearch Dashboards Operator is free software, distributed under the Apache
+The Charmed OpenSearch Dashboards Operator is free software, distributed under the Apache
 Software License, version 2.0. See [LICENSE](./LICENSE) for more information.
 
