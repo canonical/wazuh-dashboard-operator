@@ -39,13 +39,13 @@ OpenSearch Dashboard is a Juju charm. This means that an existing Juju environme
 Install and initialize the [LXD](https://canonical.com/lxd) 
 lightweight container hypervisor and Juju from the [Snap Store](https://snapcraft.io/store):
 
-```
+```shell
 sudo snap install juju --classic --channel=3.1/stable
 sudo snap install lxd
 lxd init --auto
 ```
 Then, boostrap Juju over LXD:
-```
+```shell
 juju bootstrap localhost
 ```
 
@@ -64,11 +64,11 @@ A straightforward installation guide is available in the charm's
 The Dashboards charm requires no specific environment adjustments.
 Therefore all we need to do to deploy the charm from [Charmhub](https://charmhub.io/opensearch-dashboards) is 
 
-```
+```shell
 juju deploy opensearch-dashboards --channel=2/edge
 ```
 and integrate it with the OpenSearch charm:
-```
+```shell
 juju integrate opensearch opensearch-dashboards-operator
 ```
 
@@ -80,12 +80,12 @@ how it goes for OpenSearch.
 Install the 
 [self-signed-certificates operator](https://github.com/canonical/self-signed-certificates-operator)
 
-```
+```shell
 juju deploy self-signed-certificates --channel=latest/stable
 ```
 and integrate it with the Dashboards charm
 
-```
+```shell
 juju integrate opensearch-dashboards self-signed-certificates
 ```
 
@@ -103,7 +103,7 @@ Construct the URL first.
 The Dashboard front-end is exposed on port `5601`. Using `juju status` we can
 retrieve the IP of each unit:
 
-```
+```shell
 opensearch-dashboards/0*     active    idle   1        10.4.151.209              
 ```
 
@@ -115,19 +115,19 @@ Using the example above, the Dashboard URL is `http://10.4.151.209:5601`.
 Set up a database user by deploying the `data-integrator` [charm](https://charmhub.io/data-integrator)
 and integrating it with `opensearch`. The user is created automatically as a result of the integration.
 
-```
+```shell
 $ juju deploy data-integrator
 $ juju deploy data-integrator --config index-name=<index_name>
 ```
 
 Retrieve user credentials running
 
-```
+```shell
 juju run data-integrator/0 get-credentials
 ```
 at the bottom of the output you should see something like:
 
-```
+```text
   password: 8kubD7nbWYZFHPVEzIVmTyqV42I7wHb4
   <CA certificate here>
   username: opensearch-client_15
