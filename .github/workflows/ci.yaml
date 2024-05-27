@@ -84,4 +84,4 @@ jobs:
       # artifact-prefix: packed-charm-cache-true
       artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
       cloud: lxd
-      juju-agent-version: 3.1.6
+      juju-agent-version: 3.1.7
