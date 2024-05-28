@@ -23,8 +23,8 @@ peers:
     interface: dashboard_peers 
   restart:
     interface: rolling_op
-  # upgrade:
-  #   interface: upgrade
+  upgrade:
+    interface: upgrade
 
 requires:
   opensearch_client:

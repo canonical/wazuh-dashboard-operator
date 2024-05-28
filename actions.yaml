@@ -8,8 +8,8 @@ get-password:
       type: string
       description: The username, the default value 'monitor'.
 
-# pre-upgrade-check:
-#   description: Run necessary pre-upgrade checks before executing a charm upgrade.
+pre-upgrade-check:
+  description: Run necessary pre-upgrade checks before executing a charm upgrade.
 
 set-password:
   description: Change the system user's password, which is used by the charm.

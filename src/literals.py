@@ -19,6 +19,15 @@ CONTAINER = "opensearch-dashboards"
 CHARM_USERS = ["monitor"]
 SERVER_PORT = 5601
 
+DEPENDENCIES = {
+    "osd_upstream": {
+        "dependencies": {},
+        "name": "opensearch-dashboards",
+        "upgrade_supported": ">=2",
+        "version": "2.12",
+    },
+}
+
 PATHS = {
     "CONF": "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards",
     "DATA": "/var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards",
