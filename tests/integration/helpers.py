@@ -14,6 +14,7 @@ import requests
 import yaml
 from ops.model import Unit
 from pytest_operator.plugin import OpsTest
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from core.workload import ODPaths
 
@@ -163,6 +164,7 @@ async def access_all_dashboards(
     """Check if all dashboard instances are accessible."""
 
     if not ops_test.model.applications[APP_NAME].units:
+        logger.debug(f"No units for application {APP_NAME}")
         return False
 
     if not relation_id:
@@ -178,6 +180,7 @@ async def access_all_dashboards(
     if https:
         unit = ops_test.model.applications[APP_NAME].units[0].name
         if unit not in skip and not get_dashboard_ca_cert(ops_test.model.name, unit):
+            logger.debug(f"Couldn't retrieve host certificate for unit {unit}")
             return False
 
     function = access_dashboard if not https else access_dashboard_https
@@ -198,6 +201,12 @@ async def access_all_dashboards(
     return result
 
 
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_fixed(15),
+    retry_error_callback=lambda _: False,
+    retry=lambda x: x is False,
+)
 def get_dashboard_ca_cert(model_full_name: str, unit: str):
     output = subprocess.run(
         [
