@@ -12,6 +12,7 @@ from typing import Dict, List, Optional
 
 import requests
 import yaml
+from charms.data_platform_libs.v0.data_interfaces import Relation
 from ops.model import Unit
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -23,6 +24,48 @@ APP_NAME = METADATA["name"]
 
 
 logger = logging.getLogger(__name__)
+
+DASHBOARD_QUERY_PARAMS = {
+    "params": {
+        "index": "albums*",
+        "body": {
+            "sort": [{"_score": {"order": "desc"}}],
+            "size": 500,
+            "version": True,
+            "stored_fields": ["*"],
+            "script_fields": {},
+            "docvalue_fields": [],
+            "_source": {"excludes": []},
+            "query": {
+                "bool": {
+                    "must": [],
+                    "filter": [{"match_all": {}}],
+                    "should": [],
+                    "must_not": [],
+                }
+            },
+        },
+        "preference": 1717603297253,
+    }
+}
+
+
+def get_relations(ops_test: OpsTest, name: str, app_name: str = APP_NAME) -> list[Relation]:
+    """Get relations of a given name"""
+    results = []
+    for relation in ops_test.model.relations:
+        if any(
+            [
+                relation.endpoints[i].name == name and relation.applications[i].name == app_name
+                for i in range(len(relation.endpoints))
+            ]
+        ):
+            results.append(relation)
+    return results
+
+
+def get_relation(ops_test: OpsTest, relation: str = "opensearch_client"):
+    return get_relations(ops_test, relation)[0]
 
 
 async def get_password(ops_test) -> str:
@@ -168,7 +211,7 @@ async def access_all_dashboards(
         return False
 
     if not relation_id:
-        relation_id = get_relation(ops_test).id
+        relation_id = get_relations(ops_test, "opensearch_client").id
 
     dashboard_credentials = await get_secret_by_label(
         ops_test, f"opensearch-client.{relation_id}.user.secret"
@@ -468,8 +511,133 @@ def get_hostname(ops_test: OpsTest, unit_name: str) -> str:
     return unit.machine.hostname
 
 
-def get_relation(ops_test: OpsTest, relation: str = "opensearch_client"):
-    relations = ops_test.model.relations
-    for relation in relations:
-        if relation.endpoints[0].interface == "opensearch_client":
-            return relation
+# def get_relation(ops_test: OpsTest, relation: str = "opensearch_client"):
+#     relations = ops_test.model.relations
+#     for relation in relations:
+#         if relation.endpoints[0].interface == "opensearch_client":
+#             return relation
+
+
+@retry(wait=wait_fixed(wait=15), stop=stop_after_attempt(15))
+async def client_run_request(
+    ops_test,
+    unit_name: str,
+    relation: Relation,
+    method: str,
+    headers: str,
+    endpoint: str,
+    payload: str = None,
+    action: str = "run-db-request",
+    server_uri: str = "",
+):
+    # python can't have variable names with a hyphen, and Juju can't have action variables with an
+    # underscore, so this is a compromise.
+
+    app_name = unit_name.split("/")[0]
+    relation_name = [
+        relation.endpoints[i].name for i in range(2) if relation.applications[i].name == app_name
+    ][0]
+    params = {
+        "relation-id": relation.id,
+        "relation-name": relation_name,
+        "headers": json.dumps(headers),
+        "method": method,
+        "endpoint": endpoint,
+    }
+    if payload:
+        params["payload"] = payload
+    if server_uri:
+        params["server-uri"] = server_uri
+
+    action = await ops_test.model.units.get(unit_name).run_action(action, **(params or {}))
+    action = await action.wait()
+
+    if action.status != "completed":
+        raise Exception(action.results)
+
+    return action.results
+
+
+@retry(wait=wait_fixed(wait=15), stop=stop_after_attempt(15))
+async def client_run_db_request(
+    ops_test,
+    unit_name: str,
+    relation: Relation,
+    method: str,
+    endpoint: str,
+    payload: str = None,
+):
+    """Client applicatoin issuing a request to Opensearch."""
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    return await client_run_request(
+        ops_test, unit_name, relation, method, headers, endpoint, payload
+    )
+
+
+@retry(wait=wait_fixed(wait=15), stop=stop_after_attempt(15))
+async def client_run_dashboards_request(
+    ops_test,
+    unit_name: str,
+    relation: Relation,
+    method: str,
+    host: str,
+    endpoint: str,
+    payload: str = None,
+    https=False,
+):
+    """Client applicatoin issuing a request to Opensearch Dashboards."""
+    action = "run-dashboards-request"
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "osd-xsrf": "osd-fetch",
+    }
+    proto = "https" if https else "http"
+    server_uri = f"{proto}://{host}:5601"
+    return await client_run_request(
+        ops_test,
+        unit_name,
+        relation,
+        method,
+        headers,
+        endpoint,
+        payload,
+        action,
+        server_uri,
+    )
+
+
+async def client_run_all_dashboards_request(
+    ops_test: OpsTest,
+    unit_name: str,
+    relation: Relation,
+    method: str,
+    endpoint: str,
+    payload: str = None,
+    https: bool = False,
+):
+    """Check if all dashboard instances are accessible."""
+
+    result = []
+    if not ops_test.model.applications[APP_NAME].units:
+        logger.debug(f"No units for application {APP_NAME}")
+        return False
+
+    for dashboards_unit in ops_test.model.applications[APP_NAME].units:
+        host = get_private_address(ops_test.model.name, dashboards_unit.name)
+        if not host:
+            logger.debug(f"No hostname found for {dashboards_unit.name}, can't check connection.")
+            return False
+
+        response = await client_run_dashboards_request(
+            ops_test, unit_name, relation, method, host, endpoint, payload, https
+        )
+        if "results" in response:
+            result.append(json.loads(response["results"])["rawResponse"])
+        else:
+            result.append(response)
+        logger.info(f"Response from {unit_name}, {host}: {response}")
+
+    if result:
+        assert all(item == result[0] for item in result)
+    return result
