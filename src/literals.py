@@ -19,6 +19,15 @@ CONTAINER = "opensearch-dashboards"
 CHARM_USERS = ["monitor"]
 SERVER_PORT = 5601
 
+DEPENDENCIES = {
+    "osd_upstream": {
+        "dependencies": {"opensearch": "2.12"},
+        "name": "opensearch-dashboards",
+        "upgrade_supported": ">=2",
+        "version": "2.12",
+    },
+}
+
 PATHS = {
     "CONF": "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards",
     "DATA": "/var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards",
@@ -44,3 +53,4 @@ MSG_WAITING_FOR_USER_CREDENTIALS = "waiting for passwords to be created"
 MSG_WAITING_FOR_PEER = "waiting for peer relation"
 MSG_DB_MISSING = "Opensearch connection is missing"
 MSG_TLS_CONFIG = "Waiting for TLS to be fully configured..."
+MSG_INCOMPATIBLE_UPGRADE = "Incompatible upgrade, rollback required"

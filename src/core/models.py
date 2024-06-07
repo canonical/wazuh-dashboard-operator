@@ -110,6 +110,11 @@ class OpensearchServer(StateBase):
         """
         return self.relation_data.get("tls-ca")
 
+    @property
+    def version(self) -> str | None:
+        """Opensearch version."""
+        return self.relation_data.get("version")
+
 
 class ODCluster(StateBase):
     """State collection metadata for the charm application."""

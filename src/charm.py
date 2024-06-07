@@ -19,10 +19,12 @@ from events.requirer import RequirerEvents
 
 # from events.provider import ProviderEvents
 from events.tls import TLSEvents
+from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
 from helpers import clear_status
 from literals import (
     CHARM_KEY,
     CHARM_USERS,
+    DEPENDENCIES,
     MSG_DB_MISSING,
     MSG_INSTALLING,
     MSG_STARTING,
@@ -59,12 +61,12 @@ class OpensearchDasboardsCharm(CharmBase):
         self.password_action_events = PasswordActionEvents(self)
         self.tls_events = TLSEvents(self)
         self.requirer_events = RequirerEvents(self)
-        # self.upgrade_events = ODUpgradeEvents(
-        #     self,
-        #     dependency_model=OpensearchDasboardsDependencyModel(
-        #         **DEPENDENCIES  # pyright: ignore[reportGeneralTypeIssues]
-        #     ),
-        # )
+        self.upgrade_events = ODUpgradeEvents(
+            self,
+            dependency_model=OpensearchDashboardsDependencyModel(
+                **DEPENDENCIES  # pyright: ignore[reportGeneralTypeIssues]
+            ),
+        )
 
         # --- MANAGERS ---
 
