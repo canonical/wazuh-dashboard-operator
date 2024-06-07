@@ -41,9 +41,6 @@ from managers.config import ConfigManager
 from managers.tls import TLSManager
 from workload import ODWorkload
 
-# from events.upgrade import ODUpgradeEvents, OpensearchDasboardsDependencyModel
-
-
 logger = logging.getLogger(__name__)
 
 
