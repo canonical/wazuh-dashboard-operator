@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import logging
 
 import pytest
 from pytest_operator.plugin import OpsTest
@@ -25,5 +26,5 @@ def application_charm_libs(ops_test: OpsTest):
     test_charm_path = "tests/integration/application-charm"
     dest_dir = f"{test_charm_path}/lib/charms/data_platform_libs/v0/"
     os.makedirs(dest_dir, exist_ok=True)
-    shutil.copyfile(source_path, dest_dir)
+    shutil.copyfile(source_path, f"{dest_dir}/data_interfaces.py")
     logger.info(f"Copied {source_path} to {dest_dir}")

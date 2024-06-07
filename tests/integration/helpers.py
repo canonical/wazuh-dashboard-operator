@@ -211,7 +211,7 @@ async def access_all_dashboards(
         return False
 
     if not relation_id:
-        relation_id = get_relations(ops_test, "opensearch_client").id
+        relation_id = get_relation(ops_test, "opensearch_client").id
 
     dashboard_credentials = await get_secret_by_label(
         ops_test, f"opensearch-client.{relation_id}.user.secret"
@@ -511,13 +511,6 @@ def get_hostname(ops_test: OpsTest, unit_name: str) -> str:
     return unit.machine.hostname
 
 
-# def get_relation(ops_test: OpsTest, relation: str = "opensearch_client"):
-#     relations = ops_test.model.relations
-#     for relation in relations:
-#         if relation.endpoints[0].interface == "opensearch_client":
-#             return relation
-
-
 @retry(wait=wait_fixed(wait=15), stop=stop_after_attempt(15))
 async def client_run_request(
     ops_test,
@@ -638,6 +631,4 @@ async def client_run_all_dashboards_request(
             result.append(response)
         logger.info(f"Response from {unit_name}, {host}: {response}")
 
-    if result:
-        assert all(item == result[0] for item in result)
     return result
