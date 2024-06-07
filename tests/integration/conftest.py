@@ -1,8 +1,11 @@
+import os
 import shutil
 import subprocess
 
 import pytest
 from pytest_operator.plugin import OpsTest
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -16,12 +19,11 @@ def opensearch_sysctl_settings():
 
 
 @pytest.fixture(scope="module")
-async def application_charm(ops_test: OpsTest):
+def application_charm_libs(ops_test: OpsTest):
     """Build the application charm."""
+    source_path = "lib/charms/data_platform_libs/v0/data_interfaces.py"
     test_charm_path = "tests/integration/application-charm"
-    shutil.copyfile(
-        "lib/charms/data_platform_libs/v0/data_interfaces.py",
-        f"{test_charm_path}/lib/charms/data_platform_libs/v0/data_interfaces.py",
-    )
-    # charm = await ops_test.build_charm(test_charm_path)
-    # return charm
+    dest_dir = f"{test_charm_path}/lib/charms/data_platform_libs/v0/"
+    os.makedirs(dest_dir, exist_ok=True)
+    shutil.copyfile(source_path, dest_dir)
+    logger.info(f"Copied {source_path} to {dest_dir}")

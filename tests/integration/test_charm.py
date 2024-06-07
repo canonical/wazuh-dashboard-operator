@@ -53,7 +53,8 @@ NUM_UNITS_DB = 2
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
-async def test_build_and_deploy(ops_test: OpsTest, application_charm):
+@pytest.mark.usefixtures("application_charm_libs")
+async def test_build_and_deploy(ops_test: OpsTest):
     """Deploying all charms required for the tests, and wait for their complete setup to be done."""
 
     charm = await ops_test.build_charm(".")
