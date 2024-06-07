@@ -2,6 +2,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 import logging
 from pathlib import Path
 
@@ -38,15 +39,17 @@ NUM_UNITS_DB = 2
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 @pytest.mark.charm
+@pytest.mark.skip_if_deployed
 async def test_build_and_deploy(ops_test: OpsTest):
     """Deploying all charms required for the tests, and wait for their complete setup to be done."""
 
     pytest.charm = await ops_test.build_charm(".")
     await ops_test.model.deploy(pytest.charm, application_name=APP_NAME, num_units=NUM_UNITS_APP)
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
-    # Pinning down opensearch revision to the last 2.10 one
-    # NOTE: can't access 2/stable from the tests, only 'edge' available
-    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB)
+    # Pinning down opensearch revision to the last 2.12 one
+    await ops_test.model.deploy(
+        OPENSEARCH_APP_NAME, channel="2/edge", revision=90, num_units=NUM_UNITS_DB
+    )
 
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config)
@@ -93,8 +96,9 @@ async def test_in_place_upgrade_http(ops_test: OpsTest):
     )
 
     assert "upgrade-stack" in relation_data
-    assert set(relation_data["upgrade-stack"]) == set(
-        [unit.id in ops_test.model.applications[APP_NAME].units]
+
+    assert set(json.loads(relation_data["upgrade-stack"])) == set(
+        [int(unit.machine.id) for unit in ops_test.model.applications[APP_NAME].units]
     )
 
     await ops_test.model.applications[APP_NAME].refresh(path=pytest.charm)
@@ -134,8 +138,8 @@ async def test_in_place_upgrade_https(ops_test: OpsTest):
     )
 
     assert "upgrade-stack" in relation_data
-    assert set(relation_data["upgrade-stack"]) == set(
-        [unit.id in ops_test.model.applications[APP_NAME].units]
+    assert set(json.loads(relation_data["upgrade-stack"])) == set(
+        [int(unit.machine.id) for unit in ops_test.model.applications[APP_NAME].units]
     )
 
     await ops_test.model.applications[APP_NAME].refresh(path=pytest.charm)
