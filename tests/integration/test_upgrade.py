@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 
 import logging
-import time
 from pathlib import Path
 
 import pytest
@@ -88,12 +87,14 @@ async def test_in_place_upgrade_http(ops_test: OpsTest):
     action = await leader_unit.run_action("pre-upgrade-check")
     await action.wait()
 
-    # ensure action completes
-    time.sleep(10)
-
-    # ensuring app is safe to upgrade
-    assert "upgrade-stack" in get_relation_data(
+    # ensuring that the upgrade stack is correct
+    relation_data = get_relation_data(
         model_full_name=ops_test.model_full_name, unit=f"{APP_NAME}/0", endpoint="upgrade"
+    )
+
+    assert "upgrade-stack" in relation_data
+    assert set(relation_data["upgrade-stack"]) == set(
+        [unit.id in ops_test.model.applications[APP_NAME].units]
     )
 
     await ops_test.model.applications[APP_NAME].refresh(path=pytest.charm)
@@ -127,12 +128,14 @@ async def test_in_place_upgrade_https(ops_test: OpsTest):
     action = await leader_unit.run_action("pre-upgrade-check")
     await action.wait()
 
-    # ensure action completes
-    time.sleep(10)
-
-    # ensuring app is safe to upgrade
-    assert "upgrade-stack" in get_relation_data(
+    # ensuring that the upgrade stack is correct
+    relation_data = get_relation_data(
         model_full_name=ops_test.model_full_name, unit=f"{APP_NAME}/0", endpoint="upgrade"
+    )
+
+    assert "upgrade-stack" in relation_data
+    assert set(relation_data["upgrade-stack"]) == set(
+        [unit.id in ops_test.model.applications[APP_NAME].units]
     )
 
     await ops_test.model.applications[APP_NAME].refresh(path=pytest.charm)

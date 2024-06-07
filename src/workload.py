@@ -12,7 +12,7 @@ import subprocess
 
 from charms.operator_libs_linux.v2 import snap
 from tenacity import retry
-from tenacity.retry import retry_if_not_result
+from tenacity.retry import retry_any, retry_if_exception, retry_if_not_result
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 from typing_extensions import override
@@ -47,11 +47,21 @@ class ODWorkload(WorkloadBase):
             logger.exception(str(e))
 
     @override
-    def restart(self) -> None:
+    @retry(
+        wait=wait_fixed(1),
+        stop=stop_after_attempt(5),
+        retry_error_callback=lambda state: state.outcome.result(),  # type: ignore
+        retry=retry_any(
+            retry_if_not_result(lambda result: True if result else False),
+            retry_if_exception(snap.SnapError),
+        ),
+    )
+    def restart(self) -> bool:
         try:
             self.dashboards.restart(services=[self.SNAP_SERVICE])
         except snap.SnapError as e:
             logger.exception(str(e))
+        return self.alive()
 
     @override
     def read(self, path: str) -> list[str]:

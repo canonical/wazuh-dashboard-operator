@@ -4,7 +4,6 @@
 
 """Event handler for handling OpensearchDashboards in-place upgrades."""
 import logging
-import time
 from typing import TYPE_CHECKING
 
 from charms.data_platform_libs.v0.upgrade import (
@@ -16,7 +15,10 @@ from charms.data_platform_libs.v0.upgrade import (
     DependencyModel,
     UpgradeGrantedEvent,
 )
+from ops.model import BlockedStatus
 from typing_extensions import override
+
+from literals import MSG_INCOMPATIBLE_UPGRADE
 
 if TYPE_CHECKING:
     from charm import (
@@ -41,11 +43,24 @@ class ODUpgradeEvents(DataUpgrade):
 
     def post_upgrade_check(self) -> None:
         """Runs necessary checks validating the unit is in a healthy state after upgrade."""
-        self.pre_upgrade_check()
+        srv_version_actual = self.charm.state.opensearch_server.version
+        srv_version_required = self.dependency_model.osd_upstream.dependencies["opensearch"]
+        major_actual, minor_actual = srv_version_actual.split(".")[:2]
+        major_required, minor_required = srv_version_required.split(".")[:2]
+        if major_actual > major_required or minor_actual > minor_required:
+            self.charm.unit.status = BlockedStatus(MSG_INCOMPATIBLE_UPGRADE)
+            raise ClusterNotReadyError(
+                message="Post-upgrade check failed and cannot safely upgrade",
+                cause="Opensearch version mismatch",
+            )
 
     @override
     def pre_upgrade_check(self) -> None:
-        pass
+        if not self.charm.workload.alive():
+            raise ClusterNotReadyError(
+                message="Pre-upgrade check failed and cannot safely upgrade",
+                cause="Unit workload is not running",
+            )
 
     @override
     def build_upgrade_stack(self) -> list[int]:
@@ -75,13 +90,11 @@ class ODUpgradeEvents(DataUpgrade):
 
         if not self.charm.workload.install():
             logger.error("Unable to install OpensearchDashboards...")
-            self.set_unit_failed()
+            self.set_unit_failed(cause="Workload install failed")
             return
 
         logger.info(f"{self.charm.unit.name} upgrading workload...")
         self.charm.workload.restart()
-
-        time.sleep(5.0)
 
         try:
             logger.debug("Running post-upgrade check...")
@@ -97,4 +110,4 @@ class ODUpgradeEvents(DataUpgrade):
 
         except ClusterNotReadyError as e:
             logger.error(e.cause)
-            self.set_unit_failed()
+            self.set_unit_failed(cause=e.cause)
