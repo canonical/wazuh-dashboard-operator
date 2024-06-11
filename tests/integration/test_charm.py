@@ -2,7 +2,10 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import asyncio
+import json
 import logging
+import re
 from pathlib import Path
 
 import pytest
@@ -10,12 +13,16 @@ import yaml
 from pytest_operator.plugin import OpsTest
 
 from .helpers import (
+    DASHBOARD_QUERY_PARAMS,
     access_all_dashboards,
     access_dashboard,
+    client_run_all_dashboards_request,
+    client_run_db_request,
     count_lines_with,
     get_leader_id,
     get_leader_name,
     get_private_address,
+    get_relations,
     get_secret_by_label,
     get_user_password,
     set_password,
@@ -26,6 +33,7 @@ logger = logging.getLogger(__name__)
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_RELATION_NAME = "opensearch_client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
     "cloudinit-userdata": """postruncmd:
@@ -36,6 +44,7 @@ OPENSEARCH_CONFIG = {
     """,
 }
 TLS_CERTIFICATES_APP_NAME = "self-signed-certificates"
+DB_CLIENT_APP_NAME = "application"
 
 NUM_UNITS_APP = 3
 NUM_UNITS_DB = 2
@@ -43,26 +52,32 @@ NUM_UNITS_DB = 2
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-@pytest.mark.charm
+@pytest.mark.skip_if_deployed
+@pytest.mark.usefixtures("application_charm_libs")
 async def test_build_and_deploy(ops_test: OpsTest):
     """Deploying all charms required for the tests, and wait for their complete setup to be done."""
 
     charm = await ops_test.build_charm(".")
+    application_charm_build = await ops_test.build_charm("tests/integration/application-charm")
+
     await ops_test.model.deploy(charm, application_name=APP_NAME, num_units=NUM_UNITS_APP)
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     # Pinning down opensearch revision to the last 2.10 one
     # NOTE: can't access 2/stable from the tests, only 'edge' available
-    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB)
 
     config = {"ca-common-name": "CN_CA"}
-    await ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config)
+    await asyncio.gather(
+        ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB),
+        ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config),
+        ops_test.model.deploy(application_charm_build, application_name=DB_CLIENT_APP_NAME),
+    )
 
     await ops_test.model.wait_for_idle(
         apps=[TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
     )
 
-    # Relate it to OpenSearch to set up TLS.
-    await ops_test.model.relate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
+    # integrate it to OpenSearch to set up TLS.
+    await ops_test.model.integrate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
     await ops_test.model.wait_for_idle(
         apps=[OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
     )
@@ -75,9 +90,11 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
     assert ops_test.model.applications[APP_NAME].status == "blocked"
 
-    pytest.relation = await ops_test.model.relate(OPENSEARCH_APP_NAME, APP_NAME)
+    # Relate both Dashboards and the Client to Opensearch
+    await ops_test.model.integrate(OPENSEARCH_APP_NAME, APP_NAME)
+    await ops_test.model.integrate(DB_CLIENT_APP_NAME, OPENSEARCH_APP_NAME)
     await ops_test.model.wait_for_idle(
-        apps=[OPENSEARCH_APP_NAME, APP_NAME], status="active", timeout=1000
+        apps=[APP_NAME, DB_CLIENT_APP_NAME, OPENSEARCH_APP_NAME], status="active", timeout=1000
     )
 
 
@@ -86,8 +103,10 @@ async def test_build_and_deploy(ops_test: OpsTest):
 async def test_dashboard_access(ops_test: OpsTest):
     """Test HTTP access to each dashboard unit."""
 
+    opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
+
     dashboard_credentials = await get_secret_by_label(
-        ops_test, f"opensearch-client.{pytest.relation.id}.user.secret"
+        ops_test, f"opensearch-client.{opensearch_relation.id}.user.secret"
     )
     dashboard_password = dashboard_credentials["password"]
 
@@ -100,13 +119,73 @@ async def test_dashboard_access(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_dashboard_access_https(ops_test: OpsTest):
     """Test HTTPS access to each dashboard unit."""
-    # Relate it to OpenSearch to set up TLS.
-    await ops_test.model.relate(APP_NAME, TLS_CERTIFICATES_APP_NAME)
+    # integrate it to OpenSearch to set up TLS.
+    await ops_test.model.integrate(APP_NAME, TLS_CERTIFICATES_APP_NAME)
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
     )
+    opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
 
-    assert access_all_dashboards(ops_test, pytest.relation, https=True)
+    assert access_all_dashboards(ops_test, opensearch_relation, https=True)
+
+
+@pytest.mark.group(1)
+@pytest.mark.abort_on_fail
+async def test_dashboard_client_data_access_https(ops_test: OpsTest):
+    """Test HTTPS access to each dashboard unit."""
+    client_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME, DB_CLIENT_APP_NAME)[0]
+
+    # Loading data to Opensearch
+    dicts = [
+        {"index": {"_index": "albums", "_id": "2"}},
+        {"artist": "Herbie Hancock", "genre": ["Jazz"], "title": "Head Hunters"},
+        {"index": {"_index": "albums", "_id": "3"}},
+        {"artist": "Lydian Collective", "genre": ["Jazz"], "title": "Adventure"},
+        {"index": {"_index": "albums", "_id": "4"}},
+        {
+            "artist": "Liquid Tension Experiment",
+            "genre": ["Prog", "Metal"],
+            "title": "Liquid Tension Experiment 2",
+        },
+    ]
+    data_dicts = [d for d in dicts if "index" not in d.keys()]
+
+    payload = "\n".join([json.dumps(d) for d in dicts]) + "\n"
+
+    unit_name = ops_test.model.applications[DB_CLIENT_APP_NAME].units[0].name
+    await client_run_db_request(
+        ops_test,
+        unit_name,
+        client_relation,
+        "POST",
+        "/_bulk?refresh=true",
+        re.escape(payload),
+    )
+
+    # # Checking if data got to the DB indeed
+    read_db_data = await client_run_db_request(
+        ops_test, unit_name, client_relation, "GET", "/albums/_search"
+    )
+    results = json.loads(read_db_data["results"])
+    logging.info(f"Loaded into the database: {results}")
+
+    # Same amount and content of data as uploaded
+    assert len(data_dicts) == len(results["hits"]["hits"])
+    assert all([hit["_source"] in data_dicts for hit in results["hits"]["hits"]])
+
+    result = await client_run_all_dashboards_request(
+        ops_test,
+        unit_name,
+        client_relation,
+        "POST",
+        "/internal/search/opensearch-with-long-numerals",
+        json.dumps(DASHBOARD_QUERY_PARAMS),
+        https=True,
+    )
+
+    # Each dashboard query reports the same result as the uploaded data
+    assert all(len(data_dicts) == len(res["hits"]["hits"]) for res in result)
+    assert all([hit["_source"] in data_dicts for res in result for hit in res["hits"]["hits"]])
 
 
 @pytest.mark.group(1)
@@ -123,8 +202,9 @@ async def test_dashboard_password_rotation(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME, OPENSEARCH_APP_NAME], status="active", timeout=1000, idle_period=30
     )
+    opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
 
-    assert access_all_dashboards(ops_test, pytest.relation, https=True)
+    assert access_all_dashboards(ops_test, opensearch_relation, https=True)
 
 
 @pytest.mark.group(1)
