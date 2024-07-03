@@ -1,7 +1,7 @@
+import logging
 import os
 import shutil
 import subprocess
-import logging
 
 import pytest
 from pytest_operator.plugin import OpsTest
