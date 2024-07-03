@@ -4,7 +4,7 @@
 
 """Collection of global literals for the charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = "9"
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = "10"
 
 SUBSTRATE = "vm"
 CHARM_KEY = "opensearch-dashboards"
@@ -21,10 +21,10 @@ SERVER_PORT = 5601
 
 DEPENDENCIES = {
     "osd_upstream": {
-        "dependencies": {"opensearch": "2.13"},
+        "dependencies": {"opensearch": "2.14"},
         "name": "opensearch-dashboards",
         "upgrade_supported": ">=2",
-        "version": "2.13",
+        "version": "2.14",
     },
 }
 
