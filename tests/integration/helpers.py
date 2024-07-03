@@ -7,7 +7,7 @@ import logging
 import socket
 import subprocess
 from pathlib import Path
-from subprocess import PIPE, check_output
+from subprocess import PIPE, CalledProcessError, check_output
 from typing import Dict, List, Optional
 
 import requests
@@ -15,8 +15,16 @@ import yaml
 from juju.relation import Relation
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
-from requests.exceptions import ConnectionError
-from tenacity import Retrying, retry, stop_after_attempt, wait_fixed
+from requests.exceptions import ConnectionError, SSLError
+from tenacity import (
+    Retrying,
+    before_sleep_log,
+    retry,
+    retry_if_exception_type,
+    retry_if_result,
+    stop_after_attempt,
+    wait_fixed,
+)
 
 from core.workload import ODPaths
 
@@ -174,13 +182,7 @@ async def access_all_prometheus_exporters(ops_test: OpsTest) -> bool:
     retry=lambda x: x is False,
 )
 def dashboard_unavailable(host: str, https: bool = False) -> bool:
-    try:
-        # Normal IP address
-        socket.inet_aton(host)
-    except OSError:
-        socket.inet_pton(socket.AF_INET6, host)
-        host = f"[{host}]"
-
+    """A single OSD instance is impossible to contact."""
     protocol = "http" if not https else "https"
     url = f"{protocol}://{host}:5601/auth/login"
     arguments = {"url": url}
@@ -194,17 +196,29 @@ def dashboard_unavailable(host: str, https: bool = False) -> bool:
     return response.status_code == 503
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(15),
+    retry_error_callback=lambda _: False,
+    retry=retry_if_result(lambda x: x is False),
+)
 def all_dashboards_unavailable(ops_test: OpsTest, https: bool = False) -> bool:
-
-    if https:
-        unit = ops_test.model.applications[APP_NAME].units[0].name
-        if not get_dashboard_ca_cert(ops_test.model.name, unit):
-            logger.error(f"Couldn't retrieve host certificate for unit {unit}")
-            return False
+    """None of the OSD units are possible to contact."""
 
     unavail = True
     for unit in ops_test.model.applications[APP_NAME].units:
+
+        if https:
+            if not get_dashboard_ca_cert(ops_test.model.name, unit):
+                logger.info(f"Couldn't retrieve host certificate for unit {unit}")
+                continue
+
         host = get_private_address(ops_test.model.name, unit.name)
+
+        # We should retry until a host could be retrieved
+        if not host:
+            continue
+
         unavail = unavail and dashboard_unavailable(host, https)
         if not unavail:
             logger.error("Host {host} still available")
@@ -249,37 +263,19 @@ def access_dashboard(
     return response.status_code == 200
 
 
-def access_dashboard_https(host: str, password: str):
-    """This function should be rather replaced by a 'requests' call, if we can figure out the source of discrepancy."""
-    try:
-        curl_cmd = check_output(
-            [
-                "bash",
-                "-c",
-                'curl  -XPOST -H "Content-Type: application/json" -H "osd-xsrf: true" -H "Accept: application/json" '
-                + f"https://{host}:5601/auth/login -d "
-                + "'"
-                + '{"username":"kibanaserver","password": "'
-                + f"{password}"
-                + '"'
-                + "}' --cacert ca.pem --verbose",
-            ],
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-    except subprocess.CalledProcessError as err:
-        logger.error(f"{err}, {err.output}")
-        return False
-    return "roles" in curl_cmd
-
-
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(15),
+    retry_error_callback=lambda _: False,
+    retry=retry_if_result(lambda x: x is False),
+)
 async def access_all_dashboards(
     ops_test: OpsTest, relation_id: int | None = None, https: bool = False, skip: list[str] = []
 ):
     """Check if all dashboard instances are accessible."""
 
     if not ops_test.model.applications[APP_NAME].units:
-        logger.debug(f"No units for application {APP_NAME}")
+        logger.error(f"No units for application {APP_NAME}")
         return False
 
     if not relation_id:
@@ -295,20 +291,19 @@ async def access_all_dashboards(
     if https:
         unit = ops_test.model.applications[APP_NAME].units[0].name
         if unit not in skip and not get_dashboard_ca_cert(ops_test.model.name, unit):
-            logger.debug(f"Couldn't retrieve host certificate for unit {unit}")
+            logger.error(f"Couldn't retrieve host certificate for unit {unit}")
             return False
 
-    function = access_dashboard if not https else access_dashboard_https
     result = True
     for unit in ops_test.model.applications[APP_NAME].units:
         if unit.name in skip:
             continue
         host = get_private_address(ops_test.model.name, unit.name)
         if not host:
-            logger.debug(f"No hostname found for {unit.name}, can't check connection.")
+            logger.error(f"No hostname found for {unit.name}, can't check connection.")
             return False
 
-        result &= function(host=host, password=dashboard_password)
+        result &= access_dashboard(host=host, password=dashboard_password, ssl=https)
         if result:
             logger.info(f"Host {unit.name}, {host} passed access check")
         else:
@@ -318,9 +313,10 @@ async def access_all_dashboards(
 
 @retry(
     stop=stop_after_attempt(5),
-    wait=wait_fixed(15),
+    wait=wait_fixed(30),
     retry_error_callback=lambda _: False,
-    retry=lambda x: x is False,
+    retry=(retry_if_result(lambda x: x is False) | retry_if_exception_type(SSLError)),
+    before_sleep=before_sleep_log(logger, logging.DEBUG),
 )
 def get_dashboard_ca_cert(model_full_name: str, unit: str):
     try:
@@ -332,6 +328,7 @@ def get_dashboard_ca_cert(model_full_name: str, unit: str):
                 f"ubuntu@{unit}:"
                 "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/ca.pem ./",
             ],
+            timeout=30,
         )
     except subprocess.CalledProcessError as err:
         logger.error(f"{err}")
@@ -375,16 +372,32 @@ async def get_address(ops_test: OpsTest, unit_name: str) -> str:
 
 
 def get_private_address(model_full_name: str, unit: str):
-    private_ip = check_output(
-        [
-            "bash",
-            "-c",
-            f"JUJU_MODEL={model_full_name} juju ssh {unit} ip a | "
-            "grep global | grep 'inet 10.*/24' | cut -d' ' -f6 | cut -d'/' -f1",
-        ],
-        text=True,
-    )
-    return private_ip.rstrip()
+    try:
+        private_ip = check_output(
+            [
+                "bash",
+                "-c",
+                f"JUJU_MODEL={model_full_name} juju ssh {unit} ip a | "
+                "grep global | grep 'inet 10.*/24' | cut -d' ' -f6 | cut -d'/' -f1",
+            ],
+            text=True,
+        )
+    except CalledProcessError as err:
+        logger.info(f"Couldn't retrieve IP address: {str(err)}")
+        return ""
+
+    if private_ip.rstrip():
+        return private_ip.rstrip()
+
+    try:
+        info = check_output(
+            ["bash", "-c", f"JUJU_MODEL={model_full_name} juju ssh {unit} ip a "],
+            text=True,
+        )
+        logger.info(f"Couldn't retrieve IP, info is: {info}")
+    except CalledProcessError as err:
+        logger.info(f"Couldn't retrieve IP address: {str(err)}")
+        return ""
 
 
 def _get_show_unit_json(model_full_name: str, unit: str) -> Dict:
