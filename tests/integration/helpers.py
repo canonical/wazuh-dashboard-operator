@@ -64,7 +64,7 @@ def get_relations(ops_test: OpsTest, name: str, app_name: str = APP_NAME) -> lis
     return results
 
 
-def get_relation(ops_test: OpsTest, relation: str = "opensearch_client"):
+def get_relation(ops_test: OpsTest, relation: str = "opensearch-client"):
     return get_relations(ops_test, relation)[0]
 
 
