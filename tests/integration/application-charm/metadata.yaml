@@ -9,5 +9,5 @@ series:
   - jammy
 
 requires:
-  opensearch_client:
+  opensearch-client:
     interface: opensearch_client

@@ -35,7 +35,7 @@ class ApplicationCharm(CharmBase):
         self.framework.observe(self.on.update_status, self._on_update_status)
 
         # `albums` index is used in integration test
-        self.opensearch = OpenSearchRequires(self, "opensearch_client", "albums", "")
+        self.opensearch = OpenSearchRequires(self, "opensearch-client", "albums", "")
 
         self.framework.observe(self.opensearch.on.index_created, self._on_authentication_updated)
         self.framework.observe(
@@ -47,7 +47,7 @@ class ApplicationCharm(CharmBase):
             self.on.run_dashboards_request_action, self._on_run_dashboards_request_action
         )
 
-        self.relations = {"opensearch_client": self.opensearch}
+        self.relations = {"opensearch-client": self.opensearch}
 
     def _on_update_status(self, _) -> None:
         """Health check for index connection."""

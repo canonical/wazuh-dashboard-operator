@@ -64,7 +64,7 @@ def get_relations(ops_test: OpsTest, name: str, app_name: str = APP_NAME) -> lis
     return results
 
 
-def get_relation(ops_test: OpsTest, relation: str = "opensearch_client"):
+def get_relation(ops_test: OpsTest, relation: str = "opensearch-client"):
     return get_relations(ops_test, relation)[0]
 
 
@@ -211,7 +211,7 @@ async def access_all_dashboards(
         return False
 
     if not relation_id:
-        relation_id = get_relation(ops_test, "opensearch_client").id
+        relation_id = get_relation(ops_test, "opensearch-client").id
 
     dashboard_credentials = await get_secret_by_label(
         ops_test, f"opensearch-client.{relation_id}.user.secret"

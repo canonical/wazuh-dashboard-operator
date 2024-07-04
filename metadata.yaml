@@ -27,7 +27,7 @@ peers:
     interface: upgrade
 
 requires:
-  opensearch_client:
+  opensearch-client:
     interface: opensearch_client
     limit: 1
     optional: true
