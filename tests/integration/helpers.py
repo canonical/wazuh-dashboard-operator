@@ -211,7 +211,7 @@ async def access_all_dashboards(
         return False
 
     if not relation_id:
-        relation_id = get_relation(ops_test, "opensearch_client").id
+        relation_id = get_relation(ops_test, "opensearch-client").id
 
     dashboard_credentials = await get_secret_by_label(
         ops_test, f"opensearch-client.{relation_id}.user.secret"
