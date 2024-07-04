@@ -10,7 +10,7 @@ SUBSTRATE = "vm"
 CHARM_KEY = "opensearch-dashboards"
 
 PEER = "dashboard_peers"
-OPENSEARCH_REL_NAME = "opensearch_client"
+OPENSEARCH_REL_NAME = "opensearch-client"
 CERTS_REL_NAME = "certificates"
 DASHBOARD_INDEX = ".opensearch-dashboards"
 DASHBOARD_USER = "kibanaserver"
