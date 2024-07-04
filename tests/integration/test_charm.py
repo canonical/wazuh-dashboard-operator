@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 OPENSEARCH_APP_NAME = "opensearch"
-OPENSEARCH_RELATION_NAME = "opensearch_client"
+OPENSEARCH_RELATION_NAME = "opensearch-client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
     "cloudinit-userdata": """postruncmd:
