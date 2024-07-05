@@ -1,6 +1,26 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Testing tools configuration
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+log_cli_level = "INFO"
+markers = ["unstable"]
+
+# Formatting tools configuration
+[tool.black]
+line-length = 99
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+
 [tool.poetry]
 # Charm is not packed as a standard Python package; this information is not used
 name = "charm"
@@ -73,26 +93,6 @@ pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workf
 pytest-asyncio = "^0.21.2"
 pytest-operator = "^0.35.0"
 pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
-
-[tool.coverage.run]
-branch = true
-
-[tool.coverage.report]
-show_missing = true
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-log_cli_level = "INFO"
-markers = ["unstable"]
-asyncio_mode = "auto"
-
-# Formatting tools configuration
-[tool.black]
-line-length = 99
-target-version = ["py310"]
-
-[tool.isort]
-profile = "black"
 
 [tool.pyright]
 include = ["src"]
