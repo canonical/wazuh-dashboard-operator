@@ -13,9 +13,6 @@ parts:
       fi
     charm-strict-dependencies: true
     charm-entrypoint: src/charm.py
-    charm-binary-python-packages:
-      - setuptools
-      - tenacity
     build-packages:
       - pkg-config
       - libffi-dev
