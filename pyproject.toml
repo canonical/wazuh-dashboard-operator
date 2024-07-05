@@ -65,15 +65,14 @@ coverage = {extras = ["toml"], version = "^7.5.1"}
 pytest-mock = "^3.11.1"
 
 [tool.poetry.group.integration.dependencies]
+ops = "^2.13.0"
 pytest = "^8.2.2"
+juju = "^3.2.0"
+tenacity = "^8.3.0"
 pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/github_secrets"}
 pytest-asyncio = "^0.21.2"
 pytest-operator = "^0.35.0"
 pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
-pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
-juju = "^3.2.0"
-ops = "^2.13.0"
-tenacity = "^8.3.0"
 
 [tool.coverage.run]
 branch = true

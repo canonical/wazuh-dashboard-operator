@@ -1994,25 +1994,6 @@ resolved_reference = "ddb4b5112daf309a5665e14caa5dfee03b96eae0"
 subdirectory = "python/pytest_plugins/pytest_operator_cache"
 
 [[package]]
-name = "pytest-operator-groups"
-version = "0.1.0"
-description = ""
-optional = false
-python-versions = "^3.8"
-files = []
-develop = false
-
-[package.dependencies]
-pytest = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/canonical/data-platform-workflows"
-reference = "v16.2.1"
-resolved_reference = "ddb4b5112daf309a5665e14caa5dfee03b96eae0"
-subdirectory = "python/pytest_plugins/pytest_operator_groups"
-
-[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 description = "Extensions to the standard Python datetime module"
@@ -2820,4 +2801,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b096b923172a5f8c20a108e3357bafbd428462b0746a540d2a0769cb235d81b3"
+content-hash = "fa22e1698f714d7077823b691310225cbbbbeac541c83579e676657caf38503f"
