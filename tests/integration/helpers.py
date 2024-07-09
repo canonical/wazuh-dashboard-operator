@@ -12,8 +12,8 @@ from typing import Dict, List, Optional
 
 import requests
 import yaml
-from charms.data_platform_libs.v0.data_interfaces import Relation
-from ops.model import Unit
+from juju.relation import Relation
+from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
 from tenacity import retry, stop_after_attempt, wait_fixed
 

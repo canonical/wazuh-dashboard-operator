@@ -1,4 +1,4 @@
-# Copyright 2022 Canonical Ltd.
+# Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 # Testing tools configuration
@@ -22,7 +22,7 @@ target-version = ["py310"]
 profile = "black"
 
 [tool.poetry]
-# name = "opensearch-dashboards-operator"
+# Charm is not packed as a standard Python package; this information is not used
 name = "charm"
 version = "1.0"
 description = "opensearch-dashboards-operator"
@@ -33,31 +33,41 @@ python = "^3.10"
 tenacity = "^8.4.2"
 pure-sasl = "^0.6.2"
 cosl = "^0.0.12"
-pydantic = "^1.10.17"
-pyyaml = "^6.0.1"
-poetry-plugin-export = "^1.8.0"
+ops = "^2.13.0"
 
+# TODO: clean any of the notes below and their deps.
 [tool.poetry.group.charm-libs.dependencies]
-ops = "^2.4.1"
-cryptography = "^42.0.0"
+# data_platform_libs/v0/data_interfaces.py
+ops = "^2.13.0"
+poetry-core = "^1.9.0"
+# tls_certificates_interface/v3/tls_certificates.py
+cryptography = "*"
+jsonschema = "*"
+# pinning to avoid: https://github.com/canonical/charmcraft/issues/1722
+# We should unpin it once we have rustc 1.76+ available at build time
+rpds-py = "<0.19"
+# TODO: keep pydantic, but we may remove the "<2" need
+# grafana_agent/v0/cos_agent.py requires pydantic <2
+pydantic = "^1.10.17, <2"
+# grafana_agent/v0/cos_agent.py
+# bcrypt = "^4.1.3"
+
 
 [tool.poetry.group.fmt]
 optional = true
 
+
 [tool.poetry.group.fmt.dependencies]
 black = "^24.4.2"
-ruff = "^0.4.10"
 isort = "^5.13.2"
+
 
 [tool.poetry.group.lint]
 optional = true
 
+
 [tool.poetry.group.lint.dependencies]
-ops = "^2.4.1"
 black = "^24.4.2"
-ruff = "^0.4.10"
-codespell = "^2.3.0"
-pyright = "^1.1.369"
 isort = "^5.13.2"
 flake8 = "^7.0.0"
 flake8-docstrings = "^1.7.0"
@@ -65,21 +75,17 @@ flake8-copyright = "^0.2.4"
 flake8-builtins = "^2.5.0"
 pyproject-flake8 = "^7.0.0"
 pep8-naming = "^0.14.1"
-
-[tool.poetry.group.unit]
-optional = true
+codespell = "^2.2.6"
+pyright = "^1.1.318"
+typing-extensions = "^4.9.0"
 
 [tool.poetry.group.unit.dependencies]
 pytest = "^8.2.2"
-coverage = {extras = ["toml"], version = ">7.0"}
-jsonschema = "^4.22.0"
-pytest-mock = "^3.14.0"
-
-[tool.poetry.group.integration]
-optional = true
+coverage = {extras = ["toml"], version = "^7.5.1"}
+pytest-mock = "^3.11.1"
+pyyaml = "^6.0.1"
 
 [tool.poetry.group.integration.dependencies]
-ops = "^2.4.1"
 pytest = "^8.2.2"
 juju = "^3.2.0"
 tenacity = "^8.4.2"
@@ -87,35 +93,6 @@ coverage = {extras = ["toml"], version = ">7.0"}
 pytest-operator = ">0.20"
 pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
 pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
-
-# To be enabled if we are using groups on integration tests
-# pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v6.1.1", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
-
-[tool.ruff]
-line-length = 99
-select = ["E", "W", "F", "C", "N", "D", "I001"]
-extend-ignore = [
-    "D203",
-    "D204",
-    "D213",
-    "D215",
-    "D400",
-    "D401",
-    "D404",
-    "D406",
-    "D407",
-    "D408",
-    "D409",
-    "D413",
-]
-ignore = ["E501", "D107"]
-extend-exclude = ["__pycache__", "*.egg_info"]
-per-file-ignores = {"tests/*" = ["D100","D101","D102","D103","D104", "E999"], "src/literals.py" = ["D101"]}
-target-version="py310"
-src = ["src", "tests"]
-
-[tool.ruff.mccabe]
-max-complexity = 10
 
 [tool.pyright]
 include = ["src"]
