@@ -43,6 +43,9 @@ poetry-core = "^1.9.0"
 # tls_certificates_interface/v3/tls_certificates.py
 cryptography = "*"
 jsonschema = "*"
+# pinning to avoid: https://github.com/canonical/charmcraft/issues/1722
+# We should unpin it once we have rustc 1.76+ available at build time
+rpds-py = "<0.19"
 # TODO: keep pydantic, but we may remove the "<2" need
 # grafana_agent/v0/cos_agent.py requires pydantic <2
 pydantic = "^1.10.17, <2"
