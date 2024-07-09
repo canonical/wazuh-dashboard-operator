@@ -1485,22 +1485,6 @@ docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1.0)"]
 testing = ["coverage (>=6.2)", "flaky (>=3.5.0)", "hypothesis (>=5.7.1)", "mypy (>=0.931)", "pytest-trio (>=0.7.0)"]
 
 [[package]]
-name = "pytest-github-secrets"
-version = "0.1.0"
-description = ""
-optional = false
-python-versions = "^3.8"
-files = []
-develop = false
-
-[package.source]
-type = "git"
-url = "https://github.com/canonical/data-platform-workflows"
-reference = "v16.2.1"
-resolved_reference = "ddb4b5112daf309a5665e14caa5dfee03b96eae0"
-subdirectory = "python/pytest_plugins/github_secrets"
-
-[[package]]
 name = "pytest-mock"
 version = "3.14.0"
 description = "Thin-wrapper around the mock package for easier use with pytest"
@@ -2096,4 +2080,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e3bd7b1b2a2dd7cdf265bde6dfdfce02aa3f856f6e91b76912d113b686f5b21d"
+content-hash = "bf841a2c50aadfb429c5d62bac3e9f6d961303524f72388c09133e79132d069c"

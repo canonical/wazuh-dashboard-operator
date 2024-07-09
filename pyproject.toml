@@ -86,16 +86,13 @@ pytest-mock = "^3.11.1"
 pyyaml = "^6.0.1"
 
 [tool.poetry.group.integration.dependencies]
-ops = "^2.13.0"
 pytest = "^8.2.2"
 juju = "^3.2.0"
-tenacity = "^8.4.1"
-pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/github_secrets"}
-pytest-asyncio = "^0.21.2"
-pytest-operator = "^0.35.0"
+tenacity = "^8.4.2"
+coverage = {extras = ["toml"], version = ">7.0"}
+pytest-operator = ">0.20"
 pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
 pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.2.1", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
-pyyaml = "^6.0.1"
 
 [tool.pyright]
 include = ["src"]
