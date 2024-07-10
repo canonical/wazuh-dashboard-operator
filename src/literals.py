@@ -4,7 +4,7 @@
 
 """Collection of global literals for the charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = "10"
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = "18"
 
 SUBSTRATE = "vm"
 CHARM_KEY = "opensearch-dashboards"
@@ -54,3 +54,9 @@ MSG_WAITING_FOR_PEER = "waiting for peer relation"
 MSG_DB_MISSING = "Opensearch connection is missing"
 MSG_TLS_CONFIG = "Waiting for TLS to be fully configured..."
 MSG_INCOMPATIBLE_UPGRADE = "Incompatible upgrade, rollback required"
+
+# COS
+
+COS_RELATION_NAME = "cos-agent"
+COS_USER = "monitor"
+COS_PORT = 9684

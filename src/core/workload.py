@@ -72,6 +72,11 @@ class WorkloadBase(ABC):
         ...
 
     @abstractmethod
+    def configure(self, key: str, value: str) -> None:
+        """Set workload parameters"""
+        ...
+
+    @abstractmethod
     def read(self, path: str) -> list[str]:
         """Reads a file from the workload.
 

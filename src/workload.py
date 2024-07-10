@@ -27,7 +27,8 @@ class ODWorkload(WorkloadBase):
     """Implementation of WorkloadBase for running on VMs."""
 
     SNAP_NAME = "opensearch-dashboards"
-    SNAP_SERVICE = "daemon"
+    SNAP_APP_SERVICE = "opensearch-dashboards-daemon"
+    SNAP_EXPORTER_SERVICE = "kibana-exporter-daemon"
 
     def __init__(self):
         self.dashboards = snap.SnapCache()[self.SNAP_NAME]
@@ -35,14 +36,14 @@ class ODWorkload(WorkloadBase):
     @override
     def start(self) -> None:
         try:
-            self.dashboards.start(services=[self.SNAP_SERVICE])
+            self.dashboards.start(services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE])
         except snap.SnapError as e:
             logger.exception(str(e))
 
     @override
     def stop(self) -> None:
         try:
-            self.dashboards.stop(services=[self.SNAP_SERVICE])
+            self.dashboards.stop(services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE])
         except snap.SnapError as e:
             logger.exception(str(e))
 
@@ -58,10 +59,17 @@ class ODWorkload(WorkloadBase):
     )
     def restart(self) -> bool:
         try:
-            self.dashboards.restart(services=[self.SNAP_SERVICE])
+            self.dashboards.restart(services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE])
         except snap.SnapError as e:
             logger.exception(str(e))
         return self.alive()
+
+    @override
+    def configure(self, key, value) -> None:
+        try:
+            self.dashboards.set(config={key: value})
+        except snap.SnapError as e:
+            logger.exception(str(e))
 
     @override
     def read(self, path: str) -> list[str]:
@@ -101,7 +109,9 @@ class ODWorkload(WorkloadBase):
     )
     def alive(self) -> bool:
         try:
-            return bool(self.dashboards.services[self.SNAP_SERVICE]["active"])
+            return bool(self.dashboards.services[self.SNAP_APP_SERVICE]["active"]) and bool(
+                self.dashboards.services[self.SNAP_EXPORTER_SERVICE]["active"]
+            )
         except KeyError:
             return False
 

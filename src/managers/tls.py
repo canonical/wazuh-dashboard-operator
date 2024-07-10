@@ -50,6 +50,7 @@ class TLSManager:
         self.workload.write(
             content=self.state.unit_server.certificate, path=self.workload.paths.certificate
         )
+        self.workload.configure("scheme", "https")
 
     def remove_cert_files(self) -> None:
         """Removes all certs, keys, stores from the unit."""
@@ -68,6 +69,7 @@ class TLSManager:
         except (subprocess.CalledProcessError, ops.pebble.ExecError) as e:
             logger.error(str(e.stdout))
             raise e
+        self.workload.configure("scheme", "http")
 
     def certificate_valid(self) -> bool:
         """Check if server certificate is valid"""
