@@ -20,6 +20,8 @@ from ..helpers import (
 
 logger = logging.getLogger(__name__)
 
+logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+
 
 CLIENT_TIMEOUT = 10
 RESTART_DELAY = 60
@@ -37,6 +39,7 @@ OPENSEARCH_CONFIG = {
     """,
 }
 TLS_CERT_APP_NAME = "self-signed-certificates"
+ALL_APPS = [APP_NAME, TLS_CERT_APP_NAME, OPENSEARCH_APP_NAME]
 APP_AND_TLS = [APP_NAME, TLS_CERT_APP_NAME]
 PEER = "dashboard_peers"
 SERVER_PORT = 5601
@@ -49,7 +52,6 @@ LONG_WAIT = 30
 
 
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.group(1)
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
@@ -151,6 +153,8 @@ async def network_cut_leader(ops_test: OpsTest, https: bool = False):
     assert new_ip != old_ip
     logger.info(f"Old IP {old_ip} has changed to {new_ip}...")
 
+    await ops_test.model.wait_for_idle(apps=ALL_APPS, wait_for_active=True, timeout=LONG_TIMEOUT)
+
     logger.info("Checking Dashboard access...")
     assert await access_all_dashboards(ops_test, https=https)
 
@@ -203,6 +207,8 @@ async def network_throttle_leader(ops_test: OpsTest, https: bool = False):
     current_ip = await get_address(ops_test, old_leader_name)
     assert old_ip == current_ip
 
+    await ops_test.model.wait_for_idle(apps=ALL_APPS, wait_for_active=True, timeout=LONG_TIMEOUT)
+
     logger.info("Checking Dashboard access...")
     assert await access_all_dashboards(ops_test, https=https)
 
@@ -244,7 +250,7 @@ async def network_cut_application(ops_test: OpsTest, https: bool = False):
     )
 
     logger.info("Checking lack of Dashboard access...")
-    assert not (await access_all_dashboards(ops_test, https=https))
+    assert all_dashboards_unavailable(ops_test, https=https)
 
     logger.info("Restoring network...")
     for machine_name in machines:
@@ -263,6 +269,13 @@ async def network_cut_application(ops_test: OpsTest, https: bool = False):
         timeout=LONG_TIMEOUT,
         wait_period=LONG_WAIT,
     )
+
+    for unit, old_ip in unit_ip_map.items():
+        new_ip = await get_address(ops_test, unit)
+        assert new_ip != old_ip
+        logger.info(f"Old IP {old_ip} has changed to {new_ip}...")
+
+    await ops_test.model.wait_for_idle(apps=ALL_APPS, wait_for_active=True, timeout=LONG_TIMEOUT)
 
     logger.info("Checking Dashboard access...")
     assert await access_all_dashboards(ops_test, https=https)
@@ -305,7 +318,7 @@ async def network_throttle_application(ops_test: OpsTest, https: bool = False):
     )
 
     logger.info("Checking lack of Dashboard access...")
-    assert not (await access_all_dashboards(ops_test, https=https))
+    assert all_dashboards_unavailable(ops_test, https=https)
 
     logger.info("Restoring network...")
     for machine_name in machines:
@@ -328,6 +341,8 @@ async def network_throttle_application(ops_test: OpsTest, https: bool = False):
         for unit in unit_ip_map
     )
 
+    await ops_test.model.wait_for_idle(apps=ALL_APPS, wait_for_active=True, timeout=LONG_TIMEOUT)
+
     logger.info("Checking Dashboard access...")
     assert await access_all_dashboards(ops_test, https=https)
 
@@ -337,7 +352,6 @@ async def network_throttle_application(ops_test: OpsTest, https: bool = False):
 ##############################################################################
 
 
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
@@ -345,7 +359,6 @@ async def test_network_cut_ip_change_leader_http(ops_test: OpsTest, request):
     await network_cut_leader(ops_test)
 
 
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
@@ -353,7 +366,6 @@ async def test_network_cut_no_ip_change_leader_http(ops_test: OpsTest, request):
     await network_throttle_leader(ops_test)
 
 
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
@@ -361,7 +373,6 @@ async def test_network_cut_ip_change_application_http(ops_test: OpsTest, request
     await network_cut_application(ops_test)
 
 
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
@@ -372,7 +383,6 @@ async def test_network_no_ip_change_application_http(ops_test: OpsTest, request)
 ##############################################################################
 
 
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
@@ -391,7 +401,6 @@ async def test_set_tls(ops_test: OpsTest, request):
 ##############################################################################
 
 
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
@@ -399,7 +408,6 @@ async def test_network_cut_ip_change_leader_https(ops_test: OpsTest, request):
     await network_cut_leader(ops_test, https=True)
 
 
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
@@ -407,7 +415,6 @@ async def test_network_cut_no_ip_change_leader_https(ops_test: OpsTest, request)
     await network_throttle_leader(ops_test, https=True)
 
 
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
@@ -415,7 +422,6 @@ async def test_network_cut_ip_change_application_https(ops_test: OpsTest, reques
     await network_cut_application(ops_test, https=True)
 
 
-@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-4903")
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
