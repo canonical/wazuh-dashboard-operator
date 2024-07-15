@@ -139,6 +139,32 @@ def restart_unit(model_full_name: str, unit: str) -> None:
     )
 
 
+def access_prometheus_exporter(host: str) -> bool:
+    """Check if a given unit has 'kibana-exporter' service available and publishing."""
+    try:
+        # Normal IP address
+        socket.inet_aton(host)
+    except OSError:
+        socket.inet_pton(socket.AF_INET6, host)
+        host = f"[{host}]"
+
+    url = f"http://{host}:9684/metrics"
+    try:
+        response = requests.get(url)
+    except requests.exceptions.RequestException:
+        return False
+    return response.status_code == 200 and "kibana_status" in response.text
+
+
+async def access_all_prometheus_exporters(ops_test: OpsTest) -> bool:
+    """Check if a given unit has 'kibana-exporter' service available and publishing."""
+    result = True
+    for unit in ops_test.model.applications[APP_NAME].units:
+        unit_ip = await get_address(ops_test, unit.name)
+        result = result and access_prometheus_exporter(unit_ip)
+    return result
+
+
 def access_dashboard(
     host: str, password: str, username: str = "kibanaserver", ssl: bool = False
 ) -> bool:
@@ -346,12 +372,21 @@ def get_relation_id(model_full_name: str, unit: str, app_name: str):
     raise Exception("No relation found!")
 
 
-def get_relation_data(model_full_name: str, unit: str, endpoint: str):
+def get_app_relation_data(model_full_name: str, unit: str, endpoint: str):
     show_unit = _get_show_unit_json(model_full_name=model_full_name, unit=unit)
     d_relations = show_unit[unit]["relation-info"]
     for relation in d_relations:
         if relation["endpoint"] == endpoint:
             return relation["application-data"]
+    raise Exception("No relation found!")
+
+
+def get_unit_relation_data(model_full_name: str, unit: str, endpoint: str):
+    show_unit = _get_show_unit_json(model_full_name=model_full_name, unit=unit)
+    d_relations = show_unit[unit]["relation-info"]
+    for relation in d_relations:
+        if relation["endpoint"] == endpoint:
+            return relation["related-units"]
     raise Exception("No relation found!")
 
 
