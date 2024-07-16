@@ -16,14 +16,12 @@ from ops.main import main
 from ops.model import BlockedStatus, MaintenanceStatus, WaitingStatus
 
 from core.cluster import ClusterState
-from events.password_actions import PasswordActionEvents
 from events.requirer import RequirerEvents
 from events.tls import TLSEvents
 from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
 from helpers import clear_status
 from literals import (
     CHARM_KEY,
-    CHARM_USERS,
     COS_PORT,
     COS_RELATION_NAME,
     DEPENDENCIES,
@@ -33,7 +31,6 @@ from literals import (
     MSG_STARTING_SERVER,
     MSG_TLS_CONFIG,
     MSG_WAITING_FOR_PEER,
-    MSG_WAITING_FOR_USER_CREDENTIALS,
     PEER,
     RESTART_TIMEOUT,
     SERVER_PORT,
@@ -57,7 +54,6 @@ class OpensearchDasboardsCharm(CharmBase):
 
         # --- CHARM EVENT HANDLERS ---
 
-        self.password_action_events = PasswordActionEvents(self)
         self.tls_events = TLSEvents(self)
         self.requirer_events = RequirerEvents(self)
         self.upgrade_events = ODUpgradeEvents(
@@ -122,12 +118,7 @@ class OpensearchDasboardsCharm(CharmBase):
             self.unit.status = WaitingStatus(MSG_WAITING_FOR_PEER)
             event.defer()
             return
-        clear_status(self.unit, MSG_WAITING_FOR_PEER)
-
-        if self.unit.is_leader() and not self.state.cluster.internal_user_credentials:
-            for user in CHARM_USERS:
-                self.state.cluster.update({f"{user}-password": self.workload.generate_password()})
-        clear_status(self.unit, [MSG_INSTALLING, MSG_WAITING_FOR_USER_CREDENTIALS])
+        clear_status(self.unit, [MSG_INSTALLING, MSG_WAITING_FOR_PEER])
 
     def reconcile(self, event: EventBase) -> None:
         """Generic handler for all 'something changed, update' events across all relations."""
@@ -231,11 +222,6 @@ class OpensearchDasboardsCharm(CharmBase):
 
     def init_server(self):
         """Calls startup functions for server start."""
-        # don't run if leader has not yet created passwords
-        if not self.state.cluster.internal_user_credentials:
-            self.unit.status = MaintenanceStatus(MSG_WAITING_FOR_USER_CREDENTIALS)
-            return
-
         self.unit.status = MaintenanceStatus(MSG_STARTING_SERVER)
         logger.info(f"{self.unit.name} initializing...")
 

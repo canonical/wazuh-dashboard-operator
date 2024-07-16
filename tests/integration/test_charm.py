@@ -209,31 +209,6 @@ async def test_dashboard_password_rotation(ops_test: OpsTest):
 
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_local_password_rotation(ops_test: OpsTest):
-    """Test password rotation for local users -- in case we decide to have any."""
-    user = "monitor"
-    password = await get_user_password(ops_test, user)
-    assert len(password) == 32
-
-    leader_num = await get_leader_id(ops_test)
-
-    # Change both passwords
-    result = await set_password(ops_test, username=user, num_unit=leader_num)
-    assert f"{user}-password" in result.keys()
-
-    await ops_test.model.wait_for_idle(
-        apps=[APP_NAME], status="active", timeout=1000, idle_period=30
-    )
-    assert ops_test.model.applications[APP_NAME].status == "active"
-
-    new_password = await get_user_password(ops_test, user)
-
-    assert password != new_password
-    assert len(password) == 32
-
-
-@pytest.mark.group(1)
-@pytest.mark.abort_on_fail
 @pytest.mark.log_level_change
 async def test_log_level_change(ops_test: OpsTest):
 

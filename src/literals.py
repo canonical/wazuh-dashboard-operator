@@ -16,7 +16,6 @@ DASHBOARD_INDEX = ".opensearch-dashboards"
 DASHBOARD_USER = "kibanaserver"
 DASHBOARD_ROLE = "kibana_server"
 CONTAINER = "opensearch-dashboards"
-CHARM_USERS = ["monitor"]
 SERVER_PORT = 5601
 
 DEPENDENCIES = {
@@ -49,7 +48,6 @@ RESTART_TIMEOUT = 30
 MSG_INSTALLING = "installing Opensearch Dashboards..."
 MSG_STARTING = "starting..."
 MSG_STARTING_SERVER = "starting Opensearch Dashboards server..."
-MSG_WAITING_FOR_USER_CREDENTIALS = "waiting for passwords to be created"
 MSG_WAITING_FOR_PEER = "waiting for peer relation"
 MSG_DB_MISSING = "Opensearch connection is missing"
 MSG_TLS_CONFIG = "Waiting for TLS to be fully configured..."
