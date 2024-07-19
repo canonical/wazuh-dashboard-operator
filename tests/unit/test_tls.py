@@ -25,7 +25,7 @@ def harness():
     return harness
 
 
-def test_certificates_created_sets_upgrading_enabled(harness):
+def test_certificates_created_sets_tls_enabled(harness):
     with harness.hooks_disabled():
         harness.set_leader(True)
 
@@ -38,36 +38,18 @@ def test_certificates_created_sets_upgrading_enabled(harness):
         assert harness.charm.state.cluster.tls
 
 
-def test_certificates_joined_creates_private_key_if_enabled(harness):
+def test_certificates_joined_creates_private_key(harness):
     with (
         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=True),
         patch("core.models.ODCluster.tls", new_callable=PropertyMock, return_value=True),
+        patch("workload.ODWorkload.configure") as workload_config,
     ):
         cert_rel_id = harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
         harness.add_relation_unit(cert_rel_id, "tls-certificates-operator/1")
 
     assert harness.charm.state.unit_server.private_key
     assert "BEGIN RSA PRIVATE KEY" in harness.charm.state.unit_server.private_key.splitlines()[0]
-
-
-# def test_certificates_joined_creates_new_key_trust_store_password(harness):
-#     assert not harness.charm.state.unit_server.keystore_password
-#     assert not harness.charm.state.unit_server.truststore_password
-#
-#     with (
-#         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=True),
-#         patch("core.models.ODCluster.tls", new_callable=PropertyMock, return_value=True),
-#     ):
-#         cert_rel_id = harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
-#         harness.add_relation_unit(cert_rel_id, "tls-certificates-operator/1")
-#
-#     assert harness.charm.state.unit_server.keystore_password
-#     assert harness.charm.state.unit_server.truststore_password
-#
-#     assert (
-#         harness.charm.state.unit_server.keystore_password
-#         != harness.charm.state.unit_server.truststore_password
-#     )
+    assert workload_config.assert_called_once
 
 
 def test_certificates_available_fails_wrong_csr(harness):
@@ -127,10 +109,14 @@ def test_certificates_broken(harness):
     assert harness.charm.state.unit_server.csr
 
     # implicitly tests these method calls
-    with patch.multiple(
-        "managers.tls.TLSManager",
-        remove_cert_files=DEFAULT,
+    with (
+        patch.multiple(
+            "managers.tls.TLSManager",
+            remove_cert_files=DEFAULT,
+        ),
+        patch("workload.ODWorkload.configure") as workload_config,
     ):
+
         harness.remove_relation(certs_rel_id)
 
         assert not harness.charm.state.unit_server.certificate
@@ -138,6 +124,8 @@ def test_certificates_broken(harness):
         assert not harness.charm.state.unit_server.csr
         assert not harness.charm.state.unit_server.tls
         assert not harness.charm.state.cluster.tls
+
+        assert workload_config.assert_called_once
 
 
 def test_certificates_expiring(harness):
