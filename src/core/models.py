@@ -12,7 +12,7 @@ from charms.data_platform_libs.v0.data_interfaces import Data, DataDict
 from ops.model import Application, Relation, Unit
 from typing_extensions import override
 
-from literals import CHARM_USERS
+from literals import COS_USER
 
 logger = logging.getLogger(__name__)
 
@@ -129,19 +129,6 @@ class ODCluster(StateBase):
         self._tls = tls
         self.app = component
 
-    @property
-    def internal_user_credentials(self) -> dict[str, str]:
-        """The passwords for the internal quorum and super users.
-
-        Returns:
-            Dict of key username, value password
-        """
-        return {
-            user: password
-            for user in CHARM_USERS
-            if (password := self.relation_data.get(f"{user}-password"))
-        }
-
     # -- TLS --
 
     @property
@@ -177,6 +164,16 @@ class ODServer(StateBase):
     def started(self) -> bool:
         """Flag to check if the unit has started the service."""
         return self.relation_data.get("state", None) == "started"
+
+    @property
+    def cos_user(self) -> str | None:
+        """The generated password for the client application."""
+        return COS_USER
+
+    @property
+    def cos_password(self) -> str | None:
+        """The generated password for the client application."""
+        return self.relation_data.get("monitor-password")
 
     @property
     def password_rotated(self) -> bool:

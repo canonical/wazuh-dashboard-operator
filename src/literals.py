@@ -4,7 +4,7 @@
 
 """Collection of global literals for the charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = "10"
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = "18"
 
 SUBSTRATE = "vm"
 CHARM_KEY = "opensearch-dashboards"
@@ -16,7 +16,6 @@ DASHBOARD_INDEX = ".opensearch-dashboards"
 DASHBOARD_USER = "kibanaserver"
 DASHBOARD_ROLE = "kibana_server"
 CONTAINER = "opensearch-dashboards"
-CHARM_USERS = ["monitor"]
 SERVER_PORT = 5601
 
 DEPENDENCIES = {
@@ -49,8 +48,13 @@ RESTART_TIMEOUT = 30
 MSG_INSTALLING = "installing Opensearch Dashboards..."
 MSG_STARTING = "starting..."
 MSG_STARTING_SERVER = "starting Opensearch Dashboards server..."
-MSG_WAITING_FOR_USER_CREDENTIALS = "waiting for passwords to be created"
 MSG_WAITING_FOR_PEER = "waiting for peer relation"
 MSG_DB_MISSING = "Opensearch connection is missing"
 MSG_TLS_CONFIG = "Waiting for TLS to be fully configured..."
 MSG_INCOMPATIBLE_UPGRADE = "Incompatible upgrade, rollback required"
+
+# COS
+
+COS_RELATION_NAME = "cos-agent"
+COS_USER = "monitor"
+COS_PORT = 9684

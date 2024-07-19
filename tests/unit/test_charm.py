@@ -52,34 +52,6 @@ def test_clear_status(harness):
     assert isinstance(harness.charm.unit.status, ActiveStatus)
 
 
-def test_install_fails_create_passwords_until_peer_relation(harness):
-    with harness.hooks_disabled():
-        harness.set_leader(True)
-
-    with patch("workload.ODWorkload.install"):
-        harness.charm.on.install.emit()
-
-    with harness.hooks_disabled():
-        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
-        harness.set_leader(True)
-
-    assert not harness.charm.state.cluster.internal_user_credentials
-
-
-def test_install_fails_creates_passwords_succeeds(harness):
-    with harness.hooks_disabled():
-        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
-        harness.set_leader(True)
-
-    with patch("workload.ODWorkload.install"):
-        harness.charm.on.install.emit()
-        assert harness.charm.state.cluster.relation_data
-
-        assert harness.charm.state.cluster.internal_user_credentials
-
-
 @pytest.mark.skipif(SUBSTRATE == "k8s", reason="Snap not used on K8s charms")
 def test_install_blocks_snap_install_failure(harness):
     with harness.hooks_disabled():
@@ -202,7 +174,11 @@ def test_relation_changed_does_not_restart_on_departing(harness):
         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
         harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
 
-    with patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_acquire_lock") as patched:
+    with (
+        patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_acquire_lock") as patched,
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("workload.ODWorkload.start"),
+    ):
         harness.remove_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
         patched.assert_not_called()
 
@@ -233,11 +209,6 @@ def test_restart_fails_not_started(harness):
     with (
         patch("workload.ODWorkload.restart") as patched_restart,
         patch("workload.ODWorkload.start") as patched_start,
-        patch(
-            "core.models.ODCluster.internal_user_credentials",
-            new_callable=PropertyMock,
-            return_value={"user": "password"},
-        ),
         patch("managers.config.ConfigManager.set_dashboard_properties"),
     ):
         harness.charm._restart(EventBase)
@@ -308,9 +279,12 @@ def test_config_changed_applies_relation_data(harness):
         harness.set_leader(True)
 
     with (
-        patch("core.cluster.ClusterState.stable", return_value=True),
         patch("managers.config.ConfigManager.config_changed") as patched,
+        patch("core.cluster.ClusterState.stable", return_value=True),
         patch("core.cluster.ClusterState.all_units_related", return_value=True),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("workload.ODWorkload.start"),
+        patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_acquire_lock"),
     ):
         harness.charm.on.config_changed.emit()
 
