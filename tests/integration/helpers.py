@@ -15,12 +15,14 @@ import yaml
 from juju.relation import Relation
 from juju.unit import Unit
 from pytest_operator.plugin import OpsTest
-from tenacity import retry, stop_after_attempt, wait_fixed
+from requests.exceptions import ConnectionError
+from tenacity import Retrying, retry, stop_after_attempt, wait_fixed
 
 from core.workload import ODPaths
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
+OPENSEARCH_APP_NAME = "opensearch"
 
 
 logger = logging.getLogger(__name__)
@@ -165,6 +167,50 @@ async def access_all_prometheus_exporters(ops_test: OpsTest) -> bool:
     return result
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(5),
+    retry_error_callback=lambda _: False,
+    retry=lambda x: x is False,
+)
+def dashboard_unavailable(host: str, https: bool = False) -> bool:
+    try:
+        # Normal IP address
+        socket.inet_aton(host)
+    except OSError:
+        socket.inet_pton(socket.AF_INET6, host)
+        host = f"[{host}]"
+
+    protocol = "http" if not https else "https"
+    url = f"{protocol}://{host}:5601/auth/login"
+    arguments = {"url": url}
+    if https:
+        arguments["verify"] = "./ca.pem"
+
+    try:
+        response = requests.get(**arguments)
+    except ConnectionError:
+        return True
+    return response.status_code == 503
+
+
+def all_dashboards_unavailable(ops_test: OpsTest, https: bool = False) -> bool:
+
+    if https:
+        unit = ops_test.model.applications[APP_NAME].units[0].name
+        if not get_dashboard_ca_cert(ops_test.model.name, unit):
+            logger.error(f"Couldn't retrieve host certificate for unit {unit}")
+            return False
+
+    unavail = True
+    for unit in ops_test.model.applications[APP_NAME].units:
+        host = get_private_address(ops_test.model.name, unit.name)
+        unavail = unavail and dashboard_unavailable(host, https)
+        if not unavail:
+            logger.error("Host {host} still available")
+    return unavail
+
+
 def access_dashboard(
     host: str, password: str, username: str = "kibanaserver", ssl: bool = False
 ) -> bool:
@@ -277,14 +323,19 @@ async def access_all_dashboards(
     retry=lambda x: x is False,
 )
 def get_dashboard_ca_cert(model_full_name: str, unit: str):
-    output = subprocess.run(
-        [
-            "bash",
-            "-c",
-            f"JUJU_MODEL={model_full_name} juju scp "
-            f"ubuntu@{unit}:/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/ca.pem ./",
-        ],
-    )
+    try:
+        output = subprocess.run(
+            [
+                "bash",
+                "-c",
+                f"JUJU_MODEL={model_full_name} juju scp "
+                f"ubuntu@{unit}:"
+                "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/ca.pem ./",
+            ],
+        )
+    except subprocess.CalledProcessError as err:
+        logger.error(f"{err}")
+        return False
     if not output.returncode:
         return True
     return False
@@ -397,6 +448,32 @@ async def get_application_hosts(ops_test: OpsTest, app_name: str, units: List[st
     for unit in units:
         hosts.append(status["applications"][app_name]["units"][f"{unit}"]["public-address"])
     return hosts
+
+
+async def check_full_status(
+    ops_test: OpsTest, app: str = APP_NAME, status: str = "active", status_msg: str | None = None
+) -> bool:
+    """Compare app and unit status against those requested in the parameters."""
+    status_data = await ops_test.model.get_status()  # noqa: F821
+
+    if not status_data.applications[app].status.status == status:
+        return False
+
+    if not all(
+        unit.workload_status.status == status
+        for unit in status_data.applications[app].units.values()
+    ):
+        return False
+
+    if status_msg:
+        if not status_data.applications[app].status.info == status_msg:
+            return False
+        if not all(
+            unit.workload_status.info == status_msg
+            for unit in status_data.applications[app].units.values()
+        ):
+            return False
+    return True
 
 
 def count_lines_with(model_full_name: str, unit: str, file: str, pattern: str) -> int:
@@ -667,3 +744,20 @@ async def client_run_all_dashboards_request(
         logger.info(f"Response from {unit_name}, {host}: {response}")
 
     return result
+
+
+async def destroy_cluster(ops_test, app: str = OPENSEARCH_APP_NAME):
+    """Destroy cluster in a forceful way."""
+    n_apps_before = len(ops_test.model.applications)
+    await ops_test.model.applications[app].destroy(destroy_storage=True, force=True, no_wait=False)
+
+    # destroy does not wait for applications to be removed, perform this check manually
+    for attempt in Retrying(stop=stop_after_attempt(100), wait=wait_fixed(10), reraise=True):
+        with attempt:
+            # pytest_operator has a bug where the number of applications does not get correctly
+            # updated. Wrapping the call with `fast_forward` resolves this
+            async with ops_test.fast_forward():
+                n_apps_after = len(ops_test.model.applications)
+            # This case we don't raise an error in the context manager which
+            # fails to restore the `update-status-hook-interval` value to it's former state.
+            assert n_apps_after == n_apps_before - 1, "old cluster not destroyed successfully."
