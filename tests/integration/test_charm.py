@@ -48,6 +48,7 @@ NUM_UNITS_APP = 3
 NUM_UNITS_DB = 2
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
@@ -99,6 +100,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_dashboard_access(ops_test: OpsTest):
@@ -109,6 +111,7 @@ async def test_dashboard_access(ops_test: OpsTest):
     assert await access_all_prometheus_exporters(ops_test)
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_dashboard_access_https(ops_test: OpsTest):
@@ -124,6 +127,7 @@ async def test_dashboard_access_https(ops_test: OpsTest):
     assert await access_all_prometheus_exporters(ops_test)
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_dashboard_client_data_access_https(ops_test: OpsTest):
@@ -183,6 +187,7 @@ async def test_dashboard_client_data_access_https(ops_test: OpsTest):
     assert all([hit["_source"] in data_dicts for res in result for hit in res["hits"]["hits"]])
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_cos_relations(ops_test: OpsTest):
@@ -213,6 +218,7 @@ async def test_cos_relations(ops_test: OpsTest):
             assert unit_cos_config["metrics_scrape_jobs"][0][key] == value
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 @pytest.mark.log_level_change

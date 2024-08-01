@@ -33,6 +33,7 @@ HTTPS_UNITS = [3, 4, 5]
 APP_AND_TLS = [APP_NAME, TLS_CERTIFICATES_APP_NAME]
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
@@ -138,6 +139,7 @@ async def scale_down(ops_test: OpsTest, unit_ids: list[str], https: bool = False
 ##############################################################################
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_horizontal_scale_up_http(ops_test: OpsTest) -> None:
@@ -145,6 +147,7 @@ async def test_horizontal_scale_up_http(ops_test: OpsTest) -> None:
     await scale_up(ops_test, amount=len(HTTP_UNITS) - 1)
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_horizontal_scale_down_http(ops_test: OpsTest) -> None:
@@ -152,6 +155,7 @@ async def test_horizontal_scale_down_http(ops_test: OpsTest) -> None:
     await scale_down(ops_test, unit_ids=HTTP_UNITS[1:])
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_horizontal_scale_down_to_zero_http(ops_test: OpsTest) -> None:
@@ -162,6 +166,7 @@ async def test_horizontal_scale_down_to_zero_http(ops_test: OpsTest) -> None:
 ##############################################################################
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_tls_on(ops_test: OpsTest) -> None:
@@ -189,6 +194,7 @@ async def test_tls_on(ops_test: OpsTest) -> None:
 ##############################################################################
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_horizontal_scale_up_https(ops_test: OpsTest) -> None:
@@ -196,6 +202,7 @@ async def test_horizontal_scale_up_https(ops_test: OpsTest) -> None:
     await scale_up(ops_test, amount=len(HTTPS_UNITS) - 1, https=True)
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_horizontal_scale_down_https(ops_test: OpsTest) -> None:
@@ -203,6 +210,7 @@ async def test_horizontal_scale_down_https(ops_test: OpsTest) -> None:
     await scale_down(ops_test, unit_ids=HTTPS_UNITS[1:], https=True)
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_horizontal_scale_down_to_zero_https(ops_test: OpsTest) -> None:
@@ -210,6 +218,7 @@ async def test_horizontal_scale_down_to_zero_https(ops_test: OpsTest) -> None:
     await scale_down(ops_test, unit_ids=HTTPS_UNITS[0:1], https=True)
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_horizontal_scale_up_from_zero_https(ops_test: OpsTest) -> None:
