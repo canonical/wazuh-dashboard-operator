@@ -18,6 +18,7 @@ from literals import (
     OPENSEARCH_REL_NAME,
     SUBSTRATE,
 )
+from src.literals import MSG_STATUS_DB_DOWN
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +173,7 @@ def test_health_opensearch_not_ok(harness, status):
         json=opensearch_status,
     )
 
-    assert not harness.charm.health_manager.opensearch_ok()
+    assert (False, MSG_STATUS_DB_DOWN) == harness.charm.health_manager.opensearch_ok()
 
 
 @responses.activate
@@ -184,4 +185,4 @@ def test_health_opensearch_unavailable(harness):
         status=503,
     )
 
-    assert not harness.charm.health_manager.opensearch_ok()
+    assert (False, MSG_STATUS_DB_DOWN) == harness.charm.health_manager.opensearch_ok()

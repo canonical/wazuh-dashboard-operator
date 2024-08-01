@@ -5,7 +5,6 @@
 """Manager for handling service health."""
 
 import logging
-import os
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
@@ -15,12 +14,13 @@ from core.workload import WorkloadBase
 from exceptions import OSDAPIError
 from literals import (
     HEALTH_OPENSEARCH_STATUS_URL,
+    MSG_STATUS_DB_DOWN,
+    MSG_STATUS_DB_MISSING,
     MSG_STATUS_ERROR,
     MSG_STATUS_UNAVAIL,
     MSG_STATUS_UNHEALTHY,
     MSG_STATUS_UNKNOWN,
     MSG_STATUS_WORKLOAD_DOWN,
-    OPENSEARCH_CA_FILE,
 )
 from managers.api import APIManager
 
@@ -59,22 +59,11 @@ class HealthManager:
             return False, MSG_STATUS_ERROR
         return True, MSG_STATUS_UNKNOWN
 
-    def healthy(self) -> tuple[bool, str]:
-        """Unit-level global healthcheck."""
-        if not self.workload.alive:
-            return False, MSG_STATUS_WORKLOAD_DOWN
-
-        return self.status_ok()
-
-    def opensearch_ok(self) -> bool:
+    def opensearch_ok(self) -> tuple[bool, str]:
         """Verify if associated Opensearch service is up and running."""
 
         if not self.state.opensearch_server or not self.state.opensearch_server.tls_ca:
-            return False
-
-        if not os.path.isfile(OPENSEARCH_CA_FILE):
-            with open(OPENSEARCH_CA_FILE, "w") as text_file:
-                text_file.write(self.state.opensearch_server.tls_ca)
+            return False, MSG_STATUS_DB_MISSING
 
         for endpoint in self.state.opensearch_server.endpoints:
             full_url = f"https://{endpoint}/{HEALTH_OPENSEARCH_STATUS_URL}"
@@ -82,7 +71,7 @@ class HealthManager:
             request_kwargs = {
                 "url": full_url,
                 "method": "GET",
-                "verify": OPENSEARCH_CA_FILE,
+                "verify": self.workload.paths.opensearch_ca,
                 "headers": None,
             }
 
@@ -103,6 +92,17 @@ class HealthManager:
                 except requests.exceptions.JSONDecodeError:
                     continue
                 if status.get("status") == "green":
-                    return True
+                    return True, ""
 
-        return False
+        return False, MSG_STATUS_DB_DOWN
+
+    def app_healthy(self) -> tuple[bool, str]:
+        """Unit-level global healthcheck."""
+        return self.opensearch_ok()
+
+    def unit_healthy(self) -> tuple[bool, str]:
+        """Unit-level global healthcheck."""
+        if not self.workload.alive:
+            return False, MSG_STATUS_WORKLOAD_DOWN
+
+        return self.status_ok()

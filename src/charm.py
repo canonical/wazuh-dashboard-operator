@@ -12,7 +12,7 @@ from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops.charm import CharmBase, InstallEvent, SecretChangedEvent
 from ops.framework import EventBase
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
+from ops.model import BlockedStatus, MaintenanceStatus, WaitingStatus
 
 from core.cluster import ClusterState
 from events.requirer import RequirerEvents
@@ -24,14 +24,14 @@ from literals import (
     COS_PORT,
     COS_RELATION_NAME,
     DEPENDENCIES,
-    MSG_DB_DOWN,
-    MSG_DB_MISSING,
+    MSG_APP_STATUS,
     MSG_INCOMPATIBLE_UPGRADE,
     MSG_INSTALLING,
     MSG_STARTING,
     MSG_STARTING_SERVER,
-    MSG_STATUS,
+    MSG_STATUS_DB_MISSING,
     MSG_TLS_CONFIG,
+    MSG_UNIT_STATUS,
     MSG_WAITING_FOR_PEER,
     PEER,
     RESTART_TIMEOUT,
@@ -138,9 +138,8 @@ class OpensearchDasboardsCharm(CharmBase):
 
         outdated_status = []
 
-        # not all methods called
+        # 1. Block until peer relation is set
         if not self.state.peer_relation:
-            # Block until peer relation is set
             self.unit.status = WaitingStatus(MSG_WAITING_FOR_PEER)
             return
         else:
@@ -154,24 +153,24 @@ class OpensearchDasboardsCharm(CharmBase):
         if getattr(event, "departing_unit", None) == self.unit:
             return
 
-        # Restart on config change
+        # 2. Restart on config change
         if (
             self.config_manager.config_changed()
             and self.state.unit_server.started
-            # and self.upgrade_events.idle
+            and self.upgrade_events.idle
         ):
             self.on[f"{self.restart.name}"].acquire_lock.emit()
             # No point in setting any status -- would be wiped out by rollingops after the restert
             return
 
-        # Maintain the correct app status
+        # 3. Maintain the correct app status
         # No further actions below but only status settings
 
         # Block until Opensearch is available and it's a compatible version
         if self.state.opensearch_server:
-            outdated_status.append(MSG_DB_MISSING)
+            outdated_status.append(MSG_STATUS_DB_MISSING)
         else:
-            set_global_status(self, BlockedStatus(MSG_DB_MISSING))
+            set_global_status(self, BlockedStatus(MSG_STATUS_DB_MISSING))
             return
 
         if self.upgrade_manager.version_compatible():
@@ -193,23 +192,26 @@ class OpensearchDasboardsCharm(CharmBase):
             outdated_status.append(MSG_TLS_CONFIG)
 
         # Regular health-check
-        if self.health_manager.opensearch_ok():
-            outdated_status.append(MSG_DB_DOWN)
-        else:
-            set_global_status(self, BlockedStatus(MSG_DB_DOWN))
-            return
-
-        healthy, msg = self.health_manager.healthy()
-
-        if not healthy:
-            self.unit.status = BlockedStatus(msg)
-            return
-
-        if msg:
-            self.unit.status = WaitingStatus(msg)
+        # Checks that may modify the 'app' state as well
+        app_healthy, app_msg = self.health_manager.app_healthy()
+        if not app_healthy:
+            set_global_status(self, BlockedStatus(app_msg))
             return
         else:
-            outdated_status += MSG_STATUS
+            outdated_status += MSG_APP_STATUS
+
+        # Checks purely on unit level
+        unit_healthy, unit_msg = self.health_manager.unit_healthy()
+
+        if not unit_healthy:
+            self.unit.status = BlockedStatus(unit_msg)
+            return
+
+        if unit_msg:
+            self.unit.status = WaitingStatus(unit_msg)
+            return
+        else:
+            outdated_status += MSG_UNIT_STATUS
 
         # Clear all possible irrelevant statuses
         for status in outdated_status:
@@ -297,7 +299,7 @@ class OpensearchDasboardsCharm(CharmBase):
         clear_status(self.unit, MSG_STARTING_SERVER)
 
         if self.unit.is_leader() and not self.state.opensearch_server:
-            self.app.status = BlockedStatus(MSG_DB_MISSING)
+            self.app.status = BlockedStatus(MSG_STATUS_DB_MISSING)
 
     def _scrape_config(self) -> list[dict]:
         """Generates the scrape config as needed."""

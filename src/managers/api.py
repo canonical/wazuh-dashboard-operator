@@ -2,7 +2,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Manager for for handling API access."""
+"""Manager for for handling OSD REST API access."""
 import json
 import logging
 from typing import TYPE_CHECKING, Any
@@ -28,7 +28,7 @@ HEADERS = {
 
 
 class APIManager:
-    """Manager for for handling configuration building + writing."""
+    """Manager for for handling OSD REST API access."""
 
     def __init__(
         self,
