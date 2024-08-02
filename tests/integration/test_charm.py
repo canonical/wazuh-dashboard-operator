@@ -45,7 +45,7 @@ COS_AGENT_RELATION_NAME = "cos-agent"
 DB_CLIENT_APP_NAME = "application"
 
 NUM_UNITS_APP = 3
-NUM_UNITS_DB = 2
+NUM_UNITS_DB = 3
 
 
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])

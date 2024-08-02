@@ -33,7 +33,7 @@ OPENSEARCH_CONFIG = {
 TLS_CERTIFICATES_APP_NAME = "self-signed-certificates"
 
 NUM_UNITS_APP = 3
-NUM_UNITS_DB = 2
+NUM_UNITS_DB = 3
 
 
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
