@@ -5,6 +5,7 @@
 """Manager for handling service health."""
 
 import logging
+import os
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
@@ -62,7 +63,10 @@ class HealthManager:
     def opensearch_ok(self) -> tuple[bool, str]:
         """Verify if associated Opensearch service is up and running."""
 
-        if not self.state.opensearch_server or not self.state.opensearch_server.tls_ca:
+        if not self.state.opensearch_server or not (
+            os.path.exists(self.workload.paths.opensearch_ca)
+            and os.path.getsize(self.workload.paths.opensearch_ca) > 0
+        ):
             return False, MSG_STATUS_DB_MISSING
 
         for endpoint in self.state.opensearch_server.endpoints:

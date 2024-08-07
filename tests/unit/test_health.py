@@ -4,6 +4,7 @@
 
 import logging
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import responses
@@ -173,7 +174,8 @@ def test_health_opensearch_not_ok(harness, status):
         json=opensearch_status,
     )
 
-    assert (False, MSG_STATUS_DB_DOWN) == harness.charm.health_manager.opensearch_ok()
+    with patch("os.path.exists", return_value=True), patch("os.path.getsize", return_value=1):
+        assert (False, MSG_STATUS_DB_DOWN) == harness.charm.health_manager.opensearch_ok()
 
 
 @responses.activate
@@ -185,4 +187,5 @@ def test_health_opensearch_unavailable(harness):
         status=503,
     )
 
-    assert (False, MSG_STATUS_DB_DOWN) == harness.charm.health_manager.opensearch_ok()
+    with patch("os.path.exists", return_value=True), patch("os.path.getsize", return_value=1):
+        assert (False, MSG_STATUS_DB_DOWN) == harness.charm.health_manager.opensearch_ok()

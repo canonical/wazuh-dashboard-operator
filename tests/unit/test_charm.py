@@ -416,6 +416,8 @@ def test_service_unhealthy(harness):
         patch("workload.ODWorkload.start", return_value=True),
         patch("managers.config.ConfigManager.config_changed", return_value=False),
         patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("os.path.exists", return_value=True),
+        patch("os.path.getsize", return_value=1),
     ):
         harness.charm.init_server()
         harness.charm.on.update_status.emit()
@@ -454,6 +456,8 @@ def test_service_error(harness):
         patch("workload.ODWorkload.start", return_value=True),
         patch("managers.config.ConfigManager.config_changed", return_value=False),
         patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("os.path.exists", return_value=True),
+        patch("os.path.getsize", return_value=1),
     ):
         harness.charm.init_server()
         harness.charm.on.update_status.emit()
@@ -492,6 +496,8 @@ def test_service_available(harness):
         patch("workload.ODWorkload.start", return_value=True),
         patch("managers.config.ConfigManager.config_changed", return_value=False),
         patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("os.path.exists", return_value=True),
+        patch("os.path.getsize", return_value=1),
     ):
         harness.charm.init_server()
         harness.charm.on.update_status.emit()
