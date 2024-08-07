@@ -295,7 +295,7 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
 
     logger.info("Checking if Dashboards is available again")
     opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
-    assert access_all_dashboards(ops_test, opensearch_relation, https=True)
+    assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
 
     logger.info("Removing an opensearch unit so Opensearch gets in a 'red' state")
     await ops_test.model.applications[APP_NAME].destroy_unit(
@@ -307,6 +307,15 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     assert await check_full_status(
         ops_test, status="blocked", status_msg="Opensearch service is (partially or fully) down"
     )
+
+
+@pytest.mark.group(1)
+@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-5073")
+async def test_restore_opensearch_restores_osd(ops_test: OpsTest):
+    """This test shouldn't be separate but a native continuation of the previous one.
+
+    Should be only split as long as it's not enabled.
+    """
 
     logger.info("Destroying and restoring the Opensearch cluster")
     await destroy_cluster(ops_test, app=OPENSEARCH_APP_NAME)
@@ -323,4 +332,4 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
 
     logger.info("Checking if Dashboards is available again")
     opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
-    assert access_all_dashboards(ops_test, opensearch_relation, https=True)
+    assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
