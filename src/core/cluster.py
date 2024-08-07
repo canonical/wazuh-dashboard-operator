@@ -59,10 +59,7 @@ class ClusterState(Object):
     @property
     def opensearch_relation(self) -> Relation | None:
         """The Opensearch Server relation."""
-        try:
-            return self.model.get_relation(OPENSEARCH_REL_NAME)
-        except KeyError:
-            return None
+        return self.model.get_relation(OPENSEARCH_REL_NAME)
 
     @property
     def tls_relation(self) -> Relation | None:

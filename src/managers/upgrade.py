@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class UpgradeManager:
-    """Manager for building necessary files for Java TLS auth."""
+    """Logic relating to Rolling Upgrades."""
 
     def __init__(
         self,
@@ -34,13 +34,10 @@ class UpgradeManager:
         if not self.state.opensearch_server:
             return True
 
-        srv_version_actual = self.state.opensearch_server.version
-        if not srv_version_actual:
+        if not (srv_version_actual := self.state.opensearch_server.version):
             return False
 
         srv_version_required = self.dependency_model.osd_upstream.dependencies["opensearch"]
         major_actual, minor_actual = srv_version_actual.split(".")[:2]
         major_required, minor_required = srv_version_required.split(".")[:2]
-        if major_actual > major_required or minor_actual > minor_required:
-            return False
-        return True
+        return major_actual <= major_required and minor_actual <= minor_required
