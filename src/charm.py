@@ -7,7 +7,6 @@
 import logging
 import time
 
-# from events.provider import ProviderEvents
 from charms.grafana_agent.v0.cos_agent import COSAgentProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops.charm import CharmBase, InstallEvent, SecretChangedEvent
@@ -19,25 +18,31 @@ from core.cluster import ClusterState
 from events.requirer import RequirerEvents
 from events.tls import TLSEvents
 from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
-from helpers import clear_status
+from helpers import clear_global_status, clear_status, set_global_status
 from literals import (
     CHARM_KEY,
     COS_PORT,
     COS_RELATION_NAME,
     DEPENDENCIES,
-    MSG_DB_MISSING,
+    MSG_APP_STATUS,
+    MSG_INCOMPATIBLE_UPGRADE,
     MSG_INSTALLING,
     MSG_STARTING,
     MSG_STARTING_SERVER,
+    MSG_STATUS_DB_MISSING,
     MSG_TLS_CONFIG,
+    MSG_UNIT_STATUS,
     MSG_WAITING_FOR_PEER,
     PEER,
     RESTART_TIMEOUT,
     SERVER_PORT,
     SUBSTRATE,
 )
+from managers.api import APIManager
 from managers.config import ConfigManager
+from managers.health import HealthManager
 from managers.tls import TLSManager
+from managers.upgrade import UpgradeManager
 from workload import ODWorkload
 
 logger = logging.getLogger(__name__)
@@ -56,12 +61,8 @@ class OpensearchDasboardsCharm(CharmBase):
 
         self.tls_events = TLSEvents(self)
         self.requirer_events = RequirerEvents(self)
-        self.upgrade_events = ODUpgradeEvents(
-            self,
-            dependency_model=OpensearchDashboardsDependencyModel(
-                **DEPENDENCIES  # pyright: ignore[reportGeneralTypeIssues]
-            ),
-        )
+        dependency_model = OpensearchDashboardsDependencyModel(**DEPENDENCIES)
+        self.upgrade_events = ODUpgradeEvents(self, dependency_model=dependency_model)
 
         # --- MANAGERS ---
 
@@ -70,6 +71,18 @@ class OpensearchDasboardsCharm(CharmBase):
         )
         self.config_manager = ConfigManager(
             state=self.state, workload=self.workload, substrate=SUBSTRATE, config=self.config
+        )
+        self.api_manager = APIManager(
+            state=self.state, workload=self.workload, substrate=SUBSTRATE
+        )
+        self.health_manager = HealthManager(
+            state=self.state, workload=self.workload, substrate=SUBSTRATE
+        )
+        self.upgrade_manager = UpgradeManager(
+            state=self.state,
+            workload=self.workload,
+            substrate=SUBSTRATE,
+            dependency_model=dependency_model,
         )
 
         # --- LIB EVENT HANDLERS ---
@@ -123,9 +136,12 @@ class OpensearchDasboardsCharm(CharmBase):
     def reconcile(self, event: EventBase) -> None:
         """Generic handler for all 'something changed, update' events across all relations."""
 
-        # not all methods called
+        # 1. Block until peer relation is set
         if not self.state.peer_relation:
+            self.unit.status = WaitingStatus(MSG_WAITING_FOR_PEER)
             return
+
+        outdated_status = [MSG_WAITING_FOR_PEER]
 
         # attempt startup of server
         if not self.state.unit_server.started:
@@ -135,11 +151,31 @@ class OpensearchDasboardsCharm(CharmBase):
         if getattr(event, "departing_unit", None) == self.unit:
             return
 
-        outdated_status = []
-        # Maintain the correct app status
-        if self.unit.is_leader():
-            if self.state.opensearch_server:
-                outdated_status.append(MSG_DB_MISSING)
+        # 2. Restart on config change
+        if (
+            self.config_manager.config_changed()
+            and self.state.unit_server.started
+            and self.upgrade_events.idle
+        ):
+            self.on[f"{self.restart.name}"].acquire_lock.emit()
+            # No point in setting any status -- would be wiped out by rollingops after the restert
+            return
+
+        # 3. Maintain the correct app status
+        # No further actions below but only status settings
+
+        # Block until Opensearch is available and it's a compatible version
+        if self.state.opensearch_server:
+            outdated_status.append(MSG_STATUS_DB_MISSING)
+        else:
+            set_global_status(self, BlockedStatus(MSG_STATUS_DB_MISSING))
+            return
+
+        if self.upgrade_manager.version_compatible():
+            outdated_status.append(MSG_INCOMPATIBLE_UPGRADE)
+        else:
+            set_global_status(self, BlockedStatus(MSG_INCOMPATIBLE_UPGRADE))
+            return
 
         # Maintain the correct unit status
 
@@ -149,18 +185,35 @@ class OpensearchDasboardsCharm(CharmBase):
                 outdated_status.append(MSG_TLS_CONFIG)
             else:
                 self.unit.status = MaintenanceStatus(MSG_TLS_CONFIG)
+                return
+        else:
+            outdated_status.append(MSG_TLS_CONFIG)
 
-        # Restart on config change
-        if (
-            self.config_manager.config_changed()
-            and self.state.unit_server.started
-            # and self.upgrade_events.idle
-        ):
-            self.on[f"{self.restart.name}"].acquire_lock.emit()
+        # Regular health-check
+        # Checks that may modify the 'app' state as well
+        app_healthy, app_msg = self.health_manager.app_healthy()
+        if not app_healthy:
+            set_global_status(self, BlockedStatus(app_msg))
+            return
+        else:
+            outdated_status += MSG_APP_STATUS
+
+        # Checks purely on unit level
+        unit_healthy, unit_msg = self.health_manager.unit_healthy()
+
+        if not unit_healthy:
+            self.unit.status = BlockedStatus(unit_msg)
+            return
+
+        if unit_msg:
+            self.unit.status = WaitingStatus(unit_msg)
+            return
+        else:
+            outdated_status += MSG_UNIT_STATUS
 
         # Clear all possible irrelevant statuses
         for status in outdated_status:
-            clear_status(self.unit, status)
+            clear_global_status(self, status)
 
     def _on_secret_changed(self, event: SecretChangedEvent):
         """Reconfigure services on a secret changed event."""
@@ -217,6 +270,7 @@ class OpensearchDasboardsCharm(CharmBase):
             time.sleep(5)
 
         clear_status(self.unit, [MSG_STARTING, MSG_STARTING_SERVER])
+        self.on.update_status.emit()
 
     # --- CONVENIENCE METHODS ---
 
@@ -229,6 +283,7 @@ class OpensearchDasboardsCharm(CharmBase):
         self.config_manager.set_dashboard_properties()
 
         logger.debug("starting Opensearch Dashboards service")
+
         self.workload.start()
 
         # open port
@@ -242,7 +297,7 @@ class OpensearchDasboardsCharm(CharmBase):
         clear_status(self.unit, MSG_STARTING_SERVER)
 
         if self.unit.is_leader() and not self.state.opensearch_server:
-            self.app.status = BlockedStatus(MSG_DB_MISSING)
+            self.app.status = BlockedStatus(MSG_STATUS_DB_MISSING)
 
     def _scrape_config(self) -> list[dict]:
         """Generates the scrape config as needed."""

@@ -16,9 +16,12 @@ from .helpers import (
     DASHBOARD_QUERY_PARAMS,
     access_all_dashboards,
     access_all_prometheus_exporters,
+    all_dashboards_unavailable,
+    check_full_status,
     client_run_all_dashboards_request,
     client_run_db_request,
     count_lines_with,
+    destroy_cluster,
     get_address,
     get_relations,
     get_unit_relation_data,
@@ -61,8 +64,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
     await ops_test.model.deploy(charm, application_name=APP_NAME, num_units=NUM_UNITS_APP)
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
-    # Pinning down opensearch revision to the last 2.10 one
-    # NOTE: can't access 2/stable from the tests, only 'edge' available
 
     config = {"ca-common-name": "CN_CA"}
     await asyncio.gather(
@@ -261,3 +262,77 @@ async def test_log_level_change(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME], status="active", timeout=1000, idle_period=30
     )
+
+
+@pytest.mark.group(1)
+@pytest.mark.abort_on_fail
+async def test_dashboard_status_changes(ops_test: OpsTest):
+    """Test HTTPS access to each dashboard unit."""
+
+    logger.info("Breaking opensearch connection")
+    await ops_test.juju("remove-relation", "opensearch", "opensearch-dashboards")
+    await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="active", timeout=1000)
+
+    async with ops_test.fast_forward("30s"):
+        await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked")
+
+    assert await check_full_status(
+        ops_test, status="blocked", status_msg="Opensearch connection is missing"
+    )
+
+    logger.info("Checking if Dashboards have become unavailable")
+    assert all_dashboards_unavailable(ops_test, https=True)
+
+    logger.info("Restoring Opensearch connection")
+    await ops_test.model.integrate(APP_NAME, OPENSEARCH_APP_NAME)
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, OPENSEARCH_APP_NAME], status="active", timeout=1000
+    )
+    assert ops_test.model.applications[APP_NAME].status == "active"
+    assert all(
+        unit.workload_status == "active" for unit in ops_test.model.applications[APP_NAME].units
+    )
+
+    logger.info("Checking if Dashboards is available again")
+    opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
+    assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
+
+    logger.info("Removing an opensearch unit so Opensearch gets in a 'red' state")
+    await ops_test.model.applications[APP_NAME].destroy_unit(
+        ops_test.model.applications[OPENSEARCH_APP_NAME].units[1].name
+    )
+    await ops_test.model.applications[APP_NAME].destroy_unit(
+        ops_test.model.applications[OPENSEARCH_APP_NAME].units[0].name
+    )
+    async with ops_test.fast_forward("30s"):
+        await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked")
+
+    assert await check_full_status(
+        ops_test, status="blocked", status_msg="Opensearch service is (partially or fully) down"
+    )
+
+
+@pytest.mark.group(1)
+@pytest.mark.skip(reason="https://warthogs.atlassian.net/browse/DPE-5073")
+async def test_restore_opensearch_restores_osd(ops_test: OpsTest):
+    """This test shouldn't be separate but a native continuation of the previous one.
+
+    Should be only split as long as it's not enabled.
+    """
+
+    logger.info("Destroying and restoring the Opensearch cluster")
+    await destroy_cluster(ops_test, app=OPENSEARCH_APP_NAME)
+
+    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB),
+    await ops_test.model.integrate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
+    async with ops_test.fast_forward("30s"):
+        await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="blocked")
+
+    await ops_test.model.integrate(APP_NAME, OPENSEARCH_APP_NAME)
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, OPENSEARCH_APP_NAME], status="active", timeout=1000
+    )
+
+    logger.info("Checking if Dashboards is available again")
+    opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
+    assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)

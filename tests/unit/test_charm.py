@@ -4,23 +4,31 @@
 
 import logging
 from pathlib import Path
-from unittest.mock import PropertyMock, patch
+from unittest.mock import patch
 
 import pytest
+import responses
 import yaml
 from ops.framework import EventBase
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 from ops.testing import Harness
 
-from charm import OpensearchDasboardsCharm
+from charm import OpensearchDasboardsCharm, OpensearchDashboardsDependencyModel
 from helpers import clear_status
 from literals import CHARM_KEY, CONTAINER, OPENSEARCH_REL_NAME, PEER, SUBSTRATE
+from src.literals import (
+    MSG_INCOMPATIBLE_UPGRADE,
+    MSG_STATUS_ERROR,
+    MSG_STATUS_UNHEALTHY,
+)
 
 logger = logging.getLogger(__name__)
 
 CONFIG = str(yaml.safe_load(Path("./config.yaml").read_text()))
 ACTIONS = str(yaml.safe_load(Path("./actions.yaml").read_text()))
 METADATA = str(yaml.safe_load(Path("./metadata.yaml").read_text()))
+
+OPENSEARCH_APP_NAME = "opensearch"
 
 
 @pytest.fixture
@@ -33,9 +41,42 @@ def harness():
     harness.add_relation("restart", CHARM_KEY)
     upgrade_rel_id = harness.add_relation("upgrade", CHARM_KEY)
     harness.update_relation_data(upgrade_rel_id, f"{CHARM_KEY}/0", {"state": "idle"})
-    harness._update_config({"log_level": "debug"})
+    harness._update_config({"log_level": "INFO"})
     harness.begin()
+    harness.charm.upgrade_events.dependency_model = OpensearchDashboardsDependencyModel(
+        **{
+            "osd_upstream": {
+                "dependencies": {"opensearch": "2.12"},
+                "name": "opensearch-dashboards",
+                "upgrade_supported": ">=2",
+                "version": "2.12",
+            },
+        }
+    )
     return harness
+
+
+def set_healthy_opensearch_connection(harness):
+    """Set up a functional opensearch mock."""
+    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
+    harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+    harness.update_relation_data(
+        opensearch_rel_id,
+        "opensearch",
+        {"endpoints": "111.222.333.444:9200,555.666.777.888:9200"},
+    )
+    harness.update_relation_data(opensearch_rel_id, "opensearch", {"tls-ca": "<cert_data_here>"})
+    harness.update_relation_data(
+        opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "2.12.1"}
+    )
+
+    responses.add(
+        method="GET",
+        url="https://111.222.333.444:9200/_cluster/health",
+        status=200,
+        json={"status": "green"},
+    )
+    return opensearch_rel_id
 
 
 def test_clear_status(harness):
@@ -226,6 +267,7 @@ def test_restart_restarts_with_sleep(harness):
 
     with (
         patch("workload.ODWorkload.restart") as patched_restart,
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
         patch("time.sleep") as patched_sleep,
     ):
         harness.charm._restart(EventBase(harness.charm))
@@ -289,6 +331,219 @@ def test_config_changed_applies_relation_data(harness):
         harness.charm.on.config_changed.emit()
 
         patched.assert_called_once()
+
+
+# Setting the correct status
+
+
+def test_workload_down_blocked_status(harness):
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.set_leader(True)
+
+    with (
+        patch("workload.ODWorkload.alive", return_value=False),
+        patch("workload.ODWorkload.write"),
+        patch("workload.ODWorkload.start", return_value=True),
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+    ):
+        harness.charm.on.update_status.emit()
+
+        assert isinstance(harness.model.unit.status, BlockedStatus)
+        assert isinstance(harness.model.app.status, BlockedStatus)
+
+
+@responses.activate
+def test_service_unavailable_blocked_status(harness):
+    responses.add(
+        method="GET",
+        url=f"{harness.charm.state.unit_server.url}/api/status",
+        status=503,
+        body="OpenSearch Dashboards server is not ready yet",
+    )
+
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
+        harness.set_leader(True)
+
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
+        harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+
+    with (
+        patch("workload.ODWorkload.alive", return_value=True),
+        patch("workload.ODWorkload.write"),
+        patch("workload.ODWorkload.start", return_value=True),
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+    ):
+        harness.charm.init_server()
+        harness.charm.on.update_status.emit()
+
+        assert isinstance(harness.model.unit.status, BlockedStatus)
+
+
+@responses.activate
+def test_service_unhealthy(harness):
+    expected_response = {
+        "status": {
+            "overall": {
+                "state": "yellow",
+            },
+        }
+    }
+
+    responses.add(
+        method="GET",
+        url=f"{harness.charm.state.unit_server.url}/api/status",
+        status=200,
+        json=expected_response,
+    )
+
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
+        harness.set_leader(True)
+        set_healthy_opensearch_connection(harness)
+
+    with (
+        patch("workload.ODWorkload.alive", return_value=True),
+        patch("workload.ODWorkload.write"),
+        patch("workload.ODWorkload.start", return_value=True),
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("os.path.exists", return_value=True),
+        patch("os.path.getsize", return_value=1),
+    ):
+        harness.charm.init_server()
+        harness.charm.on.update_status.emit()
+
+        assert isinstance(harness.model.unit.status, WaitingStatus)
+        assert harness.model.unit.status.message == MSG_STATUS_UNHEALTHY
+
+
+@responses.activate
+def test_service_error(harness):
+    expected_response = {
+        "status": {
+            "overall": {
+                "state": "red",
+            },
+        }
+    }
+
+    responses.add(
+        method="GET",
+        url=f"{harness.charm.state.unit_server.url}/api/status",
+        status=200,
+        json=expected_response,
+    )
+
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
+        harness.set_leader(True)
+        set_healthy_opensearch_connection(harness)
+
+    with (
+        patch("workload.ODWorkload.alive", return_value=True),
+        patch("workload.ODWorkload.write"),
+        patch("workload.ODWorkload.start", return_value=True),
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("os.path.exists", return_value=True),
+        patch("os.path.getsize", return_value=1),
+    ):
+        harness.charm.init_server()
+        harness.charm.on.update_status.emit()
+
+        assert isinstance(harness.model.unit.status, BlockedStatus)
+        assert harness.model.unit.status.message == MSG_STATUS_ERROR
+
+
+@responses.activate
+def test_service_available(harness):
+    expected_response = {
+        "status": {
+            "overall": {
+                "state": "green",
+            },
+        }
+    }
+
+    responses.add(
+        method="GET",
+        url=f"{harness.charm.state.unit_server.url}/api/status",
+        status=200,
+        json=expected_response,
+    )
+
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
+        harness.set_leader(True)
+        set_healthy_opensearch_connection(harness)
+
+    with (
+        patch("workload.ODWorkload.alive", return_value=True),
+        patch("workload.ODWorkload.write"),
+        patch("workload.ODWorkload.start", return_value=True),
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("os.path.exists", return_value=True),
+        patch("os.path.getsize", return_value=1),
+    ):
+        harness.charm.init_server()
+        harness.charm.on.update_status.emit()
+
+        assert isinstance(harness.model.unit.status, ActiveStatus)
+
+
+@responses.activate
+def test_wrong_opensearch_version(harness):
+    expected_response = {
+        "status": {
+            "overall": {
+                "state": "green",
+            },
+        }
+    }
+
+    responses.add(
+        method="GET",
+        url=f"{harness.charm.state.unit_server.url}/api/status",
+        status=200,
+        json=expected_response,
+    )
+
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
+        harness.set_leader(True)
+        opensearch_rel_id = set_healthy_opensearch_connection(harness)
+        harness.update_relation_data(
+            opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "20.12.1"}
+        )
+
+    with (
+        patch("workload.ODWorkload.alive", return_value=True),
+        patch("workload.ODWorkload.write"),
+        patch("workload.ODWorkload.start", return_value=True),
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+    ):
+        harness.charm.init_server()
+        harness.charm.on.update_status.emit()
+
+        assert isinstance(harness.model.unit.status, BlockedStatus)
+        assert harness.model.unit.status.message == MSG_INCOMPATIBLE_UPGRADE
 
 
 # def test_port_updates_if_tls(harness):

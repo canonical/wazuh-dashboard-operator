@@ -33,7 +33,9 @@ python = "^3.10"
 tenacity = "^8.4.2"
 pure-sasl = "^0.6.2"
 cosl = "^0.0.12"
-ops = "^2.13.0"
+pydantic = "^1.10.17"
+pyyaml = "^6.0.1"
+poetry-plugin-export = "^1.8.0"
 
 # TODO: clean any of the notes below and their deps.
 [tool.poetry.group.charm-libs.dependencies]
@@ -41,7 +43,7 @@ ops = "^2.13.0"
 ops = "^2.13.0"
 poetry-core = "^1.9.0"
 # tls_certificates_interface/v3/tls_certificates.py
-cryptography = "*"
+cryptography = "42.0.8"
 jsonschema = "*"
 # pinning to avoid: https://github.com/canonical/charmcraft/issues/1722
 # We should unpin it once we have rustc 1.76+ available at build time
@@ -78,12 +80,18 @@ pep8-naming = "^0.14.1"
 codespell = "^2.2.6"
 pyright = "^1.1.318"
 typing-extensions = "^4.9.0"
+requests = "^2.32.3"
+ops = "^2.13.0"
+
+[tool.poetry.group.unit]
+optional = true
 
 [tool.poetry.group.unit.dependencies]
 pytest = "^8.2.2"
 coverage = {extras = ["toml"], version = "^7.5.1"}
 pytest-mock = "^3.11.1"
 pyyaml = "^6.0.1"
+responses = "^0.25.3"
 
 [tool.poetry.group.integration.dependencies]
 pytest = "^8.2.2"

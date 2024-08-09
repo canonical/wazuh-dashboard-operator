@@ -32,7 +32,7 @@ class ClusterState(Object):
     """Collection of global cluster state for Framework/Object."""
 
     def __init__(self, charm: Framework | Object, substrate: SUBSTRATES):
-        super().__init__(parent=charm, key="charm_state")
+        super().__init__(parent=charm, key="osd_charm_state")
         self.substrate: SUBSTRATES = substrate
         self._servers_data = {}
 

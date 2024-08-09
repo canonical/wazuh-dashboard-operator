@@ -42,7 +42,7 @@ def harness():
             harness.charm.state.peer_relation.id, f"{CHARM_KEY}/0", {"hostname": "000.000.000"}
         )
 
-    harness.charm.upgrade_events.dependency_model = OpensearchDashboardsDependencyModel(
+    harness.charm.upgrade_manager.dependency_model = OpensearchDashboardsDependencyModel(
         **{
             "osd_upstream": {
                 "dependencies": {"opensearch": "2.12"},
@@ -70,13 +70,13 @@ def test_pre_upgrade_check_fails_if_workload_down(harness, mocker):
             harness.charm.unit.status = BlockedStatus(MSG_INCOMPATIBLE_UPGRADE)
 
 
-def test_post_upgrade_check_succeeds(harness, mocker):
+@pytest.mark.parametrize("version", [("2.1.1"), ("2.12.0"), ("2.12.1"), ("2.12")])
+def test_post_upgrade_check_succeeds(version, harness, mocker):
     """Verify success if no version mismatch"""
     opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, OPENSEARCH_APP_NAME)
-    harness.update_relation_data(
-        opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "2.12.1"}
-    )
+    harness.update_relation_data(opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": version})
     assert harness.charm.upgrade_events.post_upgrade_check() is None
+    assert harness.charm.upgrade_manager.version_compatible() is True
 
 
 def test_post_upgrade_check_fails_major(harness, mocker):
@@ -86,6 +86,7 @@ def test_post_upgrade_check_fails_major(harness, mocker):
             opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "3.1"}
         )
         assert harness.charm.upgrade_events.post_upgrade_check() is None
+        assert harness.charm.upgrade_manager.version_compatible() is False
         assert isinstance(harness.model.unit.status, BlockedStatus)
 
 
@@ -96,6 +97,7 @@ def test_post_upgrade_check_fails_minor(harness, mocker):
             opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "2.13.1"}
         )
         assert harness.charm.upgrade_events.post_upgrade_check() is None
+        assert harness.charm.upgrade_manager.version_compatible() is False
         assert isinstance(harness.model.unit.status, BlockedStatus)
 
 

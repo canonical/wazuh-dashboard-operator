@@ -4,7 +4,7 @@
 
 """Collection of global literals for the charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = "18"
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = "19"
 
 SUBSTRATE = "vm"
 CHARM_KEY = "opensearch-dashboards"
@@ -49,12 +49,31 @@ MSG_INSTALLING = "installing Opensearch Dashboards..."
 MSG_STARTING = "starting..."
 MSG_STARTING_SERVER = "starting Opensearch Dashboards server..."
 MSG_WAITING_FOR_PEER = "waiting for peer relation"
-MSG_DB_MISSING = "Opensearch connection is missing"
+MSG_STATUS_DB_MISSING = "Opensearch connection is missing"
+MSG_STATUS_DB_DOWN = "Opensearch service is (partially or fully) down"
 MSG_TLS_CONFIG = "Waiting for TLS to be fully configured..."
-MSG_INCOMPATIBLE_UPGRADE = "Incompatible upgrade, rollback required"
+MSG_INCOMPATIBLE_UPGRADE = "Incompatible Opensearch and Dashboards versions"
+
+MSG_STATUS_UNAVAIL = "Service unavailable"
+MSG_STATUS_UNHEALTHY = "Service is not in a green health state"
+MSG_STATUS_ERROR = "Service is an error state"
+MSG_STATUS_WORKLOAD_DOWN = "Workload is not alive"
+MSG_STATUS_UNKNOWN = "Workload status is not known"
+
+MSG_APP_STATUS = [
+    MSG_STATUS_DB_DOWN,
+]
+
+MSG_UNIT_STATUS = [
+    MSG_STATUS_UNAVAIL,
+    MSG_STATUS_UNHEALTHY,
+    MSG_STATUS_WORKLOAD_DOWN,
+    MSG_STATUS_UNKNOWN,
+]
 
 # COS
 
 COS_RELATION_NAME = "cos-agent"
-COS_USER = "monitor"
 COS_PORT = 9684
+
+HEALTH_OPENSEARCH_STATUS_URL = "_cluster/health"

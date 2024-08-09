@@ -47,7 +47,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     # Opensearch
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     # NOTE: can't access 2/stable from the tests, only 'edge' available
-    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=1)
+    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=2)
 
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config)

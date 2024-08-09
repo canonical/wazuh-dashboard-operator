@@ -43,11 +43,7 @@ class ODUpgradeEvents(DataUpgrade):
 
     def post_upgrade_check(self) -> None:
         """Runs necessary checks validating the unit is in a healthy state after upgrade."""
-        srv_version_actual = self.charm.state.opensearch_server.version
-        srv_version_required = self.dependency_model.osd_upstream.dependencies["opensearch"]
-        major_actual, minor_actual = srv_version_actual.split(".")[:2]
-        major_required, minor_required = srv_version_required.split(".")[:2]
-        if major_actual > major_required or minor_actual > minor_required:
+        if not self.charm.upgrade_manager.version_compatible():
             self.charm.unit.status = BlockedStatus(MSG_INCOMPATIBLE_UPGRADE)
             raise ClusterNotReadyError(
                 message="Post-upgrade check failed and cannot safely upgrade",
