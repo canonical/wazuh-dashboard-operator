@@ -299,6 +299,9 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
 
     logger.info("Removing an opensearch unit so Opensearch gets in a 'red' state")
     await ops_test.model.applications[APP_NAME].destroy_unit(
+        ops_test.model.applications[OPENSEARCH_APP_NAME].units[1].name
+    )
+    await ops_test.model.applications[APP_NAME].destroy_unit(
         ops_test.model.applications[OPENSEARCH_APP_NAME].units[0].name
     )
     async with ops_test.fast_forward("30s"):
