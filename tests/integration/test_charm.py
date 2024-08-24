@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 
 import pytest
+import requests
 import yaml
 from pytest_operator.plugin import OpsTest
 
@@ -128,28 +129,33 @@ async def test_dashboard_access_https(ops_test: OpsTest):
     assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
     assert await access_all_prometheus_exporters(ops_test)
 
-    # Breaking the relation shouldn't impact service availabilty
+    # Breaking the relation shouldn't impact service availability
     # A new certificate is requested when the relation is joined again
-    await ops_test.juju("remove-relation", "opensearch", "opensearch-dashboards")
+    await ops_test.juju("remove-relation", APP_NAME, TLS_CERTIFICATES_APP_NAME)
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
     )
+
+    # Event thought the TLS connection is not there, we do NOT switch back to HTTP
+    with pytest.raises(requests.exceptions.ConnectionError):
+        await access_all_dashboards(ops_test, opensearch_relation.id)
+
+    # Instead, HTTPS works uninterrupted
     assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
-    host_cert = await get_file_contents(
-        ops_test, "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/server.pem"
+
+    server_cert = (
+        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/server.pem"
     )
+    unit = ops_test.model.applications[APP_NAME].units[0]
+    host_cert = get_file_contents(ops_test, unit, server_cert)
 
     # Restore relation for further tests
     await ops_test.model.integrate(APP_NAME, TLS_CERTIFICATES_APP_NAME)
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
     )
-    same_host_cert = await get_file_contents(
-        ops_test, "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/server.pem"
-    )
-    assert host_cert == same_host_cert
-    # OR THIS IS WHAT WE WANT
-    # assert host_cert != same_host_cert
+    new_host_cert = get_file_contents(ops_test, unit, server_cert)
+    assert host_cert != new_host_cert
 
 
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])

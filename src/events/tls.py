@@ -14,7 +14,7 @@ from charms.tls_certificates_interface.v3.tls_certificates import (
     generate_csr,
     generate_private_key,
 )
-from ops.charm import ActionEvent, RelationJoinedEvent
+from ops.charm import ActionEvent, RelationCreatedEvent
 from ops.framework import EventBase, Object
 
 from literals import CERTS_REL_NAME
@@ -34,7 +34,8 @@ class TLSEvents(Object):
         self.certificates = TLSCertificatesRequiresV3(self.charm, CERTS_REL_NAME)
 
         self.framework.observe(
-            getattr(self.charm.on, "certificates_relation_joined"), self._on_certs_relation_joined
+            getattr(self.charm.on, "certificates_relation_created"),
+            self._on_certs_relation_created,
         )
         self.framework.observe(
             getattr(self.certificates.on, "certificate_available"), self._on_certificate_available
@@ -59,9 +60,8 @@ class TLSEvents(Object):
                 {"private-key": generate_private_key().decode("utf-8")}
             )
 
-        if self.charm.state.unit_server.tls and self.charm.tls_manager.certificate_valid():
-            return
-            # OR SHOULD WE REMOVE (incl. REVOKE) AND DELETE OLD FILES (i.e. run self._remove_certificates())
+        if self.charm.state.unit_server.tls:
+            self._remove_certificates()
 
         logger.debug(
             "Requesting certificate for: "
@@ -91,8 +91,8 @@ class TLSEvents(Object):
         # remove all existing keystores from the unit so we don't preserve certs
         self.charm.tls_manager.remove_cert_files()
 
-    def _on_certs_relation_joined(self, event: RelationJoinedEvent) -> None:
-        """Handler for `certificates_relation_joined` event."""
+    def _on_certs_relation_created(self, event: RelationCreatedEvent) -> None:
+        """Handler for `certificates_relation_created` event."""
         # generate unit private key if not already created by action
         self._request_certificates()
 
@@ -139,7 +139,7 @@ class TLSEvents(Object):
 
     def _on_certs_relation_broken(self, _) -> None:
         """Handler for `certificates_relation_broken` event."""
-        # In case we have valid certificats, we keep them for smooth service function
+        # In case we have valid certificates, we keep them for smooth service function
         if self.charm.state.unit_server.tls and not self.charm.tls_manager.certificate_valid():
             self._remove_certificates()
 
