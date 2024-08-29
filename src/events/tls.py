@@ -14,7 +14,7 @@ from charms.tls_certificates_interface.v3.tls_certificates import (
     generate_csr,
     generate_private_key,
 )
-from ops.charm import ActionEvent, RelationJoinedEvent
+from ops.charm import ActionEvent, RelationCreatedEvent
 from ops.framework import EventBase, Object
 
 from literals import CERTS_REL_NAME
@@ -34,7 +34,8 @@ class TLSEvents(Object):
         self.certificates = TLSCertificatesRequiresV3(self.charm, CERTS_REL_NAME)
 
         self.framework.observe(
-            getattr(self.charm.on, "certificates_relation_joined"), self._on_certs_relation_joined
+            getattr(self.charm.on, "certificates_relation_created"),
+            self._on_certs_relation_created,
         )
         self.framework.observe(
             getattr(self.certificates.on, "certificate_available"), self._on_certificate_available
@@ -52,24 +53,48 @@ class TLSEvents(Object):
 
         self.framework.observe(getattr(self.charm.on, "config_changed"), self._on_config_changed)
 
-    def _on_certs_relation_joined(self, event: RelationJoinedEvent) -> None:
-        """Handler for `certificates_relation_joined` event."""
-        # generate unit private key if not already created by action
+    def _request_certificates(self):
+        """Request brand-new certificates."""
         if not self.charm.state.unit_server.private_key:
             self.charm.state.unit_server.update(
                 {"private-key": generate_private_key().decode("utf-8")}
             )
 
+        if self.charm.state.unit_server.tls:
+            self._remove_certificates()
+
+        logger.debug(
+            "Requesting certificate for: "
+            f"host {self.charm.state.unit_server.host},"
+            f"with IP {self.charm.state.unit_server.sans.get('sans_ip', [])},"
+            f"DNS {self.charm.state.unit_server.sans.get('sans_dns', [])}"
+        )
+
         csr = generate_csr(
             private_key=self.charm.state.unit_server.private_key.encode("utf-8"),
-            subject=self.charm.state.unit_server.host,
+            subject=self.charm.state.unit_server.private_ip,
             sans_ip=self.charm.state.unit_server.sans.get("sans_ip", []),
             sans_dns=self.charm.state.unit_server.sans.get("sans_dns", []),
         )
 
         self.charm.state.unit_server.update({"csr": csr.decode("utf-8").strip()})
-
         self.certificates.request_certificate_creation(certificate_signing_request=csr)
+
+    def _remove_certificates(self):
+        """Cleanup any existing certificates."""
+        if self.charm.state.cluster.tls:
+            self.certificates.request_certificate_revocation(
+                self.charm.state.unit_server.csr.encode("utf-8")
+            )
+        self.charm.state.unit_server.update({"csr": "", "certificate": "", "ca-cert": ""})
+
+        # remove all existing keystores from the unit so we don't preserve certs
+        self.charm.tls_manager.remove_cert_files()
+
+    def _on_certs_relation_created(self, event: RelationCreatedEvent) -> None:
+        """Handler for `certificates_relation_created` event."""
+        # generate unit private key if not already created by action
+        self._request_certificates()
 
     def _on_certificate_available(self, event: CertificateAvailableEvent) -> None:
         """Handler for `certificates_available` event after provider updates signed certs."""
@@ -109,14 +134,14 @@ class TLSEvents(Object):
     def _on_config_changed(self, event: EventBase):
         """If system configuration (such as IP) changes, certs have to be re-issued."""
         if self.charm.state.unit_server.tls and not self.charm.tls_manager.certificate_valid():
-            self._on_certificate_expiring(event)
+            self._remove_certificates()
+            self._request_certificates()
 
     def _on_certs_relation_broken(self, _) -> None:
         """Handler for `certificates_relation_broken` event."""
-        self.charm.state.unit_server.update({"csr": "", "certificate": "", "ca-cert": ""})
-
-        # remove all existing keystores from the unit so we don't preserve certs
-        self.charm.tls_manager.remove_cert_files()
+        # In case we have valid certificates, we keep them for smooth service function
+        if self.charm.state.unit_server.tls and not self.charm.tls_manager.certificate_valid():
+            self._remove_certificates()
 
     def _set_tls_private_key(self, event: ActionEvent) -> None:
         """Handler for `set-tls-privat-key` event when user manually specifies private-keys for a unit."""

@@ -11,6 +11,7 @@ from ops.testing import Harness
 
 from charm import OpensearchDasboardsCharm
 from literals import CERTS_REL_NAME, CHARM_KEY, PEER
+from src.events.tls import TLSEvents
 
 CONFIG = str(yaml.safe_load(Path("./config.yaml").read_text()))
 ACTIONS = str(yaml.safe_load(Path("./actions.yaml").read_text()))
@@ -65,13 +66,15 @@ def test_certificates_available_fails_wrong_csr(harness):
 
 
 def test_certificates_available_succeeds(harness):
-    harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
+    with harness.hooks_disabled():
+        harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
 
     # implicitly tests restart call
     harness.add_relation(harness.charm.restart.name, "{CHARM_KEY}/0")
 
-    harness.update_relation_data(
-        harness.charm.state.peer_relation.id, f"{CHARM_KEY}/0", {"csr": "not-missing"}
+    harness.charm.unit.add_secret(
+        {"csr": "not-missing"},
+        label=f"{PEER}.opensearch-dashboards.unit",
     )
 
     # implicitly tests these method calls
@@ -99,7 +102,12 @@ def test_certificates_broken(harness):
         certs_rel_id = harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
 
         harness.charm.unit.add_secret(
-            {"csr": "not-missing", "certificate": "cert", "ca-cert": "exists"},
+            {
+                "csr": "not-missing",
+                "certificate": "cert",
+                "ca-cert": "exists",
+                "private-key": "key",
+            },
             label=f"{PEER}.opensearch-dashboards.unit",
         )
         harness.set_leader(True)
@@ -111,19 +119,21 @@ def test_certificates_broken(harness):
     # implicitly tests these method calls
     with (
         patch.multiple(
-            "managers.tls.TLSManager",
-            remove_cert_files=DEFAULT,
+            "managers.tls.TLSManager", remove_cert_files=DEFAULT, certificate_valid=lambda _: True
         ),
         patch("workload.ODWorkload.configure") as workload_config,
+        patch("events.tls.TLSCertificatesRequiresV3.request_certificate_revocation"),
     ):
 
         harness.remove_relation(certs_rel_id)
 
-        assert not harness.charm.state.unit_server.certificate
-        assert not harness.charm.state.unit_server.ca
-        assert not harness.charm.state.unit_server.csr
-        assert not harness.charm.state.unit_server.tls
+        # While the TLS relation is gone
         assert not harness.charm.state.cluster.tls
+        # ...we've still preserved certs locally
+        assert harness.charm.state.unit_server.certificate
+        assert harness.charm.state.unit_server.ca
+        assert harness.charm.state.unit_server.csr
+        assert harness.charm.state.unit_server.tls
 
         assert workload_config.assert_called_once
 
