@@ -47,7 +47,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
     pytest.charm = await ops_test.build_charm(".")
     await ops_test.model.deploy(pytest.charm, application_name=APP_NAME, num_units=NUM_UNITS_APP)
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
-    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB)
+    await ops_test.model.deploy(
+        OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB, revision=143
+    )
 
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config)
