@@ -71,7 +71,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await asyncio.gather(
         ops_test.model.deploy(COS_AGENT_APP_NAME, num_units=1),
         ops_test.model.deploy(
-            OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB, revision=143
+            OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB, revision=144
         ),
         ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config),
         ops_test.model.deploy(application_charm_build, application_name=DB_CLIENT_APP_NAME),

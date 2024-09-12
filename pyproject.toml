@@ -40,7 +40,7 @@ poetry-plugin-export = "^1.8.0"
 # TODO: clean any of the notes below and their deps.
 [tool.poetry.group.charm-libs.dependencies]
 # data_platform_libs/v0/data_interfaces.py
-ops = "^2.13.0"
+ops = "^2.15.0"
 poetry-core = "^1.9.0"
 # tls_certificates_interface/v3/tls_certificates.py
 cryptography = "^42.0.8"
@@ -95,7 +95,8 @@ responses = "^0.25.3"
 
 [tool.poetry.group.integration.dependencies]
 pytest = "^8.2.2"
-juju = "^3.2.0"
+# should not be updated unless https://github.com/juju/python-libjuju/issues/1093 is fixed
+juju = "~3.5.0"
 tenacity = "^8.4.2"
 coverage = {extras = ["toml"], version = ">7.0"}
 pytest-operator = ">0.20"
