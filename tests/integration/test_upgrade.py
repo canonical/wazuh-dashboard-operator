@@ -48,7 +48,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.deploy(pytest.charm, application_name=APP_NAME, num_units=NUM_UNITS_APP)
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     await ops_test.model.deploy(
-        OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB, revision=143
+        OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB, revision=144
     )
 
     config = {"ca-common-name": "CN_CA"}
