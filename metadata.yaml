@@ -4,7 +4,7 @@
 name: wazuh-dashboard
 display-name: Wazuh Dashboard
 description: |
-     Wazuh Dashboard is a community-driven, Apache 2.0-licensed open source 
+    Wazuh Dashboard is a community-driven, Apache 2.0-licensed open source 
     user interface that lets you visualize your Wazuh data and run and scale
     your Wazuh clusters.
 
