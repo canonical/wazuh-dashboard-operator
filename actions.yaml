@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 get-password:
-  description: Returns the Opensearch Dashboards user password
+  description: Returns the Wazuh Dashboard user password
   params:
     username:
       type: string
