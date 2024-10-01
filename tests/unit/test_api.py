@@ -5,6 +5,7 @@
 import logging
 from pathlib import Path
 
+from unittest.mock import MagicMock
 import pytest
 import responses
 import yaml
@@ -34,6 +35,8 @@ def harness():
     harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
     harness._update_config({"log_level": "debug"})
     harness.begin()
+    harness.charm.model.get_binding = MagicMock()
+
     return harness
 
 

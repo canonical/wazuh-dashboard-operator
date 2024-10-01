@@ -10,6 +10,7 @@ SUBSTRATE = "vm"
 CHARM_KEY = "opensearch-dashboards"
 
 PEER = "dashboard_peers"
+INGRESS_REL_NAME = "ingress"
 OPENSEARCH_REL_NAME = "opensearch-client"
 CERTS_REL_NAME = "certificates"
 DASHBOARD_INDEX = ".opensearch-dashboards"

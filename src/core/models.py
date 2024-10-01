@@ -9,7 +9,7 @@ import subprocess
 from typing import Literal, MutableMapping
 
 from charms.data_platform_libs.v0.data_interfaces import Data, DataDict
-from ops.model import Application, Relation, Unit
+from ops.model import Application, Model, Relation, Unit, Binding
 from typing_extensions import override
 
 from literals import SERVER_PORT
@@ -24,7 +24,7 @@ class StateBase:
 
     def __init__(
         self,
-        relation: Relation | None,
+        relation: Relation,
         data_interface: Data,
         component: Unit | Application,
         substrate: SUBSTRATES,
@@ -61,7 +61,7 @@ class OpensearchServer(StateBase):
 
     def __init__(
         self,
-        relation: Relation | None,
+        relation: Relation,
         data_interface: Data,
         component: Application,
         substrate: SUBSTRATES,
@@ -119,7 +119,7 @@ class ODCluster(StateBase):
 
     def __init__(
         self,
-        relation: Relation | None,
+        relation: Relation,
         data_interface: Data,
         component: Application,
         substrate: SUBSTRATES,
@@ -142,13 +142,17 @@ class ODServer(StateBase):
 
     def __init__(
         self,
-        relation: Relation | None,
+        model: Model,
+        ingress_binding: Binding | None,
+        relation: Relation,
         data_interface: Data,
         component: Unit,
         substrate: SUBSTRATES,
     ):
         super().__init__(relation, data_interface, component, substrate)
         self.unit = component
+        self.model = model
+        self.extra_ingress_binding = ingress_binding
 
     @property
     def unit_id(self) -> int:
@@ -171,19 +175,30 @@ class ODServer(StateBase):
         return bool(self.relation_data.get("password-rotated", None))
 
     @property
-    def hostname(self) -> str:
+    def hostname(self) -> str | None:
         """The hostname for the unit."""
-        return socket.gethostname()
+        if not self.fqdn:
+            return None
+        return self.fqdn.split(".")[0]
 
     @property
-    def fqdn(self) -> str:
+    def fqdn(self) -> str | None:
         """The Fully Qualified Domain Name for the unit."""
-        return socket.getfqdn()
+        if not (hostnames := socket.gethostbyaddr(self.private_ip)):
+            return None
+        return hostnames[0]
 
     @property
     def private_ip(self) -> str:
         """The IP for the unit."""
-        return socket.gethostbyname(self.hostname)
+        # Either values are okay for us because we are interested on their name
+        # both objects have a .name property.
+        binding = self.extra_ingress_binding or self.relation
+        return (
+            self.model.get_binding(binding.name).network.bind_address
+            # Optional fallback, if no binding is found
+            or socket.gethostbyname(socket.gethostname())
+        )
 
     @property
     def public_ip(self) -> str:

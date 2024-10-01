@@ -12,7 +12,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
     OpenSearchRequiresData,
 )
 from ops.framework import Framework, Object
-from ops.model import Relation, Unit
+from ops.model import Relation, Unit, Binding
 
 from core.models import SUBSTRATES, ODCluster, ODServer, OpensearchServer
 from literals import (
@@ -20,6 +20,7 @@ from literals import (
     DASHBOARD_INDEX,
     DASHBOARD_ROLE,
     OPENSEARCH_REL_NAME,
+    INGRESS_REL_NAME,
     PEER,
     PEER_APP_SECRETS,
     PEER_UNIT_SECRETS,
@@ -52,7 +53,7 @@ class ClusterState(Object):
     # --- RAW RELATION ---
 
     @property
-    def peer_relation(self) -> Relation | None:
+    def peer_relation(self) -> Relation:
         """The cluster peer relation."""
         return self.model.get_relation(PEER)
 
@@ -63,8 +64,13 @@ class ClusterState(Object):
 
     @property
     def tls_relation(self) -> Relation | None:
-        """The cluster peer relation."""
+        """The cluster tls relation."""
         return self.model.get_relation(CERTS_REL_NAME)
+
+    @property
+    def extra_ingress_binding(self) -> Binding | None:
+        """The cluster's extra ingress binding."""
+        return self.model.get_binding(INGRESS_REL_NAME)
 
     # --- CORE COMPONENTS---
 
@@ -72,6 +78,8 @@ class ClusterState(Object):
     def unit_server(self) -> ODServer:
         """The server state of the current running Unit."""
         return ODServer(
+            model=self.model,
+            ingress_binding=self.extra_ingress_binding,
             relation=self.peer_relation,
             data_interface=self.peer_unit_data,
             component=self.model.unit,
@@ -116,6 +124,8 @@ class ClusterState(Object):
         for unit, data_interface in self.peer_units_data.items():
             servers.add(
                 ODServer(
+                    model=self.model,
+                    ingress_binding=self.extra_ingress_binding,
                     relation=self.peer_relation,
                     data_interface=data_interface,
                     component=unit,
