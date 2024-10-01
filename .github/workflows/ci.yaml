@@ -97,4 +97,3 @@ jobs:
           "GCP_SERVICE_ACCOUNT": "${{ secrets.GCP_SERVICE_ACCOUNT }}", }
     permissions:
       contents: write
-

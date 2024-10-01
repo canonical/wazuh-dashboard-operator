@@ -7,7 +7,7 @@
 OPENSEARCH_DASHBOARDS_SNAP_REVISION = "1"
 
 SUBSTRATE = "vm"
-CHARM_KEY = "wazuh-dashboard"
+CHARM_KEY = "opensearch-dashboards"
 
 PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch-client"
