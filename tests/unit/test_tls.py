@@ -33,6 +33,16 @@ def test_certificates_created_sets_tls_enabled(harness):
     with (
         patch("ops.framework.EventBase.defer"),
         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=True),
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
     ):
         harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
 
@@ -44,6 +54,16 @@ def test_certificates_joined_creates_private_key(harness):
         patch("core.cluster.ClusterState.stable", new_callable=PropertyMock, return_value=True),
         patch("core.models.ODCluster.tls", new_callable=PropertyMock, return_value=True),
         patch("workload.ODWorkload.configure") as workload_config,
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
     ):
         cert_rel_id = harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
         harness.add_relation_unit(cert_rel_id, "tls-certificates-operator/1")
@@ -54,15 +74,30 @@ def test_certificates_joined_creates_private_key(harness):
 
 
 def test_certificates_available_fails_wrong_csr(harness):
-    cert_rel_id = harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
-    harness.update_relation_data(cert_rel_id, f"{CHARM_KEY}/0", {"csr": "not-missing"})
+    with (
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+    ):
+        cert_rel_id = harness.add_relation(CERTS_REL_NAME, "tls-certificates-operator")
+        harness.update_relation_data(cert_rel_id, f"{CHARM_KEY}/0", {"csr": "not-missing"})
 
-    harness.charm.tls_events.certificates.on.certificate_available.emit(
-        certificate_signing_request="missing", certificate="cert", ca="ca", chain=["ca", "cert"]
-    )
+        harness.charm.tls_events.certificates.on.certificate_available.emit(
+            certificate_signing_request="missing",
+            certificate="cert",
+            ca="ca",
+            chain=["ca", "cert"],
+        )
 
-    assert not harness.charm.state.unit_server.certificate
-    assert not harness.charm.state.unit_server.ca
+        assert not harness.charm.state.unit_server.certificate
+        assert not harness.charm.state.unit_server.ca
 
 
 def test_certificates_available_succeeds(harness):
@@ -153,9 +188,21 @@ def test_certificates_expiring(harness):
         },
     )
 
-    with patch(
-        "charms.tls_certificates_interface.v3.tls_certificates.TLSCertificatesRequiresV3.request_certificate_renewal",
-        return_value=None,
+    with (
+        patch(
+            "charms.tls_certificates_interface.v3.tls_certificates.TLSCertificatesRequiresV3.request_certificate_renewal",
+            return_value=None,
+        ),
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
     ):
         harness.charm.tls_events.certificates.on.certificate_expiring.emit(
             certificate="cert", expiry=None
@@ -179,9 +226,21 @@ def test_set_tls_private_key(harness):
     )
     key = open("tests/keys/0.key").read()
 
-    with patch(
-        "charms.tls_certificates_interface.v3.tls_certificates.TLSCertificatesRequiresV3.request_certificate_renewal",
-        return_value=None,
+    with (
+        patch(
+            "charms.tls_certificates_interface.v3.tls_certificates.TLSCertificatesRequiresV3.request_certificate_renewal",
+            return_value=None,
+        ),
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
     ):
         harness.run_action("set-tls-private-key", {"internal-key": key})
 

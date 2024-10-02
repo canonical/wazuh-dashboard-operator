@@ -4,8 +4,8 @@
 
 import logging
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-from unittest.mock import MagicMock
 import pytest
 import responses
 import yaml
@@ -36,6 +36,7 @@ def harness():
     harness._update_config({"log_level": "debug"})
     harness.begin()
     harness.charm.model.get_binding = MagicMock()
+    harness.charm.model.get_binding.network.bind_address = MagicMock(return_value="10.10.10.10")
 
     return harness
 
@@ -94,13 +95,13 @@ def test_api_request(harness):
             ],
         },
     }
+    harness.charm.state.unit_server.relation = MagicMock(name="test")
 
     responses.add(
         method="GET",
         url=f"{harness.charm.state.unit_server.url}/api/status",
         json=expected_response,
     )
-
     response = harness.charm.api_manager.request("status")
     assert all(field in response for field in ["status", "name", "version"])
     assert all(field in response["status"] for field in ["statuses", "overall"])

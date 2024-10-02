@@ -18,10 +18,6 @@ maintainers:
 series:
   - jammy
 
-extra-bindings:
-  # This is an extra binding that allows to separate between ingress and reminder traffic.
-  ingress:
-
 peers:
   dashboard_peers:
     interface: dashboard_peers 

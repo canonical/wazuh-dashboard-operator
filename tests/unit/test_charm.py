@@ -4,7 +4,7 @@
 
 import logging
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 import pytest
 import responses
@@ -418,6 +418,26 @@ def test_service_unhealthy(harness):
         patch("managers.config.ConfigManager.set_dashboard_properties"),
         patch("os.path.exists", return_value=True),
         patch("os.path.getsize", return_value=1),
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "managers.api.APIManager.request",
+            return_value={
+                "status": {
+                    "overall": {
+                        "state": "yellow",
+                    },
+                },
+            },
+        ),
     ):
         harness.charm.init_server()
         harness.charm.on.update_status.emit()
@@ -458,6 +478,26 @@ def test_service_error(harness):
         patch("managers.config.ConfigManager.set_dashboard_properties"),
         patch("os.path.exists", return_value=True),
         patch("os.path.getsize", return_value=1),
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "managers.api.APIManager.request",
+            return_value={
+                "status": {
+                    "overall": {
+                        "state": "red",
+                    },
+                },
+            },
+        ),
     ):
         harness.charm.init_server()
         harness.charm.on.update_status.emit()
@@ -498,6 +538,26 @@ def test_service_available(harness):
         patch("managers.config.ConfigManager.set_dashboard_properties"),
         patch("os.path.exists", return_value=True),
         patch("os.path.getsize", return_value=1),
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="opensearch-dashboards",
+        ),
+        patch(
+            "managers.api.APIManager.request",
+            return_value={
+                "status": {
+                    "overall": {
+                        "state": "green",
+                    },
+                },
+            },
+        ),
     ):
         harness.charm.init_server()
         harness.charm.on.update_status.emit()
