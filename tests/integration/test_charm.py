@@ -143,9 +143,7 @@ async def test_dashboard_access_https(ops_test: OpsTest):
     # Instead, HTTPS works uninterrupted
     assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
 
-    server_cert = (
-        "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/certificates/server.pem"
-    )
+    server_cert = "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/certificates/server.pem"
     unit = ops_test.model.applications[APP_NAME].units[0]
     host_cert = get_file_contents(ops_test, unit, server_cert)
 
