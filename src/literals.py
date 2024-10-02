@@ -28,10 +28,10 @@ DEPENDENCIES = {
 }
 
 PATHS = {
-    "CONF": "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards",
-    "DATA": "/var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards",
-    "LOGS": "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards",
-    "BIN": "/snap/opensearch-dashboards/current/opt/opensearch-dashboards",
+    "CONF": "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard",
+    "DATA": "/var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard",
+    "LOGS": "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard",
+    "BIN": "/snap/wazuh-dashboard/current/opt/wazuh-dashboard",
 }
 
 PEER_APP_SECRETS = [

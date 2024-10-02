@@ -355,9 +355,9 @@ def get_file_contents(ops_test: OpsTest, unit: Unit, filename: str) -> str:
 
 def dump_all(ops_test: OpsTest, unit: Unit):
     for file in [
-        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/ca.pem",
-        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/opensearch_dashboards.yml",
-        "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
+        "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/certificates/ca.pem",
+        "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/opensearch_dashboards.yml",
+        "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboards/opensearch_dashboards.log",
     ]:
         output = get_file_contents(ops_test, unit, file)
         if output:
