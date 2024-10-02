@@ -28,7 +28,7 @@ opensearch_security.cookie.secure: true
 
 server.host: '{ip}'
 logging.verbose: true
-path.data: /var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards"""
+path.data: /var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard"""
 
 
 @pytest.fixture

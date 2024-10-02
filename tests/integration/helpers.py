@@ -326,7 +326,7 @@ def get_dashboard_ca_cert(model_full_name: str, unit: str):
                 "-c",
                 f"JUJU_MODEL={model_full_name} juju scp "
                 f"ubuntu@{unit}:"
-                "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/ca.pem ./",
+                "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/certificates/ca.pem ./",
             ],
             timeout=30,
         )

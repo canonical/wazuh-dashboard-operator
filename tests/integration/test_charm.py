@@ -144,7 +144,7 @@ async def test_dashboard_access_https(ops_test: OpsTest):
     assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
 
     server_cert = (
-        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/server.pem"
+        "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/certificates/server.pem"
     )
     unit = ops_test.model.applications[APP_NAME].units[0]
     host_cert = get_file_contents(ops_test, unit, server_cert)
@@ -259,7 +259,7 @@ async def test_log_level_change(ops_test: OpsTest):
         assert count_lines_with(
             ops_test.model_full_name,
             unit.name,
-            "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
+            "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard/opensearch_dashboards.log",
             "debug",
         )
 
@@ -272,7 +272,7 @@ async def test_log_level_change(ops_test: OpsTest):
         debug_lines = count_lines_with(
             ops_test.model_full_name,
             unit.name,
-            "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
+            "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard/opensearch_dashboards.log",
             "debug",
         )
 
@@ -280,7 +280,7 @@ async def test_log_level_change(ops_test: OpsTest):
             count_lines_with(
                 ops_test.model_full_name,
                 unit.name,
-                "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
+                "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard/opensearch_dashboards.log",
                 "debug",
             )
             == debug_lines
