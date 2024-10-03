@@ -275,8 +275,11 @@ def access_dashboard(
     arguments = {"url": url, "headers": headers, "json": data}
     if ssl:
         arguments["verify"] = "./ca.pem"
-
-    response = requests.post(**arguments)
+    try:
+        response = requests.post(**arguments)
+    except Exception:
+        print(response)
+        pass
     return response.status_code == 200
 
 
@@ -392,10 +395,15 @@ def get_private_address(model_full_name: str, unit: str):
     try:
         private_ip = check_output(
             [
-                "bash",
-                "-c",
-                f"JUJU_MODEL={model_full_name} juju ssh {unit} ip a | "
-                "grep global | grep 'inet 10.*/24' | cut -d' ' -f6 | cut -d'/' -f1",
+                "juju",
+                "exec",
+                f"--model={model_full_name}",
+                "--unit",
+                unit,
+                "--",
+                "network-get",
+                OPENSEARCH_RELATION_NAME,
+                "--bind-address",
             ],
             text=True,
         )
