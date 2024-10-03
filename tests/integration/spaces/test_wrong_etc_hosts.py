@@ -36,7 +36,10 @@ async def for_machines(ops_test, machines, state="started"):
                         ["juju", "machines", f"--model={ops_test.model.name}", "--format=json"]
                     )
                 )["machines"]
-                if str(id) not in mach_status.keys() or mach_status[str(id)]["juju-status"]["current"] != state:
+                if (
+                    str(id) not in mach_status.keys()
+                    or mach_status[str(id)]["juju-status"]["current"] != state
+                ):
                     logger.warning(f"machine-{id} either not exist yet or not in {state}")
                     raise Exception()
 
