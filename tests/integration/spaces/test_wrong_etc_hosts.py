@@ -4,7 +4,6 @@
 
 import asyncio
 import logging
-import socket
 import subprocess
 
 import pytest
@@ -41,26 +40,39 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
     """
     osd_charm = await ops_test.build_charm(".")
 
-    machines = []
     for _ in range(DEFAULT_NUM_UNITS):
-        machines.append(
-            ops_test.model.add_machine(
-                spec=(None),
-                series=SERIES,
-                constraints="spaces=alpha,client,cluster,backup",
-                bind={"": "cluster"},
-            )
+        subprocess.check_output(
+            [
+                "juju",
+                "add-machine",
+                f"-n{DEFAULT_NUM_UNITS}",
+                f"--model={ops_test.model.name}",
+                "--constraints=spaces=alpha,client,cluster,backup",
+                f"--series={SERIES}",
+            ]
         )
-    await asyncio.gather(*machines)
+
+    asyncio.sleep(20)
+    await ops_test.model.wait_for_idle(
+        apps=[TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
+    )
 
     # Now, we should SSH to each machine and inject the record into /etc/hosts
-    for machine in machines:
-        machine_id = machine.id
-        machine_ip = "127.0.1.1"
+    machine_ip = "127.0.1.1"
+    for machine_id in range(DEFAULT_NUM_UNITS):
         subprocess.check_output(
-            f"""juju ssh {machine_id}
-              -- sudo sh -c 'sudo sed -i "1i\\{machine_ip} $(hostname -f)" /etc/hosts'
-              """.split()
+            [
+                "juju",
+                "ssh",
+                f"--model={ops_test.model.name}",
+                str(machine_id),
+                "--",
+                "sudo",
+                "sed",
+                "-i",
+                f'"1i\\{machine_ip} $(hostname -f)"',
+                "/etc/hosts",
+            ]
         )
 
     await ops_test.model.deploy(

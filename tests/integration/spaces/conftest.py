@@ -58,7 +58,7 @@ def _lxd_network(name: str, subnet: str, external: bool = True):
         raise
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module")
 def lxd():
     try:
         # Set all networks' dns.mode=none
@@ -91,16 +91,19 @@ def lxd():
 
 
 @pytest.fixture(scope="module")
-async def lxd_spaces(ops_test: OpsTest):
+def lxd_spaces(ops_test: OpsTest, lxd):
     subprocess.run(
         [
             "juju",
             "reload-spaces",
+            f"--model={ops_test.model.name}",
         ],
     )
-    await ops_test.model.add_space("client", cidrs=["10.0.0.0/24"])
-    await ops_test.model.add_space("cluster", cidrs=["10.10.10.0/24"])
-    await ops_test.model.add_space("backup", cidrs=["10.20.20.0/24"])
+    spaces = [("client", "10.0.0.0/24"), ("cluster", "10.10.10.0/24"), ("backup", "10.20.20.0/24")]
+    for space in spaces:
+        subprocess.check_output(
+            f"juju add-space --model={ops_test.model.name} {space[0]} {space[1]}".split()
+        )
 
 
 @pytest.hookimpl()
