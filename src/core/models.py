@@ -192,7 +192,7 @@ class ODServer(StateBase):
         # Either values are okay for us because we are interested on their name
         # both objects have a .name property.
         address = None
-        if binding := self.relation:
+        if relation := self.relation:
             binding_obj = self.model.get_binding(binding.name)
             address = (
                 str(binding_obj.network.bind_address)
