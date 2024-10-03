@@ -180,7 +180,7 @@ class ODServer(StateBase):
     @property
     def fqdn(self) -> str | None:
         """The Fully Qualified Domain Name for the unit."""
-        socket.getfqdn(self.private_ip)
+        return socket.getfqdn(self.private_ip)
 
     @property
     def private_ip(self) -> str:
@@ -200,15 +200,19 @@ class ODServer(StateBase):
 
     @property
     def public_ip(self) -> str:
-        result = subprocess.check_output(
-            [
-                "bash",
-                "-c",
-                "ip a | grep global | grep -v 'inet 10.' | cut -d' ' -f6 | cut -d'/' -f1",
-            ],
-            text=True,
-        )
-        return result.rstrip()
+        """The public IP for the unit."""
+        # Either values are okay for us because we are interested on their name
+        # both objects have a .name property.
+        address = None
+        if relation := self.relation:
+            relation_obj = self.model.get_binding(relation.name)
+            address = (
+                str(relation_obj.network.ingress_address)
+                if relation_obj and relation_obj.network
+                else None
+            )
+        # Optional fallback, if no binding is found
+        return address or socket.gethostbyname(socket.gethostname())
 
     @property
     def host(self) -> str:
@@ -258,7 +262,7 @@ class ODServer(StateBase):
             return {}
 
         return {
-            "sans_ip": [ip for ip in [self.private_ip] if ip],
+            "sans_ip": [self.private_ip],
             "sans_dns": [dns for dns in {self.hostname, self.fqdn} if dns],
         }
 
