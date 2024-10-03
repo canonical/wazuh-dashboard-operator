@@ -175,16 +175,12 @@ class ODServer(StateBase):
     @property
     def hostname(self) -> str | None:
         """The hostname for the unit."""
-        if not self.fqdn:
-            return None
-        return self.fqdn.split(".")[0]
+        return socket.gethostname()
 
     @property
     def fqdn(self) -> str | None:
         """The Fully Qualified Domain Name for the unit."""
-        if not (hostnames := socket.gethostbyaddr(self.private_ip)):
-            return None
-        return hostnames[0]
+        socket.getfqdn(self.private_ip)
 
     @property
     def private_ip(self) -> str:

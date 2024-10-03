@@ -10,10 +10,10 @@ from pytest_operator.plugin import OpsTest
 
 from ..helpers import (
     APP_NAME,
+    OPENSEARCH_APP_NAME,
     OPENSEARCH_RELATION_NAME,
     SERIES,
     TLS_CERTIFICATES_APP_NAME,
-    OPENSEARCH_APP_NAME,
     access_all_dashboards,
     access_all_prometheus_exporters,
     get_relations,
@@ -39,6 +39,13 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
     More information: gh:canonical/opensearch-dashboards-operator#121
     """
     osd_charm = await ops_test.build_charm(".")
+
+    for _ in range(DEFAULT_NUM_UNITS):
+        await ops_test.model.add_machine(
+            spec=None,
+            constraints={"spaces": ["alpha", "cluster", "backup", "client"]},
+            series=SERIES,
+        )
 
     subprocess.check_output(
         [
