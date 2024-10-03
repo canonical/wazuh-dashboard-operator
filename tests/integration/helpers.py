@@ -31,6 +31,23 @@ from core.workload import ODPaths
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 OPENSEARCH_APP_NAME = "opensearch"
+SERIES = "jammy"
+
+OPENSEARCH_RELATION_NAME = "opensearch-client"
+OPENSEARCH_CONFIG = {
+    "logging-config": "<root>=INFO;unit=DEBUG",
+    "cloudinit-userdata": """postruncmd:
+        - [ 'sysctl', '-w', 'vm.max_map_count=262144' ]
+        - [ 'sysctl', '-w', 'fs.file-max=1048576' ]
+        - [ 'sysctl', '-w', 'vm.swappiness=0' ]
+        - [ 'sysctl', '-w', 'net.ipv4.tcp_retries2=5' ]
+    """,
+}
+
+TLS_CERTIFICATES_APP_NAME = "self-signed-certificates"
+COS_AGENT_APP_NAME = "grafana-agent"
+COS_AGENT_RELATION_NAME = "cos-agent"
+DB_CLIENT_APP_NAME = "application"
 
 
 logger = logging.getLogger(__name__)
