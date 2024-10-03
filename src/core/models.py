@@ -263,7 +263,7 @@ class ODServer(StateBase):
 
         return {
             "sans_ip": [ip for ip in [self.private_ip] if ip],
-            "sans_dns": [dns for dns in [self.hostname, self.fqdn] if dns],
+            "sans_dns": [dns for dns in {self.hostname, self.fqdn} if dns],
         }
 
     @property
