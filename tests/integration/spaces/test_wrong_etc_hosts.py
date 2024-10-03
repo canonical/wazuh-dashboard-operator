@@ -2,7 +2,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import asyncio
 import logging
 import subprocess
 
@@ -52,29 +51,6 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
             ]
         )
 
-    asyncio.sleep(20)
-    await ops_test.model.wait_for_idle(
-        apps=[TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
-    )
-
-    # Now, we should SSH to each machine and inject the record into /etc/hosts
-    machine_ip = "127.0.1.1"
-    for machine_id in range(DEFAULT_NUM_UNITS):
-        subprocess.check_output(
-            [
-                "juju",
-                "ssh",
-                f"--model={ops_test.model.name}",
-                str(machine_id),
-                "--",
-                "sudo",
-                "sed",
-                "-i",
-                f'"1i\\{machine_ip} $(hostname -f)"',
-                "/etc/hosts",
-            ]
-        )
-
     await ops_test.model.deploy(
         osd_charm,
         num_units=DEFAULT_NUM_UNITS,
@@ -101,6 +77,24 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
     await ops_test.model.wait_for_idle(
         apps=[TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
     )
+
+    # Now, we should SSH to each machine and inject the record into /etc/hosts
+    machine_ip = "127.0.1.1"
+    for machine_id in range(DEFAULT_NUM_UNITS):
+        subprocess.check_output(
+            [
+                "juju",
+                "ssh",
+                f"--model={ops_test.model.name}",
+                str(machine_id),
+                "--",
+                "sudo",
+                "sed",
+                "-i",
+                f'"1i\\{machine_ip} $(hostname -f)"',
+                "/etc/hosts",
+            ]
+        )
 
     assert len(ops_test.model.applications[APP_NAME].units) == DEFAULT_NUM_UNITS
 

@@ -90,6 +90,7 @@ def lxd():
     _lxd_network("backup", "10.20.20.1/24", False)
 
 
+ 
 @pytest.fixture(scope="module")
 def lxd_spaces(ops_test: OpsTest, lxd):
     subprocess.run(
@@ -101,9 +102,7 @@ def lxd_spaces(ops_test: OpsTest, lxd):
     )
     spaces = [("client", "10.0.0.0/24"), ("cluster", "10.10.10.0/24"), ("backup", "10.20.20.0/24")]
     for space in spaces:
-        subprocess.check_output(
-            f"juju add-space --model={ops_test.model.name} {space[0]} {space[1]}".split()
-        )
+        subprocess.check_output(f"juju add-space --model={ops_test.model.name} {space[0]} {space[1]}".split())
 
 
 @pytest.hookimpl()
