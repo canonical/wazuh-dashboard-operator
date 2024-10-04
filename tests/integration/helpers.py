@@ -275,11 +275,7 @@ def access_dashboard(
     arguments = {"url": url, "headers": headers, "json": data}
     if ssl:
         arguments["verify"] = "./ca.pem"
-    try:
-        response = requests.post(**arguments)
-    except Exception:
-        print(response)
-        pass
+    response = requests.post(**arguments)
     return response.status_code == 200
 
 
@@ -799,3 +795,20 @@ async def destroy_cluster(ops_test, app: str = OPENSEARCH_APP_NAME):
             # This case we don't raise an error in the context manager which
             # fails to restore the `update-status-hook-interval` value to it's former state.
             assert n_apps_after == n_apps_before - 1, "old cluster not destroyed successfully."
+
+
+async def for_machines(ops_test, machines, state="started"):
+    for attempt in Retrying(stop=stop_after_attempt(10), wait=wait_fixed(wait=60)):
+        with attempt:
+            for id in machines:
+                mach_status = json.loads(
+                    subprocess.check_output(
+                        ["juju", "machines", f"--model={ops_test.model.name}", "--format=json"]
+                    )
+                )["machines"]
+                if (
+                    str(id) not in mach_status.keys()
+                    or mach_status[str(id)]["juju-status"]["current"] != state
+                ):
+                    logger.warning(f"machine-{id} either not exist yet or not in {state}")
+                    raise Exception()

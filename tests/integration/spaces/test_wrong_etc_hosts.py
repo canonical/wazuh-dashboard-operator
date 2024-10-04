@@ -18,6 +18,7 @@ from ..helpers import (
     TLS_CERTIFICATES_APP_NAME,
     access_all_dashboards,
     access_all_prometheus_exporters,
+    for_machines,
     get_relations,
 )
 
@@ -25,23 +26,6 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_NUM_UNITS = 1
-
-
-async def for_machines(ops_test, machines, state="started"):
-    for attempt in Retrying(stop=stop_after_attempt(10), wait=wait_fixed(wait=60)):
-        with attempt:
-            for id in machines:
-                mach_status = json.loads(
-                    subprocess.check_output(
-                        ["juju", "machines", f"--model={ops_test.model.name}", "--format=json"]
-                    )
-                )["machines"]
-                if (
-                    str(id) not in mach_status.keys()
-                    or mach_status[str(id)]["juju-status"]["current"] != state
-                ):
-                    logger.warning(f"machine-{id} either not exist yet or not in {state}")
-                    raise Exception()
 
 
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
