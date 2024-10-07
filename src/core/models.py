@@ -173,12 +173,12 @@ class ODServer(StateBase):
         return bool(self.relation_data.get("password-rotated", None))
 
     @property
-    def hostname(self) -> str | None:
+    def hostname(self) -> str:
         """The hostname for the unit."""
         return socket.gethostname()
 
     @property
-    def fqdn(self) -> str | None:
+    def fqdn(self) -> str:
         """The Fully Qualified Domain Name for the unit."""
         return socket.getfqdn(self.private_ip)
 
@@ -196,7 +196,7 @@ class ODServer(StateBase):
                 else None
             )
         # Optional fallback, if no binding is found
-        return address or socket.gethostbyname(socket.gethostname())
+        return address or socket.gethostbyname(self.hostname)
 
     @property
     def public_ip(self) -> str:
@@ -212,7 +212,7 @@ class ODServer(StateBase):
                 else None
             )
         # Optional fallback, if no binding is found
-        return address or socket.gethostbyname(socket.gethostname())
+        return address or socket.gethostbyname(self.hostname)
 
     @property
     def host(self) -> str:
