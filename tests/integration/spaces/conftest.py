@@ -46,13 +46,11 @@ def _lxd_network(name: str, subnet: str, external: bool = True):
         logger.debug(f"LXD network status: {output}")
 
         if not external:
-            subprocess.check_output(
-                ["sudo", "lxc", "network", "set", name, "raw.dnsmasq", RAW_DNSMASQ]
+            subprocess.run(
+                ["sudo", "lxc", "network", "set", name, "raw.dnsmasq", RAW_DNSMASQ], check=True
             )
 
-        subprocess.check_output(
-            f"sudo ip link set up dev {name}".split(),
-        )
+        subprocess.run(f"sudo ip link set up dev {name}".split(), check=True)
     except subprocess.CalledProcessError as e:
         logger.error(f"Error creating LXD network {name} with: {e.returncode} {e.stderr}")
         raise
@@ -101,8 +99,9 @@ def lxd_spaces(ops_test: OpsTest, lxd):
     )
     spaces = [("client", "10.0.0.0/24"), ("cluster", "10.10.10.0/24"), ("backup", "10.20.20.0/24")]
     for space in spaces:
-        subprocess.check_output(
-            f"juju add-space --model={ops_test.model.name} {space[0]} {space[1]}".split()
+        subprocess.run(
+            f"juju add-space --model={ops_test.model.name} {space[0]} {space[1]}".split(),
+            check=True,
         )
 
 
@@ -114,7 +113,7 @@ def pytest_sessionfinish(session, exitstatus):
 
     def __exec(cmd):
         try:
-            subprocess.check_output(cmd.split())
+            subprocess.run(cmd.split(), check=True)
         except subprocess.CalledProcessError as e:
             # Log and try to delete the next network
             logger.warning(f"Error deleting LXD network with: {e.returncode} {e.stderr}")

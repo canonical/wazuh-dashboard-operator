@@ -189,10 +189,10 @@ class ODServer(StateBase):
         # both objects have a .name property.
         address = None
         if relation := self.relation:
-            relation_obj = self.model.get_binding(relation.name)
+            binding_obj = self.model.get_binding(relation.name)
             address = (
-                str(relation_obj.network.bind_address)
-                if relation_obj and relation_obj.network
+                str(binding_obj.network.bind_address)
+                if binding_obj and binding_obj.network
                 else None
             )
         # Optional fallback, if no binding is found
@@ -205,10 +205,10 @@ class ODServer(StateBase):
         # both objects have a .name property.
         address = None
         if relation := self.relation:
-            relation_obj = self.model.get_binding(relation.name)
+            binding_obj = self.model.get_binding(relation.name)
             address = (
-                str(relation_obj.network.ingress_address)
-                if relation_obj and relation_obj.network
+                str(binding_obj.network.ingress_address)
+                if binding_obj and binding_obj.network
                 else None
             )
         # Optional fallback, if no binding is found

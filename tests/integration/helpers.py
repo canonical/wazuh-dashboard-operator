@@ -800,12 +800,12 @@ async def destroy_cluster(ops_test, app: str = OPENSEARCH_APP_NAME):
 async def for_machines(ops_test, machines, state="started"):
     for attempt in Retrying(stop=stop_after_attempt(10), wait=wait_fixed(wait=60)):
         with attempt:
+            mach_status = json.loads(
+                subprocess.check_output(
+                    ["juju", "machines", f"--model={ops_test.model.name}", "--format=json"]
+                )
+            )["machines"]
             for id in machines:
-                mach_status = json.loads(
-                    subprocess.check_output(
-                        ["juju", "machines", f"--model={ops_test.model.name}", "--format=json"]
-                    )
-                )["machines"]
                 if (
                     str(id) not in mach_status.keys()
                     or mach_status[str(id)]["juju-status"]["current"] != state
