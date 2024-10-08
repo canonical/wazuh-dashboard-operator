@@ -4,6 +4,7 @@
 
 """Collection of global cluster state."""
 import logging
+from ipaddress import IPv4Address, IPv6Address
 
 from charms.data_platform_libs.v0.data_interfaces import (
     DataPeerData,
@@ -12,7 +13,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
     OpenSearchRequiresData,
 )
 from ops.framework import Framework, Object
-from ops.model import Binding, Relation, Unit
+from ops.model import Relation, Unit
 
 from core.models import SUBSTRATES, ODCluster, ODServer, OpensearchServer
 from literals import (
@@ -23,6 +24,7 @@ from literals import (
     PEER,
     PEER_APP_SECRETS,
     PEER_UNIT_SECRETS,
+    SERVER_PORT,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,7 +74,6 @@ class ClusterState(Object):
     def unit_server(self) -> ODServer:
         """The server state of the current running Unit."""
         return ODServer(
-            model=self.model,
             relation=self.peer_relation,
             data_interface=self.peer_unit_data,
             component=self.model.unit,
@@ -117,7 +118,6 @@ class ClusterState(Object):
         for unit, data_interface in self.peer_units_data.items():
             servers.add(
                 ODServer(
-                    model=self.model,
                     relation=self.peer_relation,
                     data_interface=data_interface,
                     component=unit,
@@ -143,6 +143,25 @@ class ClusterState(Object):
             local_app=self.cluster.app,
         )
 
+    @property
+    def bind_address(self) -> IPv4Address | IPv6Address | str | None:
+        """The network binding address from the peer relation."""
+        bind_address = None
+        if self.peer_relation:
+            if binding := self.model.get_binding(self.peer_relation):
+                bind_address = binding.network.bind_address
+        # If the relation does not exist, then we get None
+        return bind_address
+
+    @property
+    def ingress_address(self) -> IPv4Address | IPv6Address | str | None:
+        """The network ingress address from the peer relation."""
+        ingress_address = None
+        if self.peer_relation:
+            if binding := self.model.get_binding(self.peer_relation):
+                ingress_address = binding.network.bind_address
+        return ingress_address
+
     # --- CLUSTER INIT ---
 
     @property
@@ -164,3 +183,9 @@ class ClusterState(Object):
             return False
 
         return True
+
+    @property
+    def url(self) -> str:
+        """Service URL."""
+        scheme = "https" if self.unit_server.tls else "http"
+        return f"{scheme}://{self.bind_address}:{SERVER_PORT}"

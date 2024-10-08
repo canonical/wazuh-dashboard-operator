@@ -9,10 +9,8 @@ import subprocess
 from typing import Literal, MutableMapping
 
 from charms.data_platform_libs.v0.data_interfaces import Data, DataDict
-from ops.model import Application, Model, Relation, Unit
+from ops.model import Application, Relation, Unit
 from typing_extensions import override
-
-from literals import SERVER_PORT
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +59,7 @@ class OpensearchServer(StateBase):
 
     def __init__(
         self,
-        relation: Relation,
+        relation: Relation | None,
         data_interface: Data,
         component: Application,
         substrate: SUBSTRATES,
@@ -142,7 +140,6 @@ class ODServer(StateBase):
 
     def __init__(
         self,
-        model: Model,
         relation: Relation | None,
         data_interface: Data,
         component: Unit,
@@ -150,7 +147,6 @@ class ODServer(StateBase):
     ):
         super().__init__(relation, data_interface, component, substrate)
         self.unit = component
-        self.model = model
 
     @property
     def unit_id(self) -> int:
@@ -184,35 +180,15 @@ class ODServer(StateBase):
 
     @property
     def private_ip(self) -> str:
-        """The IP for the unit."""
-        # Either values are okay for us because we are interested on their name
-        # both objects have a .name property.
-        address = None
-        if relation := self.relation:
-            binding_obj = self.model.get_binding(relation.name)
-            address = (
-                str(binding_obj.network.bind_address)
-                if binding_obj and binding_obj.network
-                else None
-            )
-        # Optional fallback, if no binding is found
-        return address or socket.gethostbyname(self.hostname)
+        """The IP for the unit recovered using socket."""
+        return socket.gethostbyname(self.hostname)
 
     @property
     def public_ip(self) -> str:
         """The public IP for the unit."""
         # Either values are okay for us because we are interested on their name
         # both objects have a .name property.
-        address = None
-        if relation := self.relation:
-            binding_obj = self.model.get_binding(relation.name)
-            address = (
-                str(binding_obj.network.ingress_address)
-                if binding_obj and binding_obj.network
-                else None
-            )
-        # Optional fallback, if no binding is found
-        return address or socket.gethostbyname(self.hostname)
+        return socket.gethostbyname(self.hostname)
 
     @property
     def host(self) -> str:
@@ -262,12 +238,10 @@ class ODServer(StateBase):
             return {}
 
         return {
-            "sans_ip": [self.private_ip],
+            "sans_ip": [
+                ip
+                for ip in [self.private_ip, self.public_ip]
+                if not self.private_ip.startswith("127")
+            ],
             "sans_dns": [dns for dns in {self.hostname, self.fqdn} if dns],
         }
-
-    @property
-    def url(self) -> str:
-        """Service URL."""
-        scheme = "https" if self.tls else "http"
-        return f"{scheme}://{self.private_ip}:{SERVER_PORT}"
