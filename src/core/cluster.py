@@ -153,15 +153,6 @@ class ClusterState(Object):
         # If the relation does not exist, then we get None
         return bind_address
 
-    @property
-    def ingress_address(self) -> IPv4Address | IPv6Address | str | None:
-        """The network ingress address from the peer relation."""
-        ingress_address = None
-        if self.peer_relation:
-            if binding := self.model.get_binding(self.peer_relation):
-                ingress_address = binding.network.bind_address
-        return ingress_address
-
     # --- CLUSTER INIT ---
 
     @property

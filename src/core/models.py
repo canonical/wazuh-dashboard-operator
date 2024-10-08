@@ -5,7 +5,6 @@
 """Collection of state objects for relations, apps and units."""
 import logging
 import socket
-import subprocess
 from typing import Literal, MutableMapping
 
 from charms.data_platform_libs.v0.data_interfaces import Data, DataDict
@@ -176,6 +175,7 @@ class ODServer(StateBase):
     @property
     def fqdn(self) -> str:
         """The Fully Qualified Domain Name for the unit."""
+        # return socket.getfqdn(self.private_ip)
         return socket.getfqdn(self.private_ip)
 
     @property
@@ -186,8 +186,6 @@ class ODServer(StateBase):
     @property
     def public_ip(self) -> str:
         """The public IP for the unit."""
-        # Either values are okay for us because we are interested on their name
-        # both objects have a .name property.
         return socket.gethostbyname(self.hostname)
 
     @property
@@ -238,10 +236,6 @@ class ODServer(StateBase):
             return {}
 
         return {
-            "sans_ip": [
-                ip
-                for ip in [self.private_ip, self.public_ip]
-                if not self.private_ip.startswith("127")
-            ],
+            "sans_ip": [self.private_ip, self.public_ip],
             "sans_dns": [dns for dns in {self.hostname, self.fqdn} if dns],
         }
