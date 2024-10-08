@@ -115,7 +115,7 @@ def test_install_sets_ip_hostname_fqdn(harness):
     with patch("workload.ODWorkload.install", return_value=False):
         harness.charm.on.install.emit()
 
-        assert harness.charm.state.unit_server.private_ip
+        assert harness.charm.state.bind_address
 
 
 def test_relation_changed_emitted_for_leader_elected(harness):
@@ -359,7 +359,7 @@ def test_workload_down_blocked_status(harness):
 def test_service_unavailable_blocked_status(harness):
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=503,
         body="OpenSearch Dashboards server is not ready yet",
     )
@@ -398,7 +398,7 @@ def test_service_unhealthy(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=200,
         json=expected_response,
     )
@@ -458,7 +458,7 @@ def test_service_error(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=200,
         json=expected_response,
     )
@@ -518,7 +518,7 @@ def test_service_available(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=200,
         json=expected_response,
     )
@@ -577,7 +577,7 @@ def test_wrong_opensearch_version(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=200,
         json=expected_response,
     )

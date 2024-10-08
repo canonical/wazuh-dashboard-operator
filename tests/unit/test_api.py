@@ -99,7 +99,7 @@ def test_api_request(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         json=expected_response,
     )
     response = harness.charm.api_manager.request("status")
@@ -164,7 +164,7 @@ def test_status(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         json=expected_response,
     )
 
