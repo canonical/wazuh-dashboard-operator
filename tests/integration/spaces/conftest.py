@@ -18,6 +18,22 @@ dhcp-option=6"""
 
 
 def _lxd_network(name: str, subnet: str, external: bool = True):
+    """Helper function"""
+
+    # Don't create the network if it already exists
+    try:
+        subprocess.run(
+            ["sudo", "lxc", "network", "show", name],
+            capture_output=True,
+            check=True,
+            encoding="utf-8",
+        )
+        logger.info(f"LXD network {name} already exists")
+        return
+    except subprocess.CalledProcessError:
+        # If we can't list the network, let's try to create it
+        pass
+
     try:
         output = subprocess.run(
             [

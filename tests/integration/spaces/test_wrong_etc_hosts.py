@@ -2,30 +2,27 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import json
 import logging
 import subprocess
 
 import pytest
 from pytest_operator.plugin import OpsTest
-from tenacity import Retrying, retry, stop_after_attempt, wait_exponential, wait_fixed
 
 from ..helpers import (
     APP_NAME,
     OPENSEARCH_APP_NAME,
-    OPENSEARCH_RELATION_NAME,
     SERIES,
     TLS_CERTIFICATES_APP_NAME,
     access_all_dashboards,
     access_all_prometheus_exporters,
     for_machines,
-    get_relations,
+    get_relation,
 )
 
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_NUM_UNITS = 1
+DEFAULT_NUM_UNITS = 3
 
 
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
@@ -76,7 +73,7 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
         series=SERIES,
         constraints="spaces=alpha,client,cluster,backup",
         bind={"": "cluster"},
-        to=",".join([str(i) for i in range(DEFAULT_NUM_UNITS)]),
+        to=[str(i) for i in range(DEFAULT_NUM_UNITS)],
     )
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(
@@ -93,7 +90,6 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
         bind={"": "cluster"},
         num_units=3,
     )
-    await ops_test.model.integrate(APP_NAME, TLS_CERTIFICATES_APP_NAME)
     await ops_test.model.integrate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
     await ops_test.model.integrate(OPENSEARCH_APP_NAME, APP_NAME)
 
@@ -108,8 +104,35 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_dashboard_access(ops_test: OpsTest):
+async def test_dashboard_access_http(ops_test: OpsTest):
     """Test HTTP access to each dashboard unit."""
-    opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
-    assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
+    assert await access_all_dashboards(ops_test, get_relation(ops_test).id)
+    assert await access_all_prometheus_exporters(ops_test)
+
+
+##############################################################################
+
+
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.group(1)
+@pytest.mark.abort_on_fail
+async def test_tls_on(ops_test: OpsTest) -> None:
+    """Not a real test, but only switching on TLS"""
+    # Relate Dashboards to OpenSearch to set up TLS.
+    await ops_test.model.integrate(APP_NAME, TLS_CERTIFICATES_APP_NAME)
+
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=3000, idle_period=30
+    )
+
+
+##############################################################################
+
+
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.group(1)
+@pytest.mark.abort_on_fail
+async def test_dashboard_access_https(ops_test: OpsTest):
+    """Test HTTP access to each dashboard unit."""
+    assert await access_all_dashboards(ops_test, get_relation(ops_test).id, https=True)
     assert await access_all_prometheus_exporters(ops_test)

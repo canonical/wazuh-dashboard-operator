@@ -33,6 +33,7 @@ APP_NAME = METADATA["name"]
 OPENSEARCH_APP_NAME = "opensearch"
 SERIES = "jammy"
 
+OPENSEARCH_APP_NAME = "opensearch"
 OPENSEARCH_RELATION_NAME = "opensearch-client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
@@ -230,7 +231,7 @@ def all_dashboards_unavailable(ops_test: OpsTest, https: bool = False) -> bool:
                 logger.info(f"Couldn't retrieve host certificate for unit {unit}")
                 continue
 
-        host = get_private_address(ops_test.model.name, unit.name)
+        host = get_bind_address(ops_test.model.name, unit.name)
 
         # We should retry until a host could be retrieved
         if not host:
@@ -314,7 +315,7 @@ async def access_all_dashboards(
     for unit in ops_test.model.applications[APP_NAME].units:
         if unit.name in skip:
             continue
-        host = get_private_address(ops_test.model.name, unit.name)
+        host = get_bind_address(ops_test.model.name, unit.name)
         if not host:
             logger.error(f"No hostname found for {unit.name}, can't check connection.")
             return False
@@ -387,7 +388,7 @@ async def get_address(ops_test: OpsTest, unit_name: str) -> str:
     return address
 
 
-def get_private_address(model_full_name: str, unit: str):
+def get_bind_address(model_full_name: str, unit: str):
     try:
         private_ip = check_output(
             [
@@ -763,7 +764,7 @@ async def client_run_all_dashboards_request(
         return False
 
     for dashboards_unit in ops_test.model.applications[APP_NAME].units:
-        host = get_private_address(ops_test.model.name, dashboards_unit.name)
+        host = get_bind_address(ops_test.model.name, dashboards_unit.name)
         if not host:
             logger.debug(f"No hostname found for {dashboards_unit.name}, can't check connection.")
             return False
