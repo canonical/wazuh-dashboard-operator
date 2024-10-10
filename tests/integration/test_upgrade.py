@@ -20,7 +20,7 @@ APP_NAME = METADATA["name"]
 # FIXME: update this to 'stable' when `pre-upgrade-check` is released to 'stable'
 CHANNEL = "edge"
 
-OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_APP_NAME = "wazuh-indexer"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
     "cloudinit-userdata": """postruncmd:
@@ -47,7 +47,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     pytest.charm = await ops_test.build_charm(".")
     await ops_test.model.deploy(pytest.charm, application_name=APP_NAME, num_units=NUM_UNITS_APP)
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
-    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB)
+    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="latest/edge", num_units=NUM_UNITS_DB)
 
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config)

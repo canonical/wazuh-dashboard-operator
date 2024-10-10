@@ -28,7 +28,7 @@ opensearch_security.cookie.secure: true
 
 server.host: '{ip}'
 logging.verbose: true
-path.data: /var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards"""
+path.data: /var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard"""
 
 
 @pytest.fixture
@@ -67,7 +67,7 @@ def test_log_level_changed(harness):
     ):
         assert harness.charm.config_manager.config_changed()
         content = DEFAULT_CONF.format(ip=harness.charm.state.unit_server.private_ip)
-        path = "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/opensearch_dashboards.yml"
+        path = "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/opensearch_dashboards.yml"
         write.assert_called_with(content=content, path=path)
 
 
@@ -82,7 +82,7 @@ def test_tls_enabled(harness):
     ):
         harness.charm.unit.add_secret(
             {"private-key": "key", "certificate": "cert", "ca-cert": "exists"},
-            label=f"{PEER}.opensearch-dashboards.unit",
+            label=f"{PEER}.wazuh-dashboard.unit",
         )
 
     assert "server.ssl.enabled: true" in harness.charm.config_manager.dashboard_properties

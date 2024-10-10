@@ -74,7 +74,7 @@ def test_certificates_available_succeeds(harness):
 
     harness.charm.unit.add_secret(
         {"csr": "not-missing"},
-        label=f"{PEER}.opensearch-dashboards.unit",
+        label=f"{PEER}.wazuh-dashboard.unit",
     )
 
     # implicitly tests these method calls
@@ -108,7 +108,7 @@ def test_certificates_broken(harness):
                 "ca-cert": "exists",
                 "private-key": "key",
             },
-            label=f"{PEER}.opensearch-dashboards.unit",
+            label=f"{PEER}.wazuh-dashboard.unit",
         )
         harness.set_leader(True)
 

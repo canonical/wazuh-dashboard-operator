@@ -1,24 +1,24 @@
-# OpenSearch Dasboards Operator
-[![Charmhub](https://charmhub.io/opensearch/badge.svg)](https://charmhub.io/opensearch)
-[![Release](https://github.com/canonical/opensearch-dashboards-operator/actions/workflows/release.yaml/badge.svg)](https://github.com/canonical/opensearch-dashboards-operator/actions/workflows/release.yaml)
-[![Tests](https://github.com/canonical/opensearch-dashboards-operator/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/canonical/opensearch-dashboards-operator/actions/workflows/ci.yaml)
-[![Docs](https://github.com/canonical/opensearch-dashboards-operator/actions/workflows/sync_docs.yaml/badge.svg)](https://github.com/canonical/opensearch-dashboards-operator/actions/workflows/sync_docs.yaml)
+# Wazuh Dasboard Operator
+[![Charmhub](https://charmhub.io/wazuh-dashboard/badge.svg)](https://charmhub.io/wazuh-dashboard)
+[![Release](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/release.yaml/badge.svg)](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/release.yaml)
+[![Tests](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/ci.yaml)
+[![Docs](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/sync_docs.yaml/badge.svg)](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/sync_docs.yaml)
 
 
 
 [//]: # (<h1 align="center">)
-[//]: # (  <a href="https://opensearch.org/">)
-[//]: # (    <img src="https://opensearch.org/assets/brand/PNG/Logo/opensearch_logo_default.png" alt="OpenSearch" />)
+[//]: # (  <a href="https://wazuh.com/">)
+[//]: # (    <img src="https://wazuh.com/uploads/2022/05/WAZUH.png" alt="Wazuh" />)
 [//]: # (  </a>)
 [//]: # (  <br />)
 [//]: # (</h1>)
 
 # Description
 
-[OpenSearch Dashboards](https://opensearch.org/docs/latest/dashboards/) 
-is a frontend application that for visualizing data stored in an OpenSearch
-database. Charmed OpenSearch Dashboard is the adaptation of the 
-[OpenSearch Dashboards](https://opensearch.org/docs/latest/dashboards/) 
+[Wazuh Dashboard](https://documentation.wazuh.com/current/user-manual/wazuh-dashboard/)) 
+is a frontend application that for visualizing data stored in an Wazuh Indexer
+database. Charmed Wazuh Dashboard is the adaptation of the 
+[Wazuh Dashboard](https://documentation.wazuh.com/current/user-manual/wazuh-dashboard/) 
 user interface to the [Juju](https://juju.is/) environment.
 
 The charm supports access via:
@@ -26,7 +26,7 @@ The charm supports access via:
  - HTTPS (typically for direct access)
  - HTTP (load-balancing) 
 
-![OpenSearch Dashboards](./docs/opensearch_dashboard.png)
+![Wazuh Dashboard](./docs/opensearch_dashboard.png)
 
 # Usage
 
@@ -34,7 +34,7 @@ The charm supports access via:
 
 ### Juju
 
-OpenSearch Dashboard is a Juju charm. This means that an existing Juju environment is necessary.
+Wazuh Dashboard is a Juju charm. This means that an existing Juju environment is necessary.
 
 Install and initialize the [LXD](https://canonical.com/lxd) 
 lightweight container hypervisor and Juju from the [Snap Store](https://snapcraft.io/store):
@@ -49,33 +49,33 @@ Then, boostrap Juju over LXD:
 juju bootstrap localhost
 ```
 
-### Charmed OpenSearch
+### Charmed Wazuh Indexer
 
-OpenSearch Dashboards visualizes an underlying OpenSearch database.
-This means that a [Charmed OpenSearch](https://charmhub.io/opensearch/)
+Wazuh Dashboard visualizes an underlying Wazuh database.
+This means that a [Charmed Wazuh Indexer](https://charmhub.io/wazuh-indexer/)
 instance also has to be ready and available.
 
 A straightforward installation guide is available in the charm's 
-[Github repository](https://github.com/canonical/opensearch-operator?tab=readme-ov-file#usage).
+[Github repository](https://github.com/canonical/wazuh-indexer-operator?tab=readme-ov-file#usage).
 
 
-## Install Charmed OpenSearch Dashboards
+## Install Charmed Wazuh Dashboard
 
 The Dashboards charm requires no specific environment adjustments.
-Therefore all we need to do to deploy the charm from [Charmhub](https://charmhub.io/opensearch-dashboards) is 
+Therefore all we need to do to deploy the charm from [Charmhub](https://charmhub.io/wazuh-dashboard) is 
 
 ```shell
-juju deploy opensearch-dashboards --channel=2/edge
+juju deploy wazuh-dashboard --channel=4/edge
 ```
-and integrate it with the OpenSearch charm:
+and integrate it with the Wazuh Indexer charm:
 ```shell
-juju integrate opensearch opensearch-dashboards-operator
+juju integrate wazuh wazuh-dashboard-operator
 ```
 
 ### Enable TLS encryption
 
-Switching to TLS support for the OpenSearch Dashboards charms goes identically to
-how it goes for OpenSearch.
+Switching to TLS support for the Wazuh Dashboard charms goes identically to
+how it goes for Wazuh.
 
 Install the 
 [self-signed-certificates operator](https://github.com/canonical/self-signed-certificates-operator)
@@ -86,7 +86,7 @@ juju deploy self-signed-certificates --channel=latest/stable
 and integrate it with the Dashboards charm
 
 ```shell
-juju integrate opensearch-dashboards self-signed-certificates
+juju integrate wazuh-dashboard self-signed-certificates
 ```
 
 ## Test interactive access
@@ -104,7 +104,7 @@ The Dashboard front-end is exposed on port `5601`. Using `juju status` we can
 retrieve the IP of each unit:
 
 ```shell
-opensearch-dashboards/0*     active    idle   1        10.4.151.209              
+wazuh-dashboard/0*     active    idle   1        10.4.151.209              
 ```
 
 Using the example above, the Dashboard URL is `http://10.4.151.209:5601`.
@@ -113,7 +113,7 @@ Using the example above, the Dashboard URL is `http://10.4.151.209:5601`.
 ### Authentication
 
 Set up a database user by deploying the `data-integrator` [charm](https://charmhub.io/data-integrator)
-and integrating it with `opensearch`. The user is created automatically as a result of the integration.
+and integrating it with `wazuh-indexer`. The user is created automatically as a result of the integration.
 
 ```shell
 $ juju deploy data-integrator
@@ -143,19 +143,19 @@ https://<IP>:5601
 
 Log in with the credentials of the new user.
 
-![OpenSearch Dashboards login](./docs/opensearch_dashboard_login.png)
+![Wazuh Dashboard login](./docs/opensearch_dashboard_login.png)
 
 You must create an "index pattern" that enables the Dasboard to access the user's data.
 It should specify the `index_name` that was used to create the user with `data-integrator`.
 
-Follow instructions from OpenSearch documentation on 
-[How to create an index pattern](https://opensearch.org/docs/latest/dashboards/management/index-patterns/#creating-an-index-pattern)
+Follow instructions from Wazuh documentation on 
+[How to create an index pattern](https://documentation.wazuh.com/current/user-manual/wazuh-indexer/wazuh-indexer-indices.html)
 
 When the index pattern is defined, data that belongs to the user will display in the Dasboards.
 
 
 # License
 
-The Charmed OpenSearch Dashboards Operator is free software, distributed under the Apache
+The Charmed Wazuh Dashboard Operator is free software, distributed under the Apache
 Software License, version 2.0. See [LICENSE](./LICENSE) for more information.
 

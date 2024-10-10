@@ -25,7 +25,7 @@ profile = "black"
 # Charm is not packed as a standard Python package; this information is not used
 name = "charm"
 version = "1.0"
-description = "opensearch-dashboards-operator"
+description = "wazuh-dashboard-operator"
 authors = []
 
 [tool.poetry.dependencies]
