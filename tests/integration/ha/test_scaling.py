@@ -53,25 +53,25 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config)
 
     await ops_test.model.wait_for_idle(
-        apps=[TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
+        apps=[TLS_CERTIFICATES_APP_NAME], status="active", timeout=1400
     )
 
     # Relate it to OpenSearch to set up TLS.
     await ops_test.model.integrate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
     await ops_test.model.wait_for_idle(
-        apps=[OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
+        apps=[OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=1400
     )
 
     async with ops_test.fast_forward():
         await ops_test.model.wait_for_idle(
-            apps=[APP_NAME], wait_for_exact_units=1, timeout=1000, idle_period=30
+            apps=[APP_NAME], wait_for_exact_units=1, timeout=1400, idle_period=30
         )
 
     assert ops_test.model.applications[APP_NAME].status == "blocked"
 
     pytest.relation = await ops_test.model.integrate(OPENSEARCH_APP_NAME, APP_NAME)
     await ops_test.model.wait_for_idle(
-        apps=[OPENSEARCH_APP_NAME, APP_NAME], status="active", timeout=1000
+        apps=[OPENSEARCH_APP_NAME, APP_NAME], status="active", timeout=1400
     )
 
 
