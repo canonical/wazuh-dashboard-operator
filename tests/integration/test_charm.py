@@ -92,10 +92,12 @@ async def test_build_and_deploy(ops_test: OpsTest):
         await ops_test.model.wait_for_idle(apps=[APP_NAME], timeout=1000, idle_period=30)
 
     assert ops_test.model.applications[APP_NAME].status == "blocked"
+    logger.error("PASOOOOOOOO")
 
     # Relate both Dashboards and the Client to Opensearch
     await ops_test.model.integrate(OPENSEARCH_APP_NAME, APP_NAME)
     await ops_test.model.integrate(DB_CLIENT_APP_NAME, OPENSEARCH_APP_NAME)
+    logger.error("PASOOOOOOOO2")
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME, DB_CLIENT_APP_NAME, OPENSEARCH_APP_NAME],
         status="active",
@@ -298,7 +300,7 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     """Test HTTPS access to each dashboard unit."""
 
     logger.info("Breaking opensearch connection")
-    await ops_test.juju("remove-relation", "wazuh-indexer", "opensearch-dashboards")
+    await ops_test.juju("remove-relation", "wazuh-indexer", "wazuh-dashboard")
     await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="active", timeout=1000)
 
     async with ops_test.fast_forward("30s"):

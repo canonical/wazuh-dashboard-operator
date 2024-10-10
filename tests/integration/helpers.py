@@ -750,6 +750,7 @@ async def client_run_all_dashboards_request(
         response = await client_run_dashboards_request(
             ops_test, unit_name, relation, method, host, endpoint, payload, https
         )
+        logger.error(response["results"])
         if "results" in response:
             result.append(json.loads(response["results"])["rawResponse"])
         else:
