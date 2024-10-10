@@ -92,12 +92,10 @@ async def test_build_and_deploy(ops_test: OpsTest):
         await ops_test.model.wait_for_idle(apps=[APP_NAME], timeout=1000, idle_period=30)
 
     assert ops_test.model.applications[APP_NAME].status == "blocked"
-    logger.error("PASOOOOOOOO")
 
     # Relate both Dashboards and the Client to Opensearch
     await ops_test.model.integrate(OPENSEARCH_APP_NAME, APP_NAME)
     await ops_test.model.integrate(DB_CLIENT_APP_NAME, OPENSEARCH_APP_NAME)
-    logger.error("PASOOOOOOOO2")
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME, DB_CLIENT_APP_NAME, OPENSEARCH_APP_NAME],
         status="active",
