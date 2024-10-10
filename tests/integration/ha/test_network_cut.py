@@ -26,7 +26,7 @@ RESTART_DELAY = 60
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_APP_NAME = "wazuh-indexer"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
     "cloudinit-userdata": """postruncmd:
@@ -60,8 +60,8 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
     # Opensearch
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
-    # NOTE: can't access 2/stable from the tests, only 'edge' available
-    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB)
+    # NOTE: can't access stable from the tests, only 'edge' available
+    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="latest/edge", num_units=NUM_UNITS_DB)
 
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(TLS_CERT_APP_NAME, channel="stable", config=config)

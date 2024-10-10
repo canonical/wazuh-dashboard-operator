@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_APP_NAME = "wazuh-indexer"
 OPENSEARCH_RELATION_NAME = "opensearch-client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
@@ -70,7 +70,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     config = {"ca-common-name": "CN_CA"}
     await asyncio.gather(
         ops_test.model.deploy(COS_AGENT_APP_NAME, num_units=1),
-        ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB),
+        ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="latest/edge", num_units=NUM_UNITS_DB),
         ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config),
         ops_test.model.deploy(application_charm_build, application_name=DB_CLIENT_APP_NAME),
     )
@@ -250,7 +250,7 @@ async def test_cos_relations(ops_test: OpsTest):
 @pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-@pytest.mark.log_level_change
+# @pytest.mark.log_level_change
 async def test_log_level_change(ops_test: OpsTest):
 
     for unit in ops_test.model.applications[APP_NAME].units:
@@ -298,7 +298,7 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     """Test HTTPS access to each dashboard unit."""
 
     logger.info("Breaking opensearch connection")
-    await ops_test.juju("remove-relation", "opensearch", "opensearch-dashboards")
+    await ops_test.juju("remove-relation", "wazuh-indexer", "opensearch-dashboards")
     await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="active", timeout=1000)
 
     async with ops_test.fast_forward("30s"):
@@ -351,7 +351,7 @@ async def test_restore_opensearch_restores_osd(ops_test: OpsTest):
     logger.info("Destroying and restoring the Opensearch cluster")
     await destroy_cluster(ops_test, app=OPENSEARCH_APP_NAME)
 
-    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB),
+    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="latest/edge", num_units=NUM_UNITS_DB),
     await ops_test.model.integrate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
     async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="blocked")
