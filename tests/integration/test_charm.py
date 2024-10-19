@@ -15,6 +15,7 @@ from pytest_operator.plugin import OpsTest
 
 from .helpers import (
     DASHBOARD_QUERY_PARAMS,
+    SERIES,
     access_all_dashboards,
     access_all_prometheus_exporters,
     all_dashboards_unavailable,
@@ -69,7 +70,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
 
     config = {"ca-common-name": "CN_CA"}
     await asyncio.gather(
-        ops_test.model.deploy(COS_AGENT_APP_NAME, num_units=1),
+        ops_test.model.deploy(COS_AGENT_APP_NAME, series=SERIES),
         ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB),
         ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config),
         ops_test.model.deploy(application_charm_build, application_name=DB_CLIENT_APP_NAME),
