@@ -14,6 +14,7 @@ import yaml
 from pytest_operator.plugin import OpsTest
 
 from .helpers import (
+    CONFIG_OPTS,
     DASHBOARD_QUERY_PARAMS,
     SERIES,
     access_all_dashboards,
@@ -71,7 +72,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
     config = {"ca-common-name": "CN_CA"}
     await asyncio.gather(
         ops_test.model.deploy(COS_AGENT_APP_NAME, series=SERIES),
-        ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB),
+        ops_test.model.deploy(
+            OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB, config=CONFIG_OPTS
+        ),
         ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="stable", config=config),
         ops_test.model.deploy(application_charm_build, application_name=DB_CLIENT_APP_NAME),
     )
@@ -354,7 +357,9 @@ async def test_restore_opensearch_restores_osd(ops_test: OpsTest):
     logger.info("Destroying and restoring the Opensearch cluster")
     await destroy_cluster(ops_test, app=OPENSEARCH_APP_NAME)
 
-    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB),
+    await ops_test.model.deploy(
+        OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB, config=CONFIG_OPTS
+    ),
     await ops_test.model.integrate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
     async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="blocked")
