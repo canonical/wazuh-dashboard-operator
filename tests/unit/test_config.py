@@ -32,8 +32,6 @@ opensearch_security.readonly_mode.roles:
 path.data: /var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards
 server.host: {ip}
 server.ssl.enabled: false
-server.ssl.supportedProtocols:
-- TLSv1.2
 """
 
 

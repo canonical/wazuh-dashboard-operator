@@ -25,7 +25,6 @@ DEFAULT_PROPERTIES = {
     "opensearch_security.readonly_mode.roles": ["kibana_read_only"],
     "server.ssl.enabled": False,
     "opensearch_security.cookie.secure": False,
-    "server.ssl.supportedProtocols": ["TLSv1.2"],  # In tandem with current OpenSearch
 }
 
 # Overrides the DEFAULT_PROPERTIES if we have TLS enabled
