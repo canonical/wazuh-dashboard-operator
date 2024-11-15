@@ -12,11 +12,11 @@ variable "app_name" {
 variable "simple_opensearch_units" {
   description = "Node count"
   type        = number
-  default     = 1
+  default     = 3
 }
 
 variable "simple_opensearch_dashboards_units" {
   description = "OpenSearch dashboards node count"
   type        = number
-  default     = 1
+  default     = 3
 }
