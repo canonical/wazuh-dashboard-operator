@@ -84,6 +84,6 @@ resource "null_resource" "simple_deployment_juju_wait_deployment" {
   depends_on = [
     juju_integration.simple_deployment_tls-operator_opensearch-integration,
     juju_integration.dashboards_opensearch-integration,
-    imple_deployment_tls-operator_opensearch-dashboards-integration,
+    juju_integration.simple_deployment_tls-operator_opensearch-dashboards-integration,
   ]
 }
