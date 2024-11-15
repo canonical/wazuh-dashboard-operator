@@ -65,7 +65,7 @@ resource "juju_integration" "simple_deployment_tls-operator_opensearch-integrati
     name = juju_application.self-signed-certificates.name
   }
   application {
-    name = module.opensearch.app_name
+    name = module.opensearch-dashboards.app_name
   }
   depends_on = [
     juju_application.self-signed-certificates,
