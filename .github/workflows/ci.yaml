@@ -77,12 +77,10 @@ jobs:
           pushd ./terraform
           terraform init
           terraform fmt
-          # -test-directory is not really working, it is ignoring some errors
           terraform validate
           pushd ./tests
           terraform init
           terraform fmt
-          # -test-directory is not really working, it is ignoring some errors
           terraform validate
           popd
           popd

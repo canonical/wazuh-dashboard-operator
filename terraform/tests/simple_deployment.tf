@@ -10,7 +10,7 @@ module "opensearch-dashboards" {
 }
 
 module "opensearch" {
-  source     = "git::https://github.com/canonical/opensearch-operator//terraform?ref=DPE-5866-terraform"
+  source     = "git::https://github.com/canonical/opensearch-operator//terraform?ref=2/edge"
   app_name   = "opensearch"
   model = var.model_name
   units      = var.simple_opensearch_units
