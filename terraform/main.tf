@@ -26,8 +26,6 @@ resource "juju_application" "opensearch-dashboards" {
     }
   ]
 
-  storage_directives = var.storage
-
   lifecycle {
     precondition {
       condition     = length(var.machines) == 0 || length(var.machines) == var.units
