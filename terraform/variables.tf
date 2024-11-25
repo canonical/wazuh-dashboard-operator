@@ -54,12 +54,6 @@ variable "machines" {
   default     = []
 }
 
-variable "storage" {
-  description = "Map of storage used by the application"
-  type        = map(string)
-  default     = {}
-}
-
 variable "endpoint_bindings" {
   description = "Map of endpoint bindings"
   type        = map(string)
