@@ -73,7 +73,7 @@ jobs:
     with:
       path-to-charm-directory: ${{ matrix.path }}
       cache: false
-      artifact-prefix: packed-charm-cache-false
+      artifact-prefix: osd-test-charm
 
   integration-test:
     strategy:
@@ -95,7 +95,7 @@ jobs:
       - build
     uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v22.0.0
     with:
-      artifact-prefix: packed-charm-cache-false
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
       cloud: lxd
       juju-agent-version: ${{ matrix.juju.agent }}
       juju-snap-channel: ${{ matrix.juju.snap_channel }}
