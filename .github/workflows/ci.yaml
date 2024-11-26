@@ -73,7 +73,7 @@ jobs:
     with:
       path-to-charm-directory: ${{ matrix.path }}
       cache: false
-      artifact-prefix: osd-test-charm
+      # artifact-prefix: osd-test-charm
 
   integration-test:
     strategy:
