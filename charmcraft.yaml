@@ -2,6 +2,10 @@
 # See LICENSE file for licensing details.
 
 type: charm
+base: ubuntu@22.04
+platforms:
+  amd64:
+
 parts:
   charm:
     charm-entrypoint: src/charm.py
@@ -22,10 +26,3 @@ parts:
       craftctl default
     charm-strict-dependencies: true
     charm-requirements: [requirements.txt]
-bases:
-  - build-on:
-      - name: "ubuntu"
-        channel: "22.04"
-    run-on:
-      - name: "ubuntu"
-        channel: "22.04"
