@@ -35,7 +35,6 @@ pure-sasl = "^0.6.2"
 cosl = "^0.0.12"
 pydantic = "^1.10.17"
 pyyaml = "^6.0.1"
-poetry-plugin-export = "^1.8.0"
 
 # TODO: clean any of the notes below and their deps.
 [tool.poetry.group.charm-libs.dependencies]
