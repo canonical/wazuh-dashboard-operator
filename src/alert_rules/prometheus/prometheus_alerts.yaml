@@ -1,15 +1,27 @@
 "groups":
 - "name": "opensearch_dashboards.alerts"
   "rules":
+
+  - "alert": "OpenSearchDashboardsScrapeFailed"
+    "annotations":
+      "message": "Scrape on {{ $labels.juju_unit }} failed. Ensure that the OpenSearch Dashboards systemd service is healthy."
+      "summary": "OpenSearch exporter scrape failed"
+    "expr": |
+      up < 1
+    "for": "5m"
+    "labels":
+      "severity": "critical"
+
   - "alert": "OpenSearchDashboardsNotHealthy"
     "annotations":
-      "message": "Server status is not green. The server may be down, it may have lost connection to Opensearch, or may suffer of partial unavailability." 
+      "message": "Server status is not green. The server may be down, it may have lost connection to Opensearch, or may suffer of partial unavailability."
       "summary": "Server health status is green"
     "expr": |
       absent(kibana_status) == 1 or kibana_status > 0
     "for": "2m"
     "labels":
       "severity": "critical"
+
   - "alert": "OpenSearchDashboardsLongResponseTime"
     "annotations":
       "message": "The server is up and responsive, however with a high latency."
@@ -19,6 +31,7 @@
     "for": "2m"
     "labels":
       "severity": "critical"
+
   - "alert": "OpenSearchDashboardsNoOpensearchConnection"
     "annotations":
       "message": "Connection to the Opensearch backend is lost."
