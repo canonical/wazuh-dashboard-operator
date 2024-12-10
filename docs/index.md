@@ -3,6 +3,9 @@ The [Wazuh Dashboard](https://documentation.wazuh.com/current/user-manual/wazuh-
 is a component for analyzing and visualizing security data data based on [OpenSearch](http://opensearch.org/). Consequently,
 this charm is a  [Charmed OpenSearch Dashboards](https://github.com/canonical/opensearch-dashboards-operator) fork.
 
+When deployed and integrated with the [Wazuh Server charm](https://charmhub.io/wazuh-server),
+the Wazuh Dashboard charm expands the capabilities that the OpenSearch Dashboards charm would provide. See the Server charm's documentation for more details. 
+
 For the complete documentation, refer to [upstream](https://charmhub.io/opensearch-dashboards).
 
 ## Project and community
