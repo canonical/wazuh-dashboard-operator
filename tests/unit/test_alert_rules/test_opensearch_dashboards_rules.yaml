@@ -1,0 +1,20 @@
+rule_files:
+  - ../../../src/alert_rules/prometheus/prometheus_alerts.yaml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'up{juju_unit="opensearch-dashboards/1"}'
+        values: '0x20'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: OpenSearchDashboardsScrapeFailed
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              juju_unit: opensearch-dashboards/1
+            exp_annotations:
+              message: "Scrape on opensearch-dashboards/1 failed. Ensure that the OpenSearch Dashboards systemd service is healthy."
+              summary: "OpenSearch exporter scrape failed"
