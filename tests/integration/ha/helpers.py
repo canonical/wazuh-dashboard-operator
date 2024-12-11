@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-PROCESS = "/snap/opensearch-dashboards/8/opt/opensearch-dashboards/start.sh"
+PROCESS = "/snap/wazuh-dashboard/8/opt/opensearch-dashboards/start.sh"
 SERVICE_DEFAULT_PATH = "/etc/systemd/system/snap.charmed-zookeeper.daemon.service"
 PEER = "cluster"
 

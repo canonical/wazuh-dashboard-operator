@@ -1,5 +1,5 @@
 "groups":
-- "name": "opensearch_dashboards.alerts"
+- "name": "wazuh_dashboard.alerts"
   "rules":
   - "alert": "OpenSearchDashboardsNotHealthy"
     "annotations":

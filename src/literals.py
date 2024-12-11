@@ -4,10 +4,10 @@
 
 """Collection of global literals for the charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = "24"
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = "2"
 
 SUBSTRATE = "vm"
-CHARM_KEY = "opensearch-dashboards"
+CHARM_KEY = "wazuh-dashboard"
 
 PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch-client"
@@ -28,10 +28,10 @@ DEPENDENCIES = {
 }
 
 PATHS = {
-    "CONF": "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards",
-    "DATA": "/var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards",
-    "LOGS": "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards",
-    "BIN": "/snap/opensearch-dashboards/current/opt/opensearch-dashboards",
+    "CONF": "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard",
+    "DATA": "/var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard",
+    "LOGS": "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard",
+    "BIN": "/snap/wazuh-dashboard/current/opt/wazuh-dashboard",
 }
 
 PEER_APP_SECRETS = [

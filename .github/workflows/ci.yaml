@@ -28,26 +28,6 @@ jobs:
       - name: Run linters
         run: tox run -e lint
 
-  lib-check:               
-    name: Check libraries  
-    runs-on: ubuntu-latest
-    timeout-minutes: 5     
-    steps:                 
-      - name: Checkout     
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   
-      - run: |
-          # Workaround for https://github.com/canonical/charmcraft/issues/1389#issuecomment-1880921728
-          touch requirements.txt          
-      - name: Check libs   
-        uses: canonical/charming-actions/check-libraries@2.6.0
-        with:
-          credentials: ${{ secrets.CHARMHUB_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          use-labels: false
-          fail-build: ${{ github.event_name == 'pull_request' }}
-
   unit-test:
     name: Unit test charm
     runs-on: ubuntu-latest
