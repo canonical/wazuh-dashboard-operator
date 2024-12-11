@@ -135,11 +135,11 @@ jobs:
           - .
           - tests/integration/application-charm
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@lucas/fix-collect-bases
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@beta-charmcraftst124
     with:
       path-to-charm-directory: ${{ matrix.path }}
       cache: false
-      charmcraft-snap-channel: 3.x/stable
+      # charmcraft-snap-channel: 3.x/stable
 
   integration-test:
     strategy:
@@ -159,9 +159,9 @@ jobs:
       - lint
       - unit-test
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v22.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v23.1.1
     with:
-      artifact-prefix:  packed-charm-cache-true
+      artifact-prefix:  packed-charm-cache-false
       cloud: lxd
       juju-agent-version: ${{ matrix.juju.agent }}
       juju-snap-channel: ${{ matrix.juju.snap_channel }}
