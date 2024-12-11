@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class ODWorkload(WorkloadBase):
     """Implementation of WorkloadBase for running on VMs."""
 
-    SNAP_NAME = "opensearch-dashboards"
+    SNAP_NAME = "wazuh-dashboard"
     SNAP_APP_SERVICE = "opensearch-dashboards-daemon"
     SNAP_EXPORTER_SERVICE = "kibana-exporter-daemon"
 
@@ -134,7 +134,7 @@ class ODWorkload(WorkloadBase):
             dashboards.ensure(
                 snap.SnapState.Present,
                 revision=OPENSEARCH_DASHBOARDS_SNAP_REVISION,
-                channel="edge",
+                channel="4/edge",
             )
 
             self.dashboards = dashboards
