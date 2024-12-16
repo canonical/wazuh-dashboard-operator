@@ -134,7 +134,6 @@ class ODWorkload(WorkloadBase):
             dashboards.ensure(
                 snap.SnapState.Present,
                 revision=OPENSEARCH_DASHBOARDS_SNAP_REVISION,
-                channel="edge",
             )
 
             self.dashboards = dashboards
