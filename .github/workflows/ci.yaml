@@ -28,19 +28,19 @@ jobs:
       - name: Run linters
         run: tox run -e lint
 
-  lib-check:               
-    name: Check libraries  
+  lib-check:
+    name: Check libraries
     runs-on: ubuntu-latest
-    timeout-minutes: 5     
-    steps:                 
-      - name: Checkout     
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   
+          fetch-depth: 0
       - run: |
           # Workaround for https://github.com/canonical/charmcraft/issues/1389#issuecomment-1880921728
-          touch requirements.txt          
-      - name: Check libs   
+          touch requirements.txt
+      - name: Check libs
         uses: canonical/charming-actions/check-libraries@2.6.0
         with:
           credentials: ${{ secrets.CHARMHUB_TOKEN }}
@@ -61,6 +61,9 @@ jobs:
           pipx install poetry
       - name: Run tests
         run: tox run -e unit
+
+  promtool:
+    uses: ./.github/workflows/test_prometheus_rules.yaml
 
   terraform-test:
     name: Terraform - Lint and Simple Deployment
@@ -129,13 +132,13 @@ jobs:
           # All runs
           - agent: 3.5.3 # renovate: juju-agent-pin-minor
             allure_report: true
-          
+
           # This runs only on scheduled runs, DPW 21 specifics (scheduled + 3.6/X)
           - snap_channel: 3.6/beta
             allure_report: false
-    
+
     name: Integration test charm | ${{ matrix.juju.agent || matrix.juju.snap_channel }}
-    
+
     needs:
       - lint
       - unit-test
