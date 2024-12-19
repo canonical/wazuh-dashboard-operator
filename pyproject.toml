@@ -97,7 +97,6 @@ responses = "^0.25.3"
 
 [tool.poetry.group.integration.dependencies]
 pytest = "^8.2.2"
-# should not be updated unless https://github.com/juju/python-libjuju/issues/1093 is fixed
 juju = "~3.6.0"
 tenacity = "^8.4.2"
 coverage = {extras = ["toml"], version = ">7.0"}
