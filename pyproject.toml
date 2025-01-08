@@ -22,11 +22,8 @@ target-version = ["py310"]
 profile = "black"
 
 [tool.poetry]
-# Charm is not packed as a standard Python package; this information is not used
-name = "charm"
-version = "1.0"
-description = "opensearch-dashboards-operator"
-authors = []
+package-mode = false
+requires-poetry = ">=2.0.0"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -103,11 +100,11 @@ coverage = {extras = ["toml"], version = ">7.0"}
 pytest-asyncio = "^0.21.2"
 pytest-operator = ">0.20"
 pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", branch = "beta-charmcraftst124", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
-pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v23.1.1", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
-pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v23.1.1", subdirectory = "python/pytest_plugins/microceph"}
-pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v23.1.1", subdirectory = "python/pytest_plugins/github_secrets"}
+pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.6", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
+pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.6", subdirectory = "python/pytest_plugins/microceph"}
+pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.6", subdirectory = "python/pytest_plugins/github_secrets"}
 allure-pytest = "^2.13.5"
-allure-pytest-collection-report = {git = "https://github.com/canonical/data-platform-workflows", tag = "v23.1.1", subdirectory = "python/pytest_plugins/allure_pytest_collection_report"}
+allure-pytest-collection-report = {git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.6", subdirectory = "python/pytest_plugins/allure_pytest_collection_report"}
 
 [tool.pyright]
 include = ["src"]

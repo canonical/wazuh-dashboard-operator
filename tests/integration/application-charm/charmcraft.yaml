@@ -10,3 +10,8 @@ type: charm
 # maintenance & tooling)
 platforms:
   ubuntu@22.04:amd64:
+
+parts:
+  my-charm:
+    source: .
+    plugin: charm
