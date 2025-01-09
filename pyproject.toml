@@ -22,11 +22,8 @@ target-version = ["py310"]
 profile = "black"
 
 [tool.poetry]
-# Charm is not packed as a standard Python package; this information is not used
-name = "charm"
-version = "1.0"
-description = "opensearch-dashboards-operator"
-authors = []
+package-mode = false
+requires-poetry = ">=2.0.0"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -35,6 +32,9 @@ pure-sasl = "^0.6.2"
 cosl = "^0.0.12"
 pydantic = "^1.10.17"
 pyyaml = "^6.0.1"
+
+# Needed to avoid pip breaking on ninja package during `craftctl default` on `override-build`
+rapidfuzz="3.9.7"
 
 # TODO: clean any of the notes below and their deps.
 [tool.poetry.group.charm-libs.dependencies]
@@ -94,18 +94,17 @@ responses = "^0.25.3"
 
 [tool.poetry.group.integration.dependencies]
 pytest = "^8.2.2"
-# should not be updated unless https://github.com/juju/python-libjuju/issues/1093 is fixed
-juju = "~3.5.0"
+juju = "~3.6.0"
 tenacity = "^8.4.2"
 coverage = {extras = ["toml"], version = ">7.0"}
 pytest-asyncio = "^0.21.2"
 pytest-operator = ">0.20"
-pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.7.0", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
-pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.7.0", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
-pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.7.0", subdirectory = "python/pytest_plugins/microceph"}
-pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.7.0", subdirectory = "python/pytest_plugins/github_secrets"}
+pytest-operator-cache = {git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.6", subdirectory = "python/pytest_plugins/pytest_operator_cache"}
+pytest-operator-groups = {git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.6", subdirectory = "python/pytest_plugins/pytest_operator_groups"}
+pytest-microceph = {git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.6", subdirectory = "python/pytest_plugins/microceph"}
+pytest-github-secrets = {git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.6", subdirectory = "python/pytest_plugins/github_secrets"}
 allure-pytest = "^2.13.5"
-allure-pytest-collection-report = {git = "https://github.com/canonical/data-platform-workflows", tag = "v16.7.0", subdirectory = "python/pytest_plugins/allure_pytest_collection_report"}
+allure-pytest-collection-report = {git = "https://github.com/canonical/data-platform-workflows", tag = "v24.0.6", subdirectory = "python/pytest_plugins/allure_pytest_collection_report"}
 
 [tool.pyright]
 include = ["src"]

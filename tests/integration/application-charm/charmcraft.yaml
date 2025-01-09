@@ -2,6 +2,8 @@
 # See LICENSE file for licensing details.
 
 type: charm
+# platforms:
+#   ubuntu@22.04:amd64:
 bases:
   - build-on:
       - name: "ubuntu"
@@ -9,3 +11,8 @@ bases:
     run-on:
       - name: "ubuntu"
         channel: "22.04"
+
+parts:
+  my-charm:
+    source: .
+    plugin: charm

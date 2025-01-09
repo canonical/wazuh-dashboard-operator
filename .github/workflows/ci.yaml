@@ -16,7 +16,7 @@ on:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -30,7 +30,7 @@ jobs:
 
   lib-check:
     name: Check libraries
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -50,7 +50,7 @@ jobs:
 
   unit-test:
     name: Unit test charm
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -63,7 +63,7 @@ jobs:
         run: tox run -e unit
 
   promtool:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -82,7 +82,7 @@ jobs:
 
   terraform-test:
     name: Terraform - Lint and Simple Deployment
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
       - name: Checkout repo
@@ -135,10 +135,11 @@ jobs:
           - .
           - tests/integration/application-charm
     name: Build charm
-    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v22.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/build_charm.yaml@v24.0.6
     with:
       path-to-charm-directory: ${{ matrix.path }}
-      cache: true
+      cache: false
+      # charmcraft-snap-channel: 3.x/stable
 
   integration-test:
     strategy:
@@ -158,9 +159,9 @@ jobs:
       - lint
       - unit-test
       - build
-    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v22.0.0
+    uses: canonical/data-platform-workflows/.github/workflows/integration_test_charm.yaml@v24.0.6
     with:
-      artifact-prefix:  packed-charm-cache-true
+      artifact-prefix:  packed-charm-cache-false
       cloud: lxd
       juju-agent-version: ${{ matrix.juju.agent }}
       juju-snap-channel: ${{ matrix.juju.snap_channel }}
