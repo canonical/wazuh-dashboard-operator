@@ -8,10 +8,10 @@ type: charm
 # (ST124 syntax is needed to enable multi-base charms with Ubuntu 24.04. We use ST124 syntax across
 # all of our charms [even those that aren't multi base] for consistency and to simplify CI/CD
 # maintenance & tooling)
-platforms:
-  ubuntu@22.04:amd64:
-  # TODO: enable after charmcraft 3 migration
-  # ubuntu@24.04:amd64:
+# platforms:
+#   ubuntu@22.04:amd64:
+#   # TODO: enable after charmcraft 3 migration
+#   ubuntu@24.04:amd64:
 
 parts:
   charm:
