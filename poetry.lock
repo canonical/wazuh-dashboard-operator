@@ -33,8 +33,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v24.0.6"
-resolved_reference = "11c673f692893a15d15ee63469420e91f91f8a95"
+reference = "v26.0.0"
+resolved_reference = "92d0a9f28a22c57b5965866c22f65b5021d3b115"
 subdirectory = "python/pytest_plugins/allure_pytest_collection_report"
 
 [[package]]
@@ -1741,8 +1741,8 @@ develop = false
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v24.0.6"
-resolved_reference = "11c673f692893a15d15ee63469420e91f91f8a95"
+reference = "v26.0.0"
+resolved_reference = "92d0a9f28a22c57b5965866c22f65b5021d3b115"
 subdirectory = "python/pytest_plugins/github_secrets"
 
 [[package]]
@@ -1762,8 +1762,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v24.0.6"
-resolved_reference = "11c673f692893a15d15ee63469420e91f91f8a95"
+reference = "v26.0.0"
+resolved_reference = "92d0a9f28a22c57b5965866c22f65b5021d3b115"
 subdirectory = "python/pytest_plugins/microceph"
 
 [[package]]
@@ -1820,8 +1820,8 @@ pyyaml = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v24.0.6"
-resolved_reference = "11c673f692893a15d15ee63469420e91f91f8a95"
+reference = "v26.0.0"
+resolved_reference = "92d0a9f28a22c57b5965866c22f65b5021d3b115"
 subdirectory = "python/pytest_plugins/pytest_operator_cache"
 
 [[package]]
@@ -1840,8 +1840,8 @@ pytest = "*"
 [package.source]
 type = "git"
 url = "https://github.com/canonical/data-platform-workflows"
-reference = "v24.0.6"
-resolved_reference = "11c673f692893a15d15ee63469420e91f91f8a95"
+reference = "v26.0.0"
+resolved_reference = "92d0a9f28a22c57b5965866c22f65b5021d3b115"
 subdirectory = "python/pytest_plugins/pytest_operator_groups"
 
 [[package]]
@@ -2583,4 +2583,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "9bf04669b598b534634f4f65e5db9bc171b36d4c999017fa643538d41a65c44b"
+content-hash = "2c1fccadb6e34e7f322e9811101a5265111fa4bb5211b869a96767a9d887de41"
