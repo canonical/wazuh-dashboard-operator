@@ -28,7 +28,7 @@ class ODWorkload(WorkloadBase):
 
     SNAP_NAME = "opensearch-dashboards"
     SNAP_APP_SERVICE = "opensearch-dashboards-daemon"
-    SNAP_EXPORTER_SERVICE = "kibana-exporter-daemon"
+    SNAP_EXPORTER_SERVICE = "exporter-daemon"
 
     def __init__(self):
         self.dashboards = snap.SnapCache()[self.SNAP_NAME]
