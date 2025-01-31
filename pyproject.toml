@@ -45,6 +45,7 @@ jsonschema = "*"
 pydantic = "^1.10"
 # grafana_agent/v0/cos_agent.py
 cosl = "*"
+data-platform-helpers = "^0.1.4"
 
 
 [tool.poetry.group.fmt]
