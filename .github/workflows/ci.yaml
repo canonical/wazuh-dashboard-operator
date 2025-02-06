@@ -103,7 +103,7 @@ jobs:
           popd
       - name: run checks - prepare
         run: |
-          sudo snap install juju --channel=3.6/beta --classic
+          sudo snap install juju --channel=3.6 --classic
           sudo snap install juju-wait --channel=latest/stable --classic
           sudo snap install jq
       - name: LXD setup
@@ -123,8 +123,8 @@ jobs:
           juju add-model test
       - name: Terraform deploy
         run: |
-          pushd ./terraform/tests/
-          TF_VAR_model_name="test" terraform apply -target null_resource.simple_deployment_juju_wait_deployment -auto-approve
+          pushd ./terraform
+          TF_VAR_model_name="test" terraform apply -auto-approve
           popd
 
   build:
