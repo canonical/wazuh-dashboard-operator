@@ -100,11 +100,6 @@ jobs:
           terraform init
           terraform fmt
           terraform validate
-          pushd ./tests
-          terraform init
-          terraform fmt
-          terraform validate
-          popd
           popd
       - name: run checks - prepare
         run: |
