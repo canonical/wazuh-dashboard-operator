@@ -124,7 +124,7 @@ jobs:
       - name: Terraform deploy
         run: |
           pushd ./terraform
-          TF_VAR_model_name="test" terraform apply -auto-approve
+          terraform apply -var='model=test' -auto-approve
           popd
 
   build:
