@@ -122,9 +122,10 @@ jobs:
           pushd ./terraform
           terraform apply -var='model=test' -auto-approve
           popd
-          
-          juju wait-for model test --query='life=="alive" && status=="available"'
+      - name: Wait for model and applications
+        run: |
           juju wait-for application opensearch-dashboards -m test --query='status=="blocked"'
+          juju wait-for model test --query='life=="alive" && status=="available"'
 
   build:
     strategy:
