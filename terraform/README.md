@@ -16,7 +16,7 @@ The module offers the following configurable inputs:
 | `channel`     | string      | Channel that the charm is deployed from | False |
 | `base`        | string      | The series to be used for this charm | False |
 | `config`      | map(string) | Map of the charm configuration options | False |
-| `model_name`  | string      | Name of the model that the charm is deployed on | True |
+| `model`       | string      | Name of the model that the charm is deployed on | True |
 | `resources`   | map(string) | Map of the charm resources | False |
 | `revision`    | number      | Revision number of the charm name | False |
 | `units`       | number      | Number of units to be deployed | False |
@@ -56,7 +56,7 @@ Define a `data` source and pass to the `model` input a reference to the `data.ju
 
 ```
 data "juju_model" "opensearch" {
-  name = var.model_name
+  name = var.model
 }
 
 module "opensearch-dashboards" {
