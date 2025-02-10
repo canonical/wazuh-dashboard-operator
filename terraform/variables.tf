@@ -59,3 +59,10 @@ variable "endpoint_bindings" {
   type        = map(string)
   default     = {}
 }
+
+# additional variables
+variable "tls" {
+  description = "Whether TLS should be enabled"
+  type        = bool
+  default     = false
+}

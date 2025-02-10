@@ -33,3 +33,35 @@ resource "juju_application" "opensearch-dashboards" {
     }
   }
 }
+
+# Deploy the self-signed-certificates operator if tls enabled
+resource "juju_application" "self-signed-certificates" {
+  for_each = var.tls ? { "deployed" = true } : {}
+
+  model = var.model
+
+  charm {
+    name    = "self-signed-certificates"
+    channel = "latest/stable"
+  }
+}
+
+# Integrate with the self-signed-certificates if tls is enabled
+resource "juju_integration" "tls-opensearch_dashboards_integration" {
+  for_each = var.tls ? { "deployed" = true } : {}
+
+  model = var.model
+
+  application {
+    name = "self-signed-certificates"
+  }
+
+  application {
+    name = juju_application.opensearch-dashboards.name
+  }
+
+  depends_on = [
+    juju_application.opensearch-dashboards,
+    juju_application.self-signed-certificates,
+  ]
+}
