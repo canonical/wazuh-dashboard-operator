@@ -48,7 +48,7 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
                 "add-machine",
                 f"--model={ops_test.model.name}",
                 '--constraints="spaces=alpha,cluster,backup,client"',
-                f"--series={SERIES}"
+                f"--series={SERIES}",
             ]
         )
 
