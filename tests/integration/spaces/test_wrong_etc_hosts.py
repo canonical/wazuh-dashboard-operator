@@ -42,10 +42,14 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
     osd_charm = await ops_test.build_charm(".")
 
     for _ in range(DEFAULT_NUM_UNITS):
-        await ops_test.model.add_machine(
-            spec=None,
-            constraints={"spaces": ["alpha", "cluster", "backup", "client"]},
-            series=SERIES,
+        subprocess.check_output(
+            [
+                "juju",
+                "add-machine",
+                f"--model={ops_test.model.name}",
+                "--constraints=spaces=alpha,cluster,backup,client",
+                f"--series={SERIES}",
+            ]
         )
 
     await for_machines(ops_test, machines=list(range(DEFAULT_NUM_UNITS)))
