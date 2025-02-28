@@ -41,9 +41,13 @@ resource "juju_application" "self-signed-certificates" {
   model = var.model
 
   charm {
-    name    = "self-signed-certificates"
-    channel = "latest/stable"
+    name     = "self-signed-certificates"
+    channel  = var.self-signed-certificates.channel
+    revision = var.self-signed-certificates.revision
+    base     = var.self-signed-certificates.base
   }
+
+  config = var.self-signed-certificates.config
 }
 
 # Integrate with the self-signed-certificates if tls is enabled
@@ -53,7 +57,7 @@ resource "juju_integration" "tls-opensearch_dashboards_integration" {
   model = var.model
 
   application {
-    name = "self-signed-certificates"
+    name = juju_application.self-signed-certificates.name
   }
 
   application {
