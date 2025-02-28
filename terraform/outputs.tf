@@ -20,7 +20,7 @@ output "provides" {
 output app_names {
   description = "Output of all deployed application names."
   value = {
-    opensearch-dashboards     = juju_application.opensearch-dashboards.name
-    self-signed-certificates  = var.tls ? juju_application.self-signed-certificates["deployed"].name : null
+    opensearch-dashboards    = juju_application.opensearch-dashboards.name
+    self-signed-certificates = var.tls ? juju_application.self-signed-certificates["deployed"].name : null
   }
 }
