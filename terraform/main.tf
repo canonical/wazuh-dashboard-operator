@@ -57,7 +57,7 @@ resource "juju_integration" "tls-opensearch_dashboards_integration" {
   model = var.model
 
   application {
-    name = juju_application.self-signed-certificates.name
+    name = juju_application.self-signed-certificates["deployed"].name
   }
 
   application {
