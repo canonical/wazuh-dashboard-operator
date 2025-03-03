@@ -15,7 +15,6 @@ resource "juju_application" "opensearch-dashboards" {
   units       = var.units
   constraints = var.constraints
 
-
   # TODO: uncomment once final fixes have been added for:
   # Error: juju/terraform-provider-juju#443, juju/terraform-provider-juju#182
   # placement = join(",", var.machines)
@@ -25,13 +24,6 @@ resource "juju_application" "opensearch-dashboards" {
       endpoint = k, space = v
     }
   ]
-
-  lifecycle {
-    precondition {
-      condition     = length(var.machines) == 0 || length(var.machines) == var.units
-      error_message = "Machine count does not match unit count"
-    }
-  }
 }
 
 # Deploy the self-signed-certificates operator if tls enabled
@@ -46,8 +38,10 @@ resource "juju_application" "self-signed-certificates" {
     revision = var.self-signed-certificates.revision
     base     = var.self-signed-certificates.base
   }
+  constraints = var.self-signed-certificates.constraints
+  config      = var.self-signed-certificates.config
 
-  config = var.self-signed-certificates.config
+  placement = var.self-signed-certificates.machines != null ? var.self-signed-certificates.machines[0] : null
 }
 
 # Integrate with the self-signed-certificates if tls is enabled
