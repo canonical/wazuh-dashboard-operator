@@ -4,6 +4,7 @@
 
 import json
 import logging
+import requests
 import socket
 import subprocess
 from pathlib import Path
@@ -353,3 +354,25 @@ async def remove_restart_delay(ops_test: OpsTest, unit_name: str) -> None:
     # reload the daemon for systemd to reflect changes
     reload_cmd = f"exec --unit {unit_name} -- sudo systemctl daemon-reload"
     await ops_test.juju(*reload_cmd.split(), check=True)
+
+
+async def set_watermark(
+    ops_test: OpsTest,
+    unit_ip: str,
+) -> None:
+    """Set watermark on the application."""
+    protocol = "https"
+    url = f"{protocol}://{unit_ip}:9200/_cluster/settings"
+    data = json.dumps(
+        {
+            "persistent": {
+                "cluster.routing.allocation.disk.threshold_enabled": "false",
+            }
+        }
+    )
+    headers = {
+        "Content-Type": "application/json",
+    }
+
+    arguments = {"url": url, "headers": headers, "data": data, verify=False}
+    response = requests.put(**arguments)
