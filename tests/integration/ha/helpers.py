@@ -356,10 +356,7 @@ async def remove_restart_delay(ops_test: OpsTest, unit_name: str) -> None:
     await ops_test.juju(*reload_cmd.split(), check=True)
 
 
-async def set_watermark(
-    ops_test: OpsTest,
-    unit_ip: str,
-) -> None:
+async def set_watermark(unit_ip: str) -> None:
     """Set watermark on the application."""
     protocol = "https"
     url = f"{protocol}://{unit_ip}:9200/_cluster/settings"
