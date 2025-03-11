@@ -70,14 +70,12 @@ async def test_build_and_deploy(ops_test: OpsTest):
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(TLS_CERT_APP_NAME, channel="stable", config=config)
 
-    await ops_test.model.wait_for_idle(
-        apps=[TLS_CERT_APP_NAME], wait_for_active=True, timeout=1000
-    )
-
     # Relate it to OpenSearch to set up TLS.
     await ops_test.model.relate(OPENSEARCH_APP_NAME, TLS_CERT_APP_NAME)
     await ops_test.model.wait_for_idle(
-        apps=[OPENSEARCH_APP_NAME, TLS_CERT_APP_NAME], wait_for_active=True, timeout=1000
+        apps=[OPENSEARCH_APP_NAME, TLS_CERT_APP_NAME],
+        wait_for_active=True,
+        timeout=LONG_TIMEOUT,
     )
 
     # Opensearch Dashboards
@@ -85,7 +83,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
         await ops_test.model.wait_for_idle(
             apps=[APP_NAME],
             wait_for_exact_units=NUM_UNITS_APP,
-            timeout=1000,
+            timeout=LONG_TIMEOUT,
             idle_period=30,
         )
 
