@@ -6,9 +6,10 @@ import logging
 from pathlib import Path
 from subprocess import CalledProcessError
 
-import integration.ha.helpers as ha_helpers, set_watermark
+import integration.ha.helpers as ha_helpers
 import pytest
 import yaml
+from integration.ha.opensearch import set_watermark
 from pytest_operator.plugin import OpsTest
 
 from ..helpers import (
@@ -94,9 +95,7 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(
         apps=[OPENSEARCH_APP_NAME, APP_NAME], wait_for_active=True, timeout=1000
     )
-    leader_name = await get_leader_name(ops_test)
-    os_leader_ip = await get_address(ops_test, leader_name)
-    set_watermark(os_leader_ip)
+    await set_watermark(ops_test, OPENSEARCH_APP_NAME)
 
 
 ##############################################################################
