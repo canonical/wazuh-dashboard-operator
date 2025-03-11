@@ -44,7 +44,7 @@ PEER = "dashboard_peers"
 SERVER_PORT = 5601
 
 NUM_UNITS_APP = 2
-NUM_UNITS_DB = 1
+NUM_UNITS_DB = 3
 
 LONG_TIMEOUT = 3000
 LONG_WAIT = 30
@@ -94,6 +94,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(
         apps=[OPENSEARCH_APP_NAME, APP_NAME], wait_for_active=True, timeout=1000
     )
+    leader_name = await get_leader_name(ops_test)
+    os_leader_ip = await get_address(ops_test, leader_name)
+    set_watermark(os_leader_ip)
 
 
 ##############################################################################
