@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from subprocess import CalledProcessError
 
-import integration.ha.helpers as ha_helpers
+import integration.ha.helpers as ha_helpers, set_watermark
 import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
