@@ -50,7 +50,7 @@ LONG_TIMEOUT = 3000
 LONG_WAIT = 30
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
@@ -353,28 +353,28 @@ async def network_throttle_application(ops_test: OpsTest, https: bool = False):
 ##############################################################################
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_network_cut_ip_change_leader_http(ops_test: OpsTest, request):
     await network_cut_leader(ops_test)
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_network_cut_no_ip_change_leader_http(ops_test: OpsTest, request):
     await network_throttle_leader(ops_test)
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_network_cut_ip_change_application_http(ops_test: OpsTest, request):
     await network_cut_application(ops_test)
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_network_no_ip_change_application_http(ops_test: OpsTest, request):
@@ -384,7 +384,7 @@ async def test_network_no_ip_change_application_http(ops_test: OpsTest, request)
 ##############################################################################
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_set_tls(ops_test: OpsTest, request):
@@ -402,28 +402,28 @@ async def test_set_tls(ops_test: OpsTest, request):
 ##############################################################################
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_network_cut_ip_change_leader_https(ops_test: OpsTest, request):
     await network_cut_leader(ops_test, https=True)
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_network_cut_no_ip_change_leader_https(ops_test: OpsTest, request):
     await network_throttle_leader(ops_test, https=True)
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_network_cut_ip_change_application_https(ops_test: OpsTest, request):
     await network_cut_application(ops_test, https=True)
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy"])
 @pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_network_cut_no_ip_change_application_https(ops_test: OpsTest, request):
