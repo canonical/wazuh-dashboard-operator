@@ -9,7 +9,6 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Optional
 
-import requests
 import yaml
 from pytest_operator.plugin import OpsTest
 from tenacity import RetryError, Retrying, retry, stop_after_attempt, wait_fixed
