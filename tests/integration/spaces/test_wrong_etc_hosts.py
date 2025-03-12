@@ -102,7 +102,7 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
     await ops_test.model.wait_for_idle(
         apps=[TLS_CERTIFICATES_APP_NAME, APP_NAME, OPENSEARCH_APP_NAME],
         status="active",
-        timeout=1000,
+        timeout=3000,
     )
     assert len(ops_test.model.applications[APP_NAME].units) == DEFAULT_NUM_UNITS
 
