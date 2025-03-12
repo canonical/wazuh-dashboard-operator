@@ -9,7 +9,6 @@ from subprocess import CalledProcessError
 import integration.ha.helpers as ha_helpers
 import pytest
 import yaml
-from integration.ha.opensearch import set_watermark
 from pytest_operator.plugin import OpsTest
 
 from ..helpers import (
