@@ -93,7 +93,6 @@ async def test_build_and_deploy(ops_test: OpsTest):
     await ops_test.model.wait_for_idle(
         apps=[OPENSEARCH_APP_NAME, APP_NAME], wait_for_active=True, timeout=1000
     )
-    await set_watermark(ops_test, OPENSEARCH_APP_NAME)
 
 
 ##############################################################################
