@@ -8,11 +8,10 @@ description: |
     analyzing, and visualizing security events and alerts data. It is also used for
     the management and monitoring of the Wazuh platform.
 summary: The Charmed Wazuh Dashboard operator
-link:
-  contact: https://launchpad.net/~canonical-is-devops
-  documentation: https://discourse.charmhub.io/t/wazuh-dashboard-documentation-overview/16072
-  issues: https://github.com/canonical/wazuh-dashbaord-operator/issues
-  source: https://github.com/canonical/wazuh-dashbaord-operator
+maintainers: https://launchpad.net/~canonical-is-devops
+docus: https://discourse.charmhub.io/t/wazuh-dashboard-documentation-overview/16072
+issues: https://github.com/canonical/wazuh-dashbaord-operator/issues
+source: https://github.com/canonical/wazuh-dashbaord-operator
 series:
   - jammy
 
