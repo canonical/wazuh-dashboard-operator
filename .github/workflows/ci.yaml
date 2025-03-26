@@ -97,7 +97,7 @@ jobs:
 
       - name: lint charm module
         run: |
-          pushd ./terraform
+          pushd ./terraform/charm
           terraform init && terraform fmt && terraform validate
           popd
       - name: run checks - prepare
