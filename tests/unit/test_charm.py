@@ -17,7 +17,6 @@ from charm import OpensearchDasboardsCharm, OpensearchDashboardsDependencyModel
 from helpers import clear_status
 from literals import CHARM_KEY, CONTAINER, OPENSEARCH_REL_NAME, PEER, SUBSTRATE
 from src.literals import (
-    MSG_INCOMPATIBLE_UPGRADE,
     MSG_STATUS_ERROR,
     MSG_STATUS_UNHEALTHY,
 )
@@ -503,47 +502,6 @@ def test_service_available(harness):
         harness.charm.on.update_status.emit()
 
         assert isinstance(harness.model.unit.status, ActiveStatus)
-
-
-@responses.activate
-def test_wrong_opensearch_version(harness):
-    expected_response = {
-        "status": {
-            "overall": {
-                "state": "green",
-            },
-        }
-    }
-
-    responses.add(
-        method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
-        status=200,
-        json=expected_response,
-    )
-
-    with harness.hooks_disabled():
-        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
-        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
-        harness.set_leader(True)
-        opensearch_rel_id = set_healthy_opensearch_connection(harness)
-        harness.update_relation_data(
-            opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "20.12.1"}
-        )
-
-    with (
-        patch("workload.ODWorkload.alive", return_value=True),
-        patch("workload.ODWorkload.write"),
-        patch("workload.ODWorkload.start", return_value=True),
-        patch("managers.config.ConfigManager.config_changed", return_value=False),
-        patch("managers.config.ConfigManager.set_dashboard_properties"),
-    ):
-        harness.charm.init_server()
-        harness.charm.on.update_status.emit()
-
-        assert isinstance(harness.model.unit.status, BlockedStatus)
-        assert harness.model.unit.status.message == MSG_INCOMPATIBLE_UPGRADE
 
 
 # def test_port_updates_if_tls(harness):

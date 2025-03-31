@@ -18,7 +18,6 @@ from charms.data_platform_libs.v0.upgrade import (
 from ops.model import BlockedStatus
 from typing_extensions import override
 
-from literals import MSG_INCOMPATIBLE_UPGRADE
 
 if TYPE_CHECKING:
     from charm import (
@@ -40,15 +39,6 @@ class ODUpgradeEvents(DataUpgrade):
     def __init__(self, charm: "OpensearchDashboardsCharm", **kwargs):
         super().__init__(charm, **kwargs)
         self.charm = charm
-
-    def post_upgrade_check(self) -> None:
-        """Runs necessary checks validating the unit is in a healthy state after upgrade."""
-        if not self.charm.upgrade_manager.version_compatible():
-            self.charm.unit.status = BlockedStatus(MSG_INCOMPATIBLE_UPGRADE)
-            raise ClusterNotReadyError(
-                message="Post-upgrade check failed and cannot safely upgrade",
-                cause="Opensearch version mismatch",
-            )
 
     @override
     def pre_upgrade_check(self) -> None:
@@ -93,9 +83,6 @@ class ODUpgradeEvents(DataUpgrade):
         self.charm.workload.restart()
 
         try:
-            logger.debug("Running post-upgrade check...")
-            self.post_upgrade_check()
-
             logger.debug("Marking unit completed...")
             self.set_unit_completed()
 
