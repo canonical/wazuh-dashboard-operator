@@ -42,6 +42,7 @@ from managers.config import ConfigManager
 from managers.health import HealthManager
 from managers.tls import TLSManager
 from managers.upgrade import UpgradeManager
+from managers.wazuh import WazuhManager
 from workload import ODWorkload
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,7 @@ class OpensearchDasboardsCharm(CharmBase):
             substrate=SUBSTRATE,
             dependency_model=dependency_model,
         )
+        self.wazuh_manager = WazuhManager(workload=self.workload)
 
         # --- LIB EVENT HANDLERS ---
 

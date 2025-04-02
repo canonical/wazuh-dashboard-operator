@@ -89,6 +89,18 @@ class WorkloadBase(ABC):
         ...
 
     @abstractmethod
+    def read_raw(self, path: str) -> str:
+        """Reads a file from the workload.
+
+        Args:
+            path: the full filepath to read from
+
+        Returns:
+            Content from the specified path
+        """
+        ...
+
+    @abstractmethod
     def write(self, content: str, path: str) -> None:
         """Writes content to a workload file.
 
