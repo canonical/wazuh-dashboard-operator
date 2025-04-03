@@ -3,9 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Event handler for related applications on the `wazuh-api` relation interface."""
-import base64
 import logging
-import re
 from typing import TYPE_CHECKING
 
 from charms.wazuh_server.v0 import wazuh_api
@@ -19,20 +17,19 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+RELATION_NAME = "wazuh-api"
+
+
 class WazuhApiEvents(Object):
     """Event handlers for related applications on the `certificates` relation interface."""
 
     def __init__(self, charm):
-        super().__init__(charm, "tls")
+        super().__init__(charm, RELATION_NAME)
         self.charm: "OpensearchDasboardsCharm" = charm
         self.wazuh_api = wazuh_api.WazuhApiRequires(self.charm)
 
         self.framework.observe(
-            getattr(self.charm.on, "wazuh_api_relation_created"),
-            self._on_wazuh_api_relation_changed,
-        )
-        self.framework.observe(
-            getattr(self.charm.on, "wazuh_api_relation_changed"),
+            self.charm.on[RELATION_NAME].relation_changed,
             self._on_wazuh_api_relation_changed,
         )
 
@@ -40,4 +37,4 @@ class WazuhApiEvents(Object):
         """Handler for `wazuh-api` relation creation and changes."""
         data = self.wazuh_api.get_relation_data()
         if data:
-            self.charm.wazuh_manager.set_wazuh_dashbaord_properties(data)
+            self.charm.wazuh_manager.set_dashboard_properties(data)
