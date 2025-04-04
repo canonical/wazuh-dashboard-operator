@@ -82,6 +82,16 @@ class ODWorkload(WorkloadBase):
         return content
 
     @override
+    def read_raw(self, path: str) -> str:
+        if not os.path.exists(path):
+            return ""
+        else:
+            with open(path) as f:
+                content = f.read()
+
+        return content
+
+    @override
     def write(self, content: str, path: str) -> None:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         shutil.chown(os.path.dirname(path), user="snap_daemon", group="root")

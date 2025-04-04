@@ -32,6 +32,7 @@ PATHS = {
     "DATA": "/var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard",
     "LOGS": "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard",
     "BIN": "/snap/wazuh-dashboard/current/opt/wazuh-dashboard",
+    "WAZUH_CONF": "/var/snap/wazuh-dashboard/current/config/wazuh/config/wazuh.yml",
 }
 
 PEER_APP_SECRETS = [

@@ -18,6 +18,7 @@ from core.cluster import ClusterState
 from events.requirer import RequirerEvents
 from events.tls import TLSEvents
 from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
+from events.wazuh_api import WazuhApiEvents
 from helpers import clear_global_status, clear_status, set_global_status
 from literals import (
     CHARM_KEY,
@@ -42,6 +43,7 @@ from managers.config import ConfigManager
 from managers.health import HealthManager
 from managers.tls import TLSManager
 from managers.upgrade import UpgradeManager
+from managers.wazuh import WazuhManager
 from workload import ODWorkload
 
 logger = logging.getLogger(__name__)
@@ -62,6 +64,7 @@ class OpensearchDasboardsCharm(CharmBase):
         self.requirer_events = RequirerEvents(self)
         dependency_model = OpensearchDashboardsDependencyModel(**DEPENDENCIES)
         self.upgrade_events = ODUpgradeEvents(self, dependency_model=dependency_model)
+        self.wazuh_api_events = WazuhApiEvents(self)
 
         # --- MANAGERS ---
 
@@ -83,6 +86,7 @@ class OpensearchDasboardsCharm(CharmBase):
             substrate=SUBSTRATE,
             dependency_model=dependency_model,
         )
+        self.wazuh_manager = WazuhManager(workload=self.workload)
 
         # --- LIB EVENT HANDLERS ---
 
