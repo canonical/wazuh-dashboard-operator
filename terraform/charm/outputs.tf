@@ -10,6 +10,7 @@ output "requires" {
   value = {
     certificates      = "certificates"
     opensearch_client = "opensearch-client"
+    wazuh_api         = "wazuh-api"
   }
 }
 
