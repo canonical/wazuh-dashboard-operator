@@ -230,8 +230,9 @@ class WazuhApiRequires(ops.Object):
                 user=user,
                 password=password,
             )
-        except ops.model.ModelError:
-            logger.debug("Could not fetch secret %s", relation_data.get("user_credentials_secret"))
+        except ops.model.ModelError as ex:
+            logger.error("Could not fetch secret %s", relation_data.get("user_credentials_secret"))
+            logger.error(ex)
             return None
 
     def _is_relation_data_valid(self, relation: ops.Relation) -> bool:
