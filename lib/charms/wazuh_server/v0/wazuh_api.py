@@ -66,7 +66,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 1
+LIBPATCH = 3
 
 PYDEPS = ["pydantic>=2"]
 
@@ -79,10 +79,18 @@ from typing import Dict, Optional
 import ops
 from pydantic import AnyHttpUrl, BaseModel, ValidationError
 
+# The wazuh dashboard charm dependencies require pydantic<2
+# Disable used-before-assignment as parse_obj_as will not be recognized pylint
+# pylint: disable=used-before-assignment
+try:
+    from pydantic import TypeAdapter
+except ImportError:
+    from pydantic import parse_obj_as
+
 logger = logging.getLogger(__name__)
 
 RELATION_NAME = "wazuh-api"
-WAZUH_API_KEY_SECRET_LABEL = "wazuh-api-credentials"
+WAZUH_API_KEY_SECRET_LABEL = "wazuh-api-remote-credentials"
 
 
 class SecretError(Exception):
@@ -129,7 +137,11 @@ class WazuhApiDataAvailableEvent(ops.RelationEvent):
     def endpoint(self) -> AnyHttpUrl:
         """Fetch the endpoint from the relation."""
         assert self.relation.app
-        return AnyHttpUrl(typing.cast(str, self.relation.data[self.relation.app].get("endpoint")))
+        url = typing.cast(str, self.relation.data[self.relation.app].get("endpoint"))
+        try:
+            return TypeAdapter(AnyHttpUrl).validate_python(url)
+        except NameError:
+            return parse_obj_as(AnyHttpUrl, url)
 
     @property
     def _credentials(self) -> tuple[str, str]:
@@ -143,7 +155,7 @@ class WazuhApiDataAvailableEvent(ops.RelationEvent):
             user = typing.cast(str, credentials.get_content().get("user"))
             password = typing.cast(str, credentials.get_content().get("password"))
             return (user, password)
-        except ops.model.ModelError as exc:
+        except ops.SecretNotFoundError as exc:
             raise SecretError(
                 f'Could not consume secret {relation_data.get("user_credentials_secret")}'
             ) from exc
@@ -224,14 +236,19 @@ class WazuhApiRequires(ops.Object):
             credentials = self.model.get_secret(id=secret_id)
             user = typing.cast(str, credentials.get_content().get("user"))
             password = typing.cast(str, credentials.get_content().get("password"))
+            url = typing.cast(str, relation_data.get("endpoint"))
+            try:
+                endpoint = TypeAdapter(AnyHttpUrl).validate_python(url)
+            except NameError:
+                endpoint = parse_obj_as(AnyHttpUrl, url)
             return WazuhApiRelationData(
-                endpoint=AnyHttpUrl(typing.cast(str, relation_data.get("endpoint"))),
+                endpoint=endpoint,
                 user_credentials_secret=secret_id,
                 user=user,
                 password=password,
             )
-        except ops.model.ModelError as ex:
-            logger.exception(ex)
+        except ops.model.ModelError:
+            logger.debug("Could not fetch secret %s", relation_data.get("user_credentials_secret"))
             return None
 
     def _is_relation_data_valid(self, relation: ops.Relation) -> bool:
