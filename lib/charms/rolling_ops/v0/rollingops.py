@@ -63,14 +63,13 @@ the CLI:
 juju run-action some-charm/0 some-charm/1 <... some-charm/n> restart
 ```
 
-Note that all units that plan to restart must receive the action and emit the acquire
+Note that all units that plan to restart must receive the action and emit the aquire
 event. Any units that do not run their acquire handler will be left out of the rolling
 restart. (An operator might take advantage of this fact to recover from a failed rolling
 operation without restarting workloads that were able to successfully restart -- simply
 omit the successful units from a subsequent run-action call.)
 
 """
-
 import logging
 from enum import Enum
 from typing import AnyStr, Callable, Optional
@@ -89,7 +88,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 8
+LIBPATCH = 7
 
 
 class LockNoRelationError(Exception):
@@ -150,6 +149,7 @@ class Lock:
     """
 
     def __init__(self, manager, unit=None):
+
         self.relation = manager.model.relations[manager.name][0]
         if not self.relation:
             # TODO: defer caller in this case (probably just fired too soon).
@@ -246,7 +246,7 @@ class Locks:
 
         # Gather all the units.
         relation = manager.model.relations[manager.name][0]
-        units = list(relation.units)
+        units = [unit for unit in relation.units]
 
         # Plus our unit ...
         units.append(manager.model.unit)
