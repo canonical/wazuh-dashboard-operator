@@ -11,9 +11,7 @@ variable "grafana_agent" {
     app_name    = optional(string, "grafana-agent")
     channel     = optional(string, "latest/stable")
     config      = optional(map(string), {})
-    constraints = optional(string, "arch=amd64")
     revision    = optional(number)
-    base        = optional(string, "ubuntu@22.04")
   })
 }
 
