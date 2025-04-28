@@ -32,7 +32,7 @@ resource "juju_integration" "grafana_agent_dashboard" {
 
   application {
     name     = module.wazuh_dashboard.app_name
-    endpoint = "cos-agent"
+    endpoint = wazuh_dashboard.provides.cos_agent
   }
 
   application {
