@@ -17,17 +17,6 @@ variable "grafana_agent" {
   })
 }
 
-name  = "grafana-agent"
-model = juju_model.wazuh_dashboard.name
-units = 0
-
-charm {
-  name     = "grafana-agent"
-  revision = 457
-  channel  = "latest/stable"
-  base     = "ubuntu@22.04"
-}
-
 variable "wazuh_dashboard" {
   type = object({
     app_name    = optional(string, "wazuh-dashboard")
