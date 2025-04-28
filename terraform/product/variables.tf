@@ -9,7 +9,7 @@ variable "dashboard_model" {
 variable "grafana_agent" {
   type = object({
     app_name    = optional(string, "grafana-agent")
-    channel     = optional(string, "4.9/edge")
+    channel     = optional(string, "latest/stable")
     config      = optional(map(string), {})
     constraints = optional(string, "arch=amd64")
     revision    = optional(number)
