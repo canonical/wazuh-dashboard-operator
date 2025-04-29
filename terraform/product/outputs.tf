@@ -23,3 +23,9 @@ output "grafana_agent_provides" {
     grafana_dashboards_provider = "grafana-dashboards-provider"
   }
 }
+
+output "wazuh_dashboard_requires" {
+  value = {
+    wazuh_api = "wazuh-api"
+  }
+}
