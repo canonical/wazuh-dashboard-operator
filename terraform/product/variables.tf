@@ -1,7 +1,7 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-variable "dashboard_model" {
+variable "model" {
   description = "Reference to the VM Juju model to deploy the dashboard charms to."
   type        = string
 }

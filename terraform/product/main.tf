@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 data "juju_model" "wazuh_dashboard" {
-  name = var.dashboard_model
+  name = var.model
 }
 
 module "wazuh_dashboard" {
