@@ -8,10 +8,10 @@ variable "dashboard_model" {
 
 variable "grafana_agent" {
   type = object({
-    app_name    = optional(string, "grafana-agent")
-    channel     = optional(string, "latest/stable")
-    config      = optional(map(string), {})
-    revision    = optional(number)
+    app_name = optional(string, "grafana-agent")
+    channel  = optional(string, "latest/stable")
+    config   = optional(map(string), {})
+    revision = optional(number)
   })
 }
 
