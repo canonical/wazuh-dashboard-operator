@@ -27,7 +27,7 @@ output "grafana_agent_provides" {
 output "wazuh_dashboard_requires" {
   value = {
     certificates      = "certificates"
-    opensearch_client = "opensearch_client"
+    opensearch_client = "opensearch-client"
     wazuh_api         = "wazuh-api"
   }
 }
