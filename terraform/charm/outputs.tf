@@ -16,6 +16,6 @@ output "requires" {
 
 output "provides" {
   value = {
-    cos_agent = "cos_agent"
+    cos_agent = "cos-agent"
   }
 }
