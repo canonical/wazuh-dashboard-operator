@@ -27,7 +27,6 @@ resource "juju_application" "grafana_agent" {
     channel  = var.grafana_agent.channel
     revision = var.grafana_agent.revision
   }
-  units = 0
 }
 
 resource "juju_integration" "grafana_agent_dashboard" {
