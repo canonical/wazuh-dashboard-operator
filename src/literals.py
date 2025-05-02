@@ -12,6 +12,7 @@ CHARM_KEY = "opensearch-dashboards"
 PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch-client"
 CERTS_REL_NAME = "certificates"
+OAUTH_REL_NAME = "oauth"
 DASHBOARD_INDEX = ".opensearch-dashboards"
 DASHBOARD_USER = "kibanaserver"
 DASHBOARD_ROLE = "kibana_server"
@@ -34,10 +35,7 @@ PATHS = {
     "BIN": "/snap/opensearch-dashboards/current/opt/opensearch-dashboards",
 }
 
-PEER_APP_SECRETS = [
-    "monitor-username",
-    "monitor-password",
-]
+PEER_APP_SECRETS = ["monitor-username", "monitor-password", "oauth-client-secret"]
 PEER_UNIT_SECRETS = ["ca-cert", "csr", "certificate", "private-key"]
 
 RESTART_TIMEOUT = 30

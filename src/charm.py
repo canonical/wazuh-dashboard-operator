@@ -15,6 +15,7 @@ from ops.main import main
 from ops.model import BlockedStatus, MaintenanceStatus, WaitingStatus
 
 from core.cluster import ClusterState
+from events.oauth import OAuthHandler
 from events.requirer import RequirerEvents
 from events.tls import TLSEvents
 from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
@@ -70,6 +71,7 @@ class OpensearchDasboardsCharm(CharmBase):
         self.requirer_events = RequirerEvents(self)
         dependency_model = OpensearchDashboardsDependencyModel(**DEPENDENCIES)
         self.upgrade_events = ODUpgradeEvents(self, dependency_model=dependency_model)
+        self.oauth = OAuthHandler(self)
 
         # --- MANAGERS ---
 
@@ -201,6 +203,10 @@ class OpensearchDasboardsCharm(CharmBase):
                 return
         else:
             outdated_status.append(MSG_TLS_CONFIG)
+
+        # Handle possible changes to the TLS
+        # TODO: HTTP - HTTPS switching should be fixed to fully utilize this
+        self.oauth.update_client_config()
 
         # Regular health-check
         # Checks that may modify the 'app' state as well
