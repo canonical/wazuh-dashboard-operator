@@ -32,6 +32,7 @@ from literals import (
     COS_RELATION_NAME,
     DEPENDENCIES,
     MSG_APP_STATUS,
+    MSG_INCOMPATIBLE_UPGRADE,
     MSG_INSTALLING,
     MSG_STARTING,
     MSG_STARTING_SERVER,
@@ -187,6 +188,12 @@ class OpensearchDasboardsCharm(CharmBase):
             outdated_status.append(MSG_STATUS_DB_MISSING)
         else:
             set_global_status(self, BlockedStatus(MSG_STATUS_DB_MISSING))
+            return
+
+        if self.upgrade_manager.version_compatible():
+            outdated_status.append(MSG_INCOMPATIBLE_UPGRADE)
+        else:
+            set_global_status(self, BlockedStatus(MSG_INCOMPATIBLE_UPGRADE))
             return
 
         # Maintain the correct unit status

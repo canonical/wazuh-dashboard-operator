@@ -22,7 +22,7 @@ DEFAULT_CONF = """logging.verbose: true
 opensearch.requestHeadersWhitelist:
 - authorization
 - securitytenant
-opensearch_security.cookie.secure: true
+opensearch_security.cookie.secure: false
 opensearch_security.multitenancy.enabled: true
 opensearch_security.multitenancy.tenants.preferred:
 - Private
@@ -31,8 +31,8 @@ opensearch_security.readonly_mode.roles:
 - kibana_read_only
 path.data: /var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard
 server.host: {ip}
+server.ssl.enabled: false
 """
-
 
 @pytest.fixture
 def harness():

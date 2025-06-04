@@ -19,6 +19,7 @@ from charm import OpensearchDasboardsCharm, OpensearchDashboardsDependencyModel
 from helpers import clear_status, update_grafana_dashboards_title
 from literals import CHARM_KEY, CONTAINER, OPENSEARCH_REL_NAME, PEER, SUBSTRATE
 from src.literals import (
+    MSG_INCOMPATIBLE_UPGRADE,
     MSG_STATUS_ERROR,
     MSG_STATUS_UNHEALTHY,
 )
