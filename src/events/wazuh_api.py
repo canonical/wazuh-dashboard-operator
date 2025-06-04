@@ -10,7 +10,6 @@ from charms.wazuh_server.v0 import wazuh_api
 from ops.charm import RelationEvent
 from ops.framework import Object
 
-
 if TYPE_CHECKING:
     from charm import OpensearchDasboardsCharm
 

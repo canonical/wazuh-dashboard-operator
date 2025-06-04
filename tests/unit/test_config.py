@@ -34,6 +34,7 @@ server.host: {ip}
 server.ssl.enabled: false
 """
 
+
 @pytest.fixture
 def harness():
     harness = Harness(OpensearchDasboardsCharm, meta=METADATA, config=CONFIG, actions=ACTIONS)
