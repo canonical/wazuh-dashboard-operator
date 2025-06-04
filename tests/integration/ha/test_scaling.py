@@ -48,7 +48,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     # NOTE: can't access 2/stable from the tests, only 'edge' available
     await ops_test.model.deploy(
-        OPENSEARCH_APP_NAME, channel="4.11/edge", num_units=2, config=CONFIG_OPTS
+        OPENSEARCH_APP_NAME, channel="latest/edge", num_units=2, config=CONFIG_OPTS
     )
 
     config = {"ca-common-name": "CN_CA"}
