@@ -4,6 +4,7 @@
 
 """Collection of global cluster state."""
 import logging
+from ipaddress import IPv4Address, IPv6Address
 
 from charms.data_platform_libs.v0.data_interfaces import (
     DataPeerData,
@@ -14,15 +15,17 @@ from charms.data_platform_libs.v0.data_interfaces import (
 from ops.framework import Framework, Object
 from ops.model import Relation, Unit
 
-from core.models import SUBSTRATES, ODCluster, ODServer, OpensearchServer
+from core.models import SUBSTRATES, OAuth, ODCluster, ODServer, OpensearchServer
 from literals import (
     CERTS_REL_NAME,
     DASHBOARD_INDEX,
     DASHBOARD_ROLE,
+    OAUTH_REL_NAME,
     OPENSEARCH_REL_NAME,
     PEER,
     PEER_APP_SECRETS,
     PEER_UNIT_SECRETS,
+    SERVER_PORT,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,8 +66,13 @@ class ClusterState(Object):
 
     @property
     def tls_relation(self) -> Relation | None:
-        """The cluster peer relation."""
+        """The cluster tls relation."""
         return self.model.get_relation(CERTS_REL_NAME)
+
+    @property
+    def oauth_relation(self) -> Relation | None:
+        """The cluster Oauth relation."""
+        return self.model.get_relation(OAUTH_REL_NAME)
 
     # --- CORE COMPONENTS---
 
@@ -141,6 +149,24 @@ class ClusterState(Object):
             local_app=self.cluster.app,
         )
 
+    @property
+    def oauth(self) -> OAuth:
+        """The oauth relation state."""
+        return OAuth(
+            relation=self.oauth_relation,
+            client_secret=self.cluster.oauth_client_secret,
+        )
+
+    @property
+    def bind_address(self) -> IPv4Address | IPv6Address | str | None:
+        """The network binding address from the peer relation."""
+        bind_address = None
+        if self.peer_relation:
+            if binding := self.model.get_binding(self.peer_relation):
+                bind_address = binding.network.bind_address
+        # If the relation does not exist, then we get None
+        return bind_address
+
     # --- CLUSTER INIT ---
 
     @property
@@ -162,3 +188,9 @@ class ClusterState(Object):
             return False
 
         return True
+
+    @property
+    def url(self) -> str:
+        """Service URL."""
+        scheme = "https" if self.unit_server.tls else "http"
+        return f"{scheme}://{self.bind_address}:{SERVER_PORT}"

@@ -15,11 +15,17 @@ from ops.main import main
 from ops.model import BlockedStatus, MaintenanceStatus, WaitingStatus
 
 from core.cluster import ClusterState
+from events.oauth import OAuthHandler
 from events.requirer import RequirerEvents
 from events.tls import TLSEvents
 from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
 from events.wazuh_api import WazuhApiEvents
-from helpers import clear_global_status, clear_status, set_global_status
+from helpers import (
+    clear_global_status,
+    clear_status,
+    set_global_status,
+    update_grafana_dashboards_title,
+)
 from literals import (
     CHARM_KEY,
     COS_PORT,
@@ -30,12 +36,14 @@ from literals import (
     MSG_STARTING,
     MSG_STARTING_SERVER,
     MSG_STATUS_DB_MISSING,
+    MSG_STATUS_HANGING,
     MSG_TLS_CONFIG,
     MSG_UNIT_STATUS,
     MSG_WAITING_FOR_PEER,
     PEER,
     RESTART_TIMEOUT,
     SERVER_PORT,
+    SERVICE_AVAILABLE_TIMEOUT,
     SUBSTRATE,
 )
 from managers.api import APIManager
@@ -65,6 +73,7 @@ class OpensearchDasboardsCharm(CharmBase):
         dependency_model = OpensearchDashboardsDependencyModel(**DEPENDENCIES)
         self.upgrade_events = ODUpgradeEvents(self, dependency_model=dependency_model)
         self.wazuh_api_events = WazuhApiEvents(self)
+        self.oauth = OAuthHandler(self)
 
         # --- MANAGERS ---
 
@@ -92,17 +101,6 @@ class OpensearchDasboardsCharm(CharmBase):
 
         self.restart = RollingOpsManager(self, relation="restart", callback=self._restart)
 
-        # --- COS ---
-        self.cos_integration = COSAgentProvider(
-            self,
-            relation_name=COS_RELATION_NAME,
-            metrics_endpoints=[],
-            scrape_configs=self._scrape_config,
-            refresh_events=[self.on.config_changed],
-            metrics_rules_dir="./src/alert_rules/prometheus",
-            log_slots=["opensearch-dashboards:logs"],
-        )
-
         # --- CORE EVENTS ---
 
         self.framework.observe(getattr(self.on, "install"), self._on_install)
@@ -118,6 +116,17 @@ class OpensearchDasboardsCharm(CharmBase):
         self.framework.observe(getattr(self.on, f"{PEER}_relation_departed"), self.reconcile)
 
         self.framework.observe(getattr(self.on, "secret_changed"), self._on_secret_changed)
+
+        # --- COS ---
+        self.cos_integration = COSAgentProvider(
+            self,
+            relation_name=COS_RELATION_NAME,
+            metrics_endpoints=[],
+            scrape_configs=self._scrape_config,
+            refresh_events=[self.on.config_changed],
+            metrics_rules_dir="./src/alert_rules/prometheus",
+            log_slots=["opensearch-dashboards:logs"],
+        )
 
     # --- CORE EVENT HANDLERS ---
 
@@ -138,11 +147,12 @@ class OpensearchDasboardsCharm(CharmBase):
 
     def reconcile(self, event: EventBase) -> None:
         """Generic handler for all 'something changed, update' events across all relations."""
-
         # 1. Block until peer relation is set
         if not self.state.peer_relation:
             self.unit.status = WaitingStatus(MSG_WAITING_FOR_PEER)
             return
+
+        update_grafana_dashboards_title(self)
 
         outdated_status = [MSG_WAITING_FOR_PEER]
 
@@ -154,9 +164,14 @@ class OpensearchDasboardsCharm(CharmBase):
         if getattr(event, "departing_unit", None) == self.unit:
             return
 
-        # 2. Restart on config change
+        # 2. Restart if the service is down or on config change
+
+        # Evaluate unit health at this point (as it may trigger a restart)
+        unit_healthy, unit_msg = self.health_manager.unit_healthy()
+
         if (
-            self.config_manager.config_changed()
+            (not unit_healthy and unit_msg == MSG_STATUS_HANGING)
+            or self.config_manager.config_changed()
             and self.state.unit_server.started
             and self.upgrade_events.idle
         ):
@@ -186,6 +201,10 @@ class OpensearchDasboardsCharm(CharmBase):
         else:
             outdated_status.append(MSG_TLS_CONFIG)
 
+        # Handle possible changes to the TLS
+        # TODO: HTTP - HTTPS switching should be fixed to fully utilize this
+        self.oauth.update_client_config()
+
         # Regular health-check
         # Checks that may modify the 'app' state as well
         app_healthy, app_msg = self.health_manager.app_healthy()
@@ -196,8 +215,6 @@ class OpensearchDasboardsCharm(CharmBase):
             outdated_status += MSG_APP_STATUS
 
         # Checks purely on unit level
-        unit_healthy, unit_msg = self.health_manager.unit_healthy()
-
         if not unit_healthy:
             self.unit.status = BlockedStatus(unit_msg)
             return
@@ -252,9 +269,6 @@ class OpensearchDasboardsCharm(CharmBase):
 
     def _restart(self, event: EventBase) -> None:
         """Handler for emitted restart events."""
-        # if not self.state.stable or not self.upgrade_events.idle:
-        #     event.defer()
-        #     return
         if not self.state.unit_server.started:
             self.reconcile(event)
             return
@@ -262,12 +276,22 @@ class OpensearchDasboardsCharm(CharmBase):
         logger.info(f"{self.unit.name} restarting...")
         self.workload.restart()
 
+        # Allow the service to start up safely on the snap level
         start_time = time.time()
         while not self.workload.alive() and time.time() - start_time < RESTART_TIMEOUT:
             time.sleep(5)
 
+        # Allow the service to establish
+        # Reason: we are emitting an 'update-status' right after
+        # If the service is not yet functional, the status is set as
+        # 'Service unavailable' until the next 'update-status' hook execution
+        start_time = time.time()
+        unit_healthy, _ = self.health_manager.unit_healthy()
+        while not unit_healthy and time.time() - start_time < SERVICE_AVAILABLE_TIMEOUT:
+            time.sleep(5)
+            unit_healthy, _ = self.health_manager.unit_healthy()
+
         clear_status(self.unit, [MSG_STARTING, MSG_STARTING_SERVER])
-        self.on.update_status.emit()
 
     # --- CONVENIENCE METHODS ---
 

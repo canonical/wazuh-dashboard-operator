@@ -31,6 +31,25 @@ from core.workload import ODPaths
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 OPENSEARCH_APP_NAME = "wazuh-indexer"
+CONFIG_OPTS = {"profile": "testing"}
+
+OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_RELATION_NAME = "opensearch-client"
+OPENSEARCH_CONFIG = {
+    "logging-config": "<root>=INFO;unit=DEBUG",
+    "cloudinit-userdata": """postruncmd:
+        - [ 'sysctl', '-w', 'vm.max_map_count=262144' ]
+        - [ 'sysctl', '-w', 'fs.file-max=1048576' ]
+        - [ 'sysctl', '-w', 'vm.swappiness=0' ]
+        - [ 'sysctl', '-w', 'net.ipv4.tcp_retries2=5' ]
+    """,
+}
+
+TLS_CERTIFICATES_APP_NAME = "self-signed-certificates"
+TLS_STABLE_CHANNEL = "latest/stable"
+COS_AGENT_APP_NAME = "grafana-agent"
+COS_AGENT_RELATION_NAME = "cos-agent"
+DB_CLIENT_APP_NAME = "application"
 
 
 logger = logging.getLogger(__name__)
@@ -150,7 +169,7 @@ def restart_unit(model_full_name: str, unit: str) -> None:
 
 
 def access_prometheus_exporter(host: str) -> bool:
-    """Check if a given unit has 'kibana-exporter' service available and publishing."""
+    """Check if a given unit has 'dashboard-exporter' service available and publishing."""
     try:
         # Normal IP address
         socket.inet_aton(host)
@@ -163,11 +182,11 @@ def access_prometheus_exporter(host: str) -> bool:
         response = requests.get(url)
     except requests.exceptions.RequestException:
         return False
-    return response.status_code == 200 and "kibana_status" in response.text
+    return response.status_code == 200 and "opensearch_dashboards_status" in response.text
 
 
 async def access_all_prometheus_exporters(ops_test: OpsTest) -> bool:
-    """Check if a given unit has 'kibana-exporter' service available and publishing."""
+    """Check if a given unit has 'dashboard-exporter' service available and publishing."""
     result = True
     for unit in ops_test.model.applications[APP_NAME].units:
         unit_ip = await get_address(ops_test, unit.name)
@@ -213,7 +232,7 @@ def all_dashboards_unavailable(ops_test: OpsTest, https: bool = False) -> bool:
                 logger.info(f"Couldn't retrieve host certificate for unit {unit}")
                 continue
 
-        host = get_private_address(ops_test.model.name, unit.name)
+        host = get_bind_address(ops_test.model.name, unit.name)
 
         # We should retry until a host could be retrieved
         if not host:
@@ -228,17 +247,6 @@ def all_dashboards_unavailable(ops_test: OpsTest, https: bool = False) -> bool:
 def access_dashboard(
     host: str, password: str, username: str = "kibanaserver", ssl: bool = False
 ) -> bool:
-    #
-    # NOTE: This one currently is failing for SSL, with:
-    # *** requests.exceptions.SSLError: HTTPSConnectionPool(host='10.67.147.132', port=5601):
-    # Max retries exceeded with url: /auth/login (Caused by
-    # SSLError(SSLCertVerificationError(1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed:
-    # IP address mismatch, certificate is not valid for '10.67.147.132'. (_ssl.c:1007)")))
-    #
-    # ...while CURL is passing happily with the same cert...
-    # Thus, temporarily the least the function below this one is used for HTTPS
-    #
-
     try:
         # Normal IP address
         socket.inet_aton(host)
@@ -258,7 +266,6 @@ def access_dashboard(
     arguments = {"url": url, "headers": headers, "json": data}
     if ssl:
         arguments["verify"] = "./ca.pem"
-
     response = requests.post(**arguments)
     return response.status_code == 200
 
@@ -298,7 +305,7 @@ async def access_all_dashboards(
     for unit in ops_test.model.applications[APP_NAME].units:
         if unit.name in skip:
             continue
-        host = get_private_address(ops_test.model.name, unit.name)
+        host = get_bind_address(ops_test.model.name, unit.name)
         if not host:
             logger.error(f"No hostname found for {unit.name}, can't check connection.")
             return False
@@ -307,7 +314,8 @@ async def access_all_dashboards(
         if result:
             logger.info(f"Host {unit.name}, {host} passed access check")
         else:
-            dump_all(ops_test, unit)
+            # dump_all(ops_test, unit)
+            pass
     return result
 
 
@@ -371,14 +379,19 @@ async def get_address(ops_test: OpsTest, unit_name: str) -> str:
     return address
 
 
-def get_private_address(model_full_name: str, unit: str):
+def get_bind_address(model_full_name: str, unit: str):
     try:
         private_ip = check_output(
             [
-                "bash",
-                "-c",
-                f"JUJU_MODEL={model_full_name} juju ssh {unit} ip a | "
-                "grep global | grep 'inet 10.*/24' | cut -d' ' -f6 | cut -d'/' -f1",
+                "juju",
+                "exec",
+                f"--model={model_full_name}",
+                "--unit",
+                unit,
+                "--",
+                "network-get",
+                OPENSEARCH_RELATION_NAME,
+                "--bind-address",
             ],
             text=True,
         )
@@ -610,7 +623,7 @@ async def get_application_relation_data(
         return relation_data[0]["local-unit"].get("data", {}).get(key)
 
 
-async def get_leader_name(ops_test: OpsTest, app_name: str = APP_NAME):
+async def get_leader_name(ops_test: OpsTest, app_name: str = APP_NAME) -> str:
     """Get the leader unit name."""
     for unit in ops_test.model.applications[app_name].units:
         if await unit.is_leader_from_status():
@@ -742,7 +755,7 @@ async def client_run_all_dashboards_request(
         return False
 
     for dashboards_unit in ops_test.model.applications[APP_NAME].units:
-        host = get_private_address(ops_test.model.name, dashboards_unit.name)
+        host = get_bind_address(ops_test.model.name, dashboards_unit.name)
         if not host:
             logger.debug(f"No hostname found for {dashboards_unit.name}, can't check connection.")
             return False
@@ -774,3 +787,20 @@ async def destroy_cluster(ops_test, app: str = OPENSEARCH_APP_NAME):
             # This case we don't raise an error in the context manager which
             # fails to restore the `update-status-hook-interval` value to it's former state.
             assert n_apps_after == n_apps_before - 1, "old cluster not destroyed successfully."
+
+
+async def for_machines(ops_test, machines, state="started"):
+    for attempt in Retrying(stop=stop_after_attempt(10), wait=wait_fixed(wait=60)):
+        with attempt:
+            mach_status = json.loads(
+                subprocess.check_output(
+                    ["juju", "machines", f"--model={ops_test.model.name}", "--format=json"]
+                )
+            )["machines"]
+            for id in machines:
+                if (
+                    str(id) not in mach_status.keys()
+                    or mach_status[str(id)]["juju-status"]["current"] != state
+                ):
+                    logger.warning(f"machine-{id} either not exist yet or not in {state}")
+                    raise Exception()

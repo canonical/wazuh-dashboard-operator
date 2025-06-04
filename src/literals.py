@@ -12,6 +12,7 @@ CHARM_KEY = "wazuh-dashboard"
 PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch-client"
 CERTS_REL_NAME = "certificates"
+OAUTH_REL_NAME = "oauth"
 DASHBOARD_INDEX = ".opensearch-dashboards"
 DASHBOARD_USER = "kibanaserver"
 DASHBOARD_ROLE = "kibana_server"
@@ -20,10 +21,10 @@ SERVER_PORT = 5601
 
 DEPENDENCIES = {
     "osd_upstream": {
-        "dependencies": {"opensearch": "2.17"},
+        "dependencies": {"opensearch": "2.19.1"},
         "name": "opensearch-dashboards",
         "upgrade_supported": ">=2",
-        "version": "2.17",
+        "version": "2.19.1",
     },
 }
 
@@ -35,13 +36,12 @@ PATHS = {
     "WAZUH_CONF": "/var/snap/wazuh-dashboard/current/config/wazuh/config/wazuh.yml",
 }
 
-PEER_APP_SECRETS = [
-    "monitor-username",
-    "monitor-password",
-]
+PEER_APP_SECRETS = ["monitor-username", "monitor-password", "oauth-client-secret"]
 PEER_UNIT_SECRETS = ["ca-cert", "csr", "certificate", "private-key"]
 
 RESTART_TIMEOUT = 30
+SERVICE_AVAILABLE_TIMEOUT = 90
+REQUEST_TIMEOUT = 30
 
 
 # Status messages
@@ -59,19 +59,22 @@ MSG_STATUS_UNHEALTHY = "Service is not in a green health state"
 MSG_STATUS_ERROR = "Service is an error state"
 MSG_STATUS_WORKLOAD_DOWN = "Workload is not alive"
 MSG_STATUS_UNKNOWN = "Workload status is not known"
+MSG_STATUS_APP_REMOVED = "remove-application was requested: leaving..."
+MSG_STATUS_HANGING = "Application does not respond, request hanging"
 
 MSG_APP_STATUS = [
     MSG_STATUS_DB_DOWN,
 ]
 
 MSG_UNIT_STATUS = [
+    MSG_STATUS_HANGING,
     MSG_STATUS_UNAVAIL,
     MSG_STATUS_UNHEALTHY,
     MSG_STATUS_WORKLOAD_DOWN,
     MSG_STATUS_UNKNOWN,
 ]
 
-# COS
+# COSG
 
 COS_RELATION_NAME = "cos-agent"
 COS_PORT = 9684

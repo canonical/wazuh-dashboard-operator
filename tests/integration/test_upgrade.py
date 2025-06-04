@@ -10,7 +10,13 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
-from .helpers import access_all_dashboards, get_app_relation_data
+from .helpers import (
+    CONFIG_OPTS,
+    TLS_CERTIFICATES_APP_NAME,
+    TLS_STABLE_CHANNEL,
+    access_all_dashboards,
+    get_app_relation_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,27 +36,31 @@ OPENSEARCH_CONFIG = {
         - [ 'sysctl', '-w', 'net.ipv4.tcp_retries2=5' ]
     """,
 }
-TLS_CERTIFICATES_APP_NAME = "self-signed-certificates"
 
 NUM_UNITS_APP = 3
 NUM_UNITS_DB = 3
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-@pytest.mark.charm
 @pytest.mark.skip_if_deployed
-async def test_build_and_deploy(ops_test: OpsTest):
+async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     """Deploying all charms required for the tests, and wait for their complete setup to be done."""
 
-    pytest.charm = await ops_test.build_charm(".")
-    await ops_test.model.deploy(pytest.charm, application_name=APP_NAME, num_units=NUM_UNITS_APP)
+    await ops_test.model.deploy(
+        charm, application_name=APP_NAME, num_units=NUM_UNITS_APP, series=series
+    )
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
-    await ops_test.model.deploy(OPENSEARCH_APP_NAME, channel="latest/edge", num_units=NUM_UNITS_DB)
+    await ops_test.model.deploy(
+        OPENSEARCH_APP_NAME,
+        channel="4.11/edge",
+        num_units=NUM_UNITS_DB,
+        config=CONFIG_OPTS,
+    )
 
     config = {"ca-common-name": "CN_CA"}
-    await ops_test.model.deploy(TLS_CERTIFICATES_APP_NAME, channel="1/stable", config=config)
+    await ops_test.model.deploy(
+        TLS_CERTIFICATES_APP_NAME, channel=TLS_STABLE_CHANNEL, config=config
+    )
 
     await ops_test.model.wait_for_idle(
         apps=[TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
@@ -59,7 +69,9 @@ async def test_build_and_deploy(ops_test: OpsTest):
     # Relate it to OpenSearch to set up TLS.
     await ops_test.model.relate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
     await ops_test.model.wait_for_idle(
-        apps=[OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
+        apps=[OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME],
+        status="active",
+        timeout=1000,
     )
 
     async with ops_test.fast_forward():
@@ -76,10 +88,8 @@ async def test_build_and_deploy(ops_test: OpsTest):
     )
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_in_place_upgrade_http(ops_test: OpsTest):
+async def test_in_place_upgrade_http(ops_test: OpsTest, charm: str):
     leader_unit = None
     for unit in ops_test.model.applications[APP_NAME].units:
         if await unit.is_leader_from_status():
@@ -91,7 +101,9 @@ async def test_in_place_upgrade_http(ops_test: OpsTest):
 
     # ensuring that the upgrade stack is correct
     relation_data = get_app_relation_data(
-        model_full_name=ops_test.model_full_name, unit=f"{APP_NAME}/0", endpoint="upgrade"
+        model_full_name=ops_test.model_full_name,
+        unit=f"{APP_NAME}/0",
+        endpoint="upgrade",
     )
 
     assert "upgrade-stack" in relation_data
@@ -100,7 +112,7 @@ async def test_in_place_upgrade_http(ops_test: OpsTest):
         [int(unit.machine.id) for unit in ops_test.model.applications[APP_NAME].units]
     )
 
-    await ops_test.model.applications[APP_NAME].refresh(path=pytest.charm)
+    await ops_test.model.applications[APP_NAME].refresh(path=charm)
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME], status="active", timeout=1000, idle_period=120
     )
@@ -108,8 +120,6 @@ async def test_in_place_upgrade_http(ops_test: OpsTest):
     assert await access_all_dashboards(ops_test)
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_switch_tls_on(ops_test: OpsTest):
     """Test HTTPS access to each dashboard unit."""
@@ -120,10 +130,8 @@ async def test_switch_tls_on(ops_test: OpsTest):
     )
 
 
-@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
-@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
-async def test_in_place_upgrade_https(ops_test: OpsTest):
+async def test_in_place_upgrade_https(ops_test: OpsTest, charm: str):
     leader_unit = None
     for unit in ops_test.model.applications[APP_NAME].units:
         if await unit.is_leader_from_status():
@@ -135,7 +143,9 @@ async def test_in_place_upgrade_https(ops_test: OpsTest):
 
     # ensuring that the upgrade stack is correct
     relation_data = get_app_relation_data(
-        model_full_name=ops_test.model_full_name, unit=f"{APP_NAME}/0", endpoint="upgrade"
+        model_full_name=ops_test.model_full_name,
+        unit=f"{APP_NAME}/0",
+        endpoint="upgrade",
     )
 
     assert "upgrade-stack" in relation_data
@@ -143,7 +153,7 @@ async def test_in_place_upgrade_https(ops_test: OpsTest):
         [int(unit.machine.id) for unit in ops_test.model.applications[APP_NAME].units]
     )
 
-    await ops_test.model.applications[APP_NAME].refresh(path=pytest.charm)
+    await ops_test.model.applications[APP_NAME].refresh(path=charm)
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME], status="active", timeout=1000, idle_period=120
     )
