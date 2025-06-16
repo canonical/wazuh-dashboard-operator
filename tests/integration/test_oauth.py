@@ -52,7 +52,7 @@ async def test_deploy(ops_test: OpsTest, ops_test_microk8s: OpsTest, charm: str,
 
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="2/edge",
+        channel="4.11/edge",
         num_units=2,
         series=series,
         config=CONFIG_OPTS,
