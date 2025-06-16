@@ -36,7 +36,7 @@ UPDATE_STATUS_INTERVAL = 60
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_APP_NAME = "wazuh-indexer"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
     "update-status-hook-interval": f"{UPDATE_STATUS_INTERVAL}s",

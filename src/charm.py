@@ -126,7 +126,7 @@ class OpensearchDasboardsCharm(CharmBase):
             scrape_configs=self._scrape_config,
             refresh_events=[self.on.config_changed],
             metrics_rules_dir="./src/alert_rules/prometheus",
-            log_slots=["opensearch-dashboards:logs"],
+            log_slots=["wazuh-dashboard:logs"],
         )
 
     # --- CORE EVENT HANDLERS ---

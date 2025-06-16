@@ -26,7 +26,7 @@ CONFIG = str(yaml.safe_load(Path("./config.yaml").read_text()))
 ACTIONS = str(yaml.safe_load(Path("./actions.yaml").read_text()))
 METADATA = str(yaml.safe_load(Path("./metadata.yaml").read_text()))
 
-OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_APP_NAME = "wazuh-indexer"
 
 
 @pytest.fixture
@@ -45,8 +45,8 @@ def harness():
     harness.charm.upgrade_manager.dependency_model = OpensearchDashboardsDependencyModel(
         **{
             "osd_upstream": {
-                "dependencies": {"opensearch": "2.12"},
-                "name": "opensearch-dashboards",
+                "dependencies": {"wazuh-indexer": "2.12"},
+                "name": "wazuh-dashboard",
                 "upgrade_supported": ">=2",
                 "version": "2.12",
             },

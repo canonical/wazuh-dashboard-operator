@@ -27,7 +27,7 @@ class ODWorkload(WorkloadBase):
     """Implementation of WorkloadBase for running on VMs."""
 
     SNAP_NAME = "wazuh-dashboard"
-    SNAP_APP_SERVICE = "opensearch-dashboards-daemon"
+    SNAP_APP_SERVICE = "wazuh-dashboard-daemon"
     SNAP_EXPORTER_SERVICE = "exporter-daemon"
 
     def __init__(self):

@@ -33,7 +33,6 @@ APP_NAME = METADATA["name"]
 OPENSEARCH_APP_NAME = "wazuh-indexer"
 CONFIG_OPTS = {"profile": "testing"}
 
-OPENSEARCH_APP_NAME = "opensearch"
 OPENSEARCH_RELATION_NAME = "opensearch-client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",

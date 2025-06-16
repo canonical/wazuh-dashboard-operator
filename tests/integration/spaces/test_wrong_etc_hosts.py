@@ -86,8 +86,8 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces, charm: str, serie
         config=config,
     )
     await ops_test.model.deploy(
-        "opensearch",
-        channel="2/edge",
+        "wazuh-indexer",
+        channel="4.11/edge",
         constraints="spaces=alpha,client,cluster,backup",
         bind={"": "cluster"},
         num_units=3,

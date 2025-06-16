@@ -13,16 +13,16 @@ PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch-client"
 CERTS_REL_NAME = "certificates"
 OAUTH_REL_NAME = "oauth"
-DASHBOARD_INDEX = ".opensearch-dashboards"
+DASHBOARD_INDEX = ".wazuh-dashboard"
 DASHBOARD_USER = "kibanaserver"
 DASHBOARD_ROLE = "kibana_server"
-CONTAINER = "opensearch-dashboards"
+CONTAINER = "wazuh-dashboard"
 SERVER_PORT = 5601
 
 DEPENDENCIES = {
     "osd_upstream": {
-        "dependencies": {"opensearch": "2.16.1"},
-        "name": "opensearch-dashboards",
+        "dependencies": {"wazuh-indexer": "2.16.1"},
+        "name": "wazuh-dashboard",
         "upgrade_supported": ">=2",
         "version": "2.16.1",
     },
