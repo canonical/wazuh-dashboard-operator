@@ -52,7 +52,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="latest/edge",
+        channel="4.11/edge",
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )

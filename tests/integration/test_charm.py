@@ -70,7 +70,7 @@ async def test_build_and_deploy(
     await ops_test.model.deploy(COS_AGENT_APP_NAME, series=series)
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="latest/edge",
+        channel="4.11/edge",
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )
@@ -347,7 +347,7 @@ async def test_restore_opensearch_restores_osd(ops_test: OpsTest):
 
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="latest/edge",
+        channel="4.11/edge",
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )

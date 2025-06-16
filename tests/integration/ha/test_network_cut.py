@@ -65,7 +65,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     # NOTE: can't access 2/stable from the tests, only 'edge' available
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="latest/edge",
+        channel="4.11/edge",
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )
