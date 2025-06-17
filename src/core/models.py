@@ -5,14 +5,13 @@
 """Collection of state objects for relations, apps and units."""
 import logging
 import socket
-import subprocess
 from typing import Literal, MutableMapping
 
+import requests
 from charms.data_platform_libs.v0.data_interfaces import Data, DataDict
+from ops import Secret
 from ops.model import Application, Relation, Unit
 from typing_extensions import override
-
-from literals import SERVER_PORT
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +135,11 @@ class ODCluster(StateBase):
         """Flag to check if TLS is enabled for the cluster."""
         return bool(self._tls)
 
+    @property
+    def oauth_client_secret(self) -> str:
+        """Client secret of the Oauth relation."""
+        return self.relation_data.get("oauth-client-secret", "")
+
 
 class ODServer(StateBase):
     """State collection metadata for a charm unit."""
@@ -178,24 +182,18 @@ class ODServer(StateBase):
     @property
     def fqdn(self) -> str:
         """The Fully Qualified Domain Name for the unit."""
-        return socket.getfqdn()
+        # return socket.getfqdn(self.private_ip)
+        return socket.getfqdn(self.private_ip)
 
     @property
     def private_ip(self) -> str:
-        """The IP for the unit."""
+        """The IP for the unit recovered using socket."""
         return socket.gethostbyname(self.hostname)
 
     @property
     def public_ip(self) -> str:
-        result = subprocess.check_output(
-            [
-                "bash",
-                "-c",
-                "ip a | grep global | grep -v 'inet 10.' | cut -d' ' -f6 | cut -d'/' -f1",
-            ],
-            text=True,
-        )
-        return result.rstrip()
+        """The public IP for the unit."""
+        return socket.gethostbyname(self.hostname)
 
     @property
     def host(self) -> str:
@@ -245,12 +243,63 @@ class ODServer(StateBase):
             return {}
 
         return {
-            "sans_ip": [self.private_ip],
-            "sans_dns": [self.hostname, self.fqdn],
+            "sans_ip": [self.private_ip, self.public_ip],
+            "sans_dns": [dns for dns in {self.hostname, self.fqdn} if dns],
         }
 
+
+class OAuth:
+    """State collection metadata for the oauth relation."""
+
+    def __init__(self, relation: Relation | None, client_secret: str):
+        self.relation = relation
+        self._client_secret = client_secret
+
     @property
-    def url(self) -> str:
-        """Service URL."""
-        scheme = "https" if self.tls else "http"
-        return f"{scheme}://{self.private_ip}:{SERVER_PORT}"
+    def relation_data(self) -> MutableMapping[str, str]:
+        """Oauth relation data object."""
+        if not self.relation or not self.relation.app:
+            return {}
+
+        return self.relation.data[self.relation.app]
+
+    @property
+    def issuer_url(self) -> str:
+        """The issuer URL to identify the IDP."""
+        return self.relation_data.get("issuer_url", "")
+
+    @property
+    def client_id(self) -> str:
+        """Client ID created by Hydra."""
+        return self.relation_data.get("client_id", "")
+
+    @property
+    def client_secret(self) -> str:
+        """Client secret created by Hydra."""
+        return self._client_secret
+
+    @property
+    def jwks_endpoint(self) -> str:
+        """The JWKS endpoint needed to validate JWT tokens."""
+        return self.relation_data.get("jwks_endpoint", "")
+
+    @property
+    def introspection_endpoint(self) -> str:
+        """The introspection endpoint needed to validate non-JWT tokens."""
+        return self.relation_data.get("introspection_endpoint", "")
+
+    @property
+    def jwt_access_token(self) -> bool:
+        """A flag indicating if the access token is JWT or not."""
+        return self.relation_data.get("jwt_access_token", "false").lower() == "true"
+
+    @property
+    def uses_trusted_ca(self) -> bool:
+        """A flag indicating if the IDP uses certificates signed by a trusted CA."""
+        try:
+            requests.get(self.issuer_url, timeout=10)
+            return True
+        except requests.exceptions.SSLError:
+            return False
+        except requests.exceptions.RequestException:
+            return True

@@ -2,9 +2,11 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 import logging
+import time
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, PropertyMock, mock_open, patch
 
 import pytest
 import responses
@@ -14,9 +16,10 @@ from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingSta
 from ops.testing import Harness
 
 from charm import OpensearchDasboardsCharm, OpensearchDashboardsDependencyModel
-from helpers import clear_status
+from helpers import clear_status, update_grafana_dashboards_title
 from literals import CHARM_KEY, CONTAINER, OPENSEARCH_REL_NAME, PEER, SUBSTRATE
 from src.literals import (
+    MSG_INCOMPATIBLE_UPGRADE,
     MSG_STATUS_ERROR,
     MSG_STATUS_UNHEALTHY,
 )
@@ -27,7 +30,7 @@ CONFIG = str(yaml.safe_load(Path("./config.yaml").read_text()))
 ACTIONS = str(yaml.safe_load(Path("./actions.yaml").read_text()))
 METADATA = str(yaml.safe_load(Path("./metadata.yaml").read_text()))
 
-OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_APP_NAME = "wazuh-indexer"
 
 
 @pytest.fixture
@@ -45,8 +48,8 @@ def harness():
     harness.charm.upgrade_events.dependency_model = OpensearchDashboardsDependencyModel(
         **{
             "osd_upstream": {
-                "dependencies": {"opensearch": "2.12"},
-                "name": "opensearch-dashboards",
+                "dependencies": {"wazuh-indexer": "2.12"},
+                "name": "wazuh-dashboard",
                 "upgrade_supported": ">=2",
                 "version": "2.12",
             },
@@ -55,16 +58,39 @@ def harness():
     return harness
 
 
+@pytest.fixture
+def mocked_dashboards():
+    mock_charm = MagicMock()
+    mock_charm.model.unit = MagicMock()
+    type(mock_charm).charm_dir = PropertyMock(return_value=Path("/fake/charm/dir"))
+
+    yield mock_charm
+
+
+@pytest.fixture(autouse=True)
+def patch_get_charm_revision():
+    with patch("helpers.get_charm_revision", return_value=167) as mock_func:
+        yield mock_func
+
+
+@pytest.fixture(autouse=True)
+def patch_test_relation_changed_starts_units():
+    with patch("charm.update_grafana_dashboards_title") as mock_func:
+        yield mock_func
+
+
 def set_healthy_opensearch_connection(harness):
     """Set up a functional opensearch mock."""
-    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-    harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+    harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
     harness.update_relation_data(
         opensearch_rel_id,
-        "opensearch",
+        "wazuh-indexer",
         {"endpoints": "111.222.333.444:9200,555.666.777.888:9200"},
     )
-    harness.update_relation_data(opensearch_rel_id, "opensearch", {"tls-ca": "<cert_data_here>"})
+    harness.update_relation_data(
+        opensearch_rel_id, "wazuh-indexer", {"tls-ca": "<cert_data_here>"}
+    )
     harness.update_relation_data(
         opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "2.12.1"}
     )
@@ -114,7 +140,7 @@ def test_install_sets_ip_hostname_fqdn(harness):
     with patch("workload.ODWorkload.install", return_value=False):
         harness.charm.on.install.emit()
 
-        assert harness.charm.state.unit_server.private_ip
+        assert harness.charm.state.bind_address
 
 
 def test_relation_changed_emitted_for_leader_elected(harness):
@@ -184,8 +210,8 @@ def test_relation_changed_starts_units(harness):
 
 def test_relation_changed_emitted_for_opensearch_relation_changed(harness):
     with harness.hooks_disabled():
-        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-        harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     with patch("events.requirer.RequirerEvents._on_client_relation_changed") as patched:
         harness.charm.on.opensearch_client_relation_changed.emit(
@@ -256,6 +282,103 @@ def test_restart_fails_not_started(harness):
         patched_start.assert_called_once()
 
 
+@responses.activate
+def test_restart_sleep_no_wait_once_service_up(harness):
+    """We are giving a "grace period" for the service to establish after a restart.
+
+    Reason: to avoid unhealthy charm state set by 'update-status' premature run.
+    """
+
+    # Let's assume that the service has started already, and has a healthy DB connection
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.set_planned_units(1)
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
+
+    expected_response = {
+        "status": {
+            "overall": {
+                "state": "green",
+            },
+        }
+    }
+
+    responses.add(
+        method="GET",
+        url=f"{harness.charm.state.url}/api/status",
+        status=200,
+        json=expected_response,
+    )
+
+    # Let's assume that we don't need to wait for workload to come up
+    # to reduce the scope of the test to the service availability delay
+    with (
+        patch("workload.ODWorkload.alive", return_value=True),
+        patch("workload.ODWorkload.restart") as patched_restart,
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("time.sleep") as patched_sleep,
+    ):
+        harness.charm._restart(EventBase(harness.charm))
+        patched_restart.assert_called_once()
+
+        # sleep() was only called to allow the service to establish
+        assert patched_sleep.call_count == 0
+
+
+@responses.activate
+def test_restart_sleep_with_timeout_if_service_down(harness):
+    """We are giving a "grace period" for the service to establish after a restart.
+
+    Reason: to avoid unhealthy charm state set by 'update-status' premature run.
+    """
+
+    # Let's assume that the service has started already, and has a healthy DB connection
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.set_planned_units(1)
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
+
+    expected_response = {
+        "status": {
+            "overall": {
+                "state": "red",
+            },
+        }
+    }
+
+    responses.add(
+        method="GET",
+        url=f"{harness.charm.state.url}/api/status",
+        status=200,
+        json=expected_response,
+    )
+
+    # Let's assume that we don't need to wait for workload to come up
+    # to reduce the scope of the test to the service availability delay
+    # Also decreasing timeout for faster run
+    patched_timeout = 5
+    with (
+        patch("workload.ODWorkload.alive", return_value=True),
+        patch("charm.SERVICE_AVAILABLE_TIMEOUT", patched_timeout),
+        patch("workload.ODWorkload.restart") as patched_restart,
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("time.sleep") as patched_sleep,
+    ):
+        start_time = time.time()
+        harness.charm._restart(EventBase(harness.charm))
+        end_time = time.time()
+        patched_restart.assert_called_once()
+
+        assert patched_sleep.call_count > 2
+        assert end_time - start_time >= patched_timeout
+
+
 def test_restart_restarts_with_sleep(harness):
     with harness.hooks_disabled():
         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
@@ -265,6 +388,9 @@ def test_restart_restarts_with_sleep(harness):
         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"0": "added"})
 
     with (
+        # Harmlessly decreasing timeouts for faster test run
+        patch("charm.RESTART_TIMEOUT", 3),
+        patch("charm.SERVICE_AVAILABLE_TIMEOUT", 3),
         patch("workload.ODWorkload.restart") as patched_restart,
         patch("managers.config.ConfigManager.set_dashboard_properties"),
         patch("time.sleep") as patched_sleep,
@@ -320,6 +446,7 @@ def test_config_changed_applies_relation_data(harness):
         harness.set_leader(True)
 
     with (
+        patch("workload.ODWorkload.alive", return_value=True),
         patch("managers.config.ConfigManager.config_changed") as patched,
         patch("core.cluster.ClusterState.stable", return_value=True),
         patch("core.cluster.ClusterState.all_units_related", return_value=True),
@@ -342,9 +469,13 @@ def test_workload_down_blocked_status(harness):
         harness.set_leader(True)
 
     with (
+        # Harmlessly decreasing timeouts for faster test run
+        patch("charm.RESTART_TIMEOUT", 3),
+        patch("charm.SERVICE_AVAILABLE_TIMEOUT", 3),
         patch("workload.ODWorkload.alive", return_value=False),
         patch("workload.ODWorkload.write"),
         patch("workload.ODWorkload.start", return_value=True),
+        patch("workload.ODWorkload.restart", return_value=False),
         patch("managers.config.ConfigManager.config_changed", return_value=False),
         patch("managers.config.ConfigManager.set_dashboard_properties"),
     ):
@@ -358,7 +489,7 @@ def test_workload_down_blocked_status(harness):
 def test_service_unavailable_blocked_status(harness):
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=503,
         body="OpenSearch Dashboards server is not ready yet",
     )
@@ -369,8 +500,8 @@ def test_service_unavailable_blocked_status(harness):
         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
         harness.set_leader(True)
 
-        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-        harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     with (
         patch("workload.ODWorkload.alive", return_value=True),
@@ -397,7 +528,7 @@ def test_service_unhealthy(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=200,
         json=expected_response,
     )
@@ -417,6 +548,26 @@ def test_service_unhealthy(harness):
         patch("managers.config.ConfigManager.set_dashboard_properties"),
         patch("os.path.exists", return_value=True),
         patch("os.path.getsize", return_value=1),
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="wazuh-dashboard",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="wazuh-dashboard",
+        ),
+        patch(
+            "managers.api.APIManager.request",
+            return_value={
+                "status": {
+                    "overall": {
+                        "state": "yellow",
+                    },
+                },
+            },
+        ),
     ):
         harness.charm.init_server()
         harness.charm.on.update_status.emit()
@@ -437,7 +588,7 @@ def test_service_error(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=200,
         json=expected_response,
     )
@@ -457,6 +608,26 @@ def test_service_error(harness):
         patch("managers.config.ConfigManager.set_dashboard_properties"),
         patch("os.path.exists", return_value=True),
         patch("os.path.getsize", return_value=1),
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="wazuh-dashboard",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="wazuh-dashboard",
+        ),
+        patch(
+            "managers.api.APIManager.request",
+            return_value={
+                "status": {
+                    "overall": {
+                        "state": "red",
+                    },
+                },
+            },
+        ),
     ):
         harness.charm.init_server()
         harness.charm.on.update_status.emit()
@@ -477,7 +648,7 @@ def test_service_available(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=200,
         json=expected_response,
     )
@@ -497,11 +668,103 @@ def test_service_available(harness):
         patch("managers.config.ConfigManager.set_dashboard_properties"),
         patch("os.path.exists", return_value=True),
         patch("os.path.getsize", return_value=1),
+        patch(
+            "core.models.ODServer.hostname",
+            new_callable=PropertyMock,
+            return_value="wazuh-dashboard",
+        ),
+        patch(
+            "core.models.ODServer.fqdn",
+            new_callable=PropertyMock,
+            return_value="wazuh-dashboard",
+        ),
+        patch(
+            "managers.api.APIManager.request",
+            return_value={
+                "status": {
+                    "overall": {
+                        "state": "green",
+                    },
+                },
+            },
+        ),
     ):
         harness.charm.init_server()
         harness.charm.on.update_status.emit()
 
         assert isinstance(harness.model.unit.status, ActiveStatus)
+
+
+@responses.activate
+def test_wrong_opensearch_version(harness):
+    expected_response = {
+        "status": {
+            "overall": {
+                "state": "green",
+            },
+        }
+    }
+
+    responses.add(
+        method="GET",
+        url=f"{harness.charm.state.url}/api/status",
+        status=200,
+        json=expected_response,
+    )
+
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
+        harness.set_leader(True)
+        opensearch_rel_id = set_healthy_opensearch_connection(harness)
+        harness.update_relation_data(
+            opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "20.12.1"}
+        )
+
+    with (
+        patch("workload.ODWorkload.alive", return_value=True),
+        patch("workload.ODWorkload.write"),
+        patch("workload.ODWorkload.start", return_value=True),
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+    ):
+        harness.charm.init_server()
+        harness.charm.on.update_status.emit()
+
+        assert isinstance(harness.model.unit.status, BlockedStatus)
+        assert harness.model.unit.status.message == MSG_INCOMPATIBLE_UPGRADE
+
+
+@patch(
+    "builtins.open",
+    new_callable=mock_open,
+    read_data=json.dumps({"title": "Charmed OpenSearch Dashboards"}),
+)
+@patch("json.dump")
+def test_update_grafana_dashboards_title_no_prior_revision(
+    mock_json_dump, mock_open_func, mocked_dashboards
+):
+
+    update_grafana_dashboards_title(mocked_dashboards)
+
+    expected_updated_dashboard = {"title": "Charmed OpenSearch Dashboards - Rev 167"}
+    mock_json_dump.assert_called_once_with(expected_updated_dashboard, mock_open_func(), indent=4)
+
+
+@patch(
+    "builtins.open",
+    new_callable=mock_open,
+    read_data=json.dumps({"title": "Charmed OpenSearch - Rev 166"}),
+)
+@patch("json.dump")
+def test_update_grafana_dashboards_title_prior_revision(
+    mock_json_dump, mock_open_func, mocked_dashboards
+):
+    update_grafana_dashboards_title(mocked_dashboards)
+
+    expected_updated_dashboard = {"title": "Charmed OpenSearch - Rev 167"}
+    mock_json_dump.assert_called_once_with(expected_updated_dashboard, mock_open_func(), indent=4)
 
 
 # def test_port_updates_if_tls(harness):

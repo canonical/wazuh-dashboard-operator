@@ -28,7 +28,7 @@ class ODWorkload(WorkloadBase):
 
     SNAP_NAME = "wazuh-dashboard"
     SNAP_APP_SERVICE = "opensearch-dashboards-daemon"
-    SNAP_EXPORTER_SERVICE = "kibana-exporter-daemon"
+    SNAP_EXPORTER_SERVICE = "exporter-daemon"
 
     def __init__(self):
         self.dashboards = snap.SnapCache()[self.SNAP_NAME]
@@ -118,10 +118,9 @@ class ODWorkload(WorkloadBase):
         retry=retry_if_not_result(lambda result: True if result else False),
     )
     def alive(self) -> bool:
+        """The main application is alive."""
         try:
-            return bool(self.dashboards.services[self.SNAP_APP_SERVICE]["active"]) and bool(
-                self.dashboards.services[self.SNAP_EXPORTER_SERVICE]["active"]
-            )
+            return bool(self.dashboards.services[self.SNAP_APP_SERVICE]["active"])
         except KeyError:
             return False
 

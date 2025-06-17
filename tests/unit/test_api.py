@@ -4,11 +4,13 @@
 
 import logging
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 import responses
 import yaml
 from ops.testing import Harness
+from requests import ReadTimeout
 
 from charm import OpensearchDasboardsCharm
 from literals import CHARM_KEY, CONTAINER, OPENSEARCH_REL_NAME, SUBSTRATE
@@ -30,10 +32,13 @@ def harness():
     harness.add_relation("restart", CHARM_KEY)
     upgrade_rel_id = harness.add_relation("upgrade", CHARM_KEY)
     harness.update_relation_data(upgrade_rel_id, f"{CHARM_KEY}/0", {"state": "idle"})
-    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-    harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+    harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
     harness._update_config({"log_level": "debug"})
     harness.begin()
+    harness.charm.model.get_binding = MagicMock()
+    harness.charm.model.get_binding.network.bind_address = MagicMock(return_value="10.10.10.10")
+
     return harness
 
 
@@ -91,13 +96,13 @@ def test_api_request(harness):
             ],
         },
     }
+    harness.charm.state.unit_server.relation = MagicMock(name="test")
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         json=expected_response,
     )
-
     response = harness.charm.api_manager.request("status")
     assert all(field in response for field in ["status", "name", "version"])
     assert all(field in response["status"] for field in ["statuses", "overall"])
@@ -160,10 +165,18 @@ def test_status(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         json=expected_response,
     )
 
     response = harness.charm.api_manager.service_status()
     assert all(field in response for field in ["status", "name", "version"])
     assert all(field in response["status"] for field in ["statuses", "overall"])
+
+
+@responses.activate
+def test_request_timeout(harness):
+    """ReadTimeout is "bubbled up" to caller."""
+    responses.add(method="GET", url=f"{harness.charm.state.url}/api/status", body=ReadTimeout())
+    with pytest.raises(ReadTimeout):
+        harness.charm.api_manager.service_status()

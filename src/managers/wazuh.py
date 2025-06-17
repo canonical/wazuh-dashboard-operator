@@ -7,9 +7,9 @@
 from urllib.parse import urlparse
 
 import yaml
+from charms.wazuh_server.v0 import wazuh_api
 
 import literals
-from charms.wazuh_server.v0 import wazuh_api
 from core.workload import WorkloadBase
 
 

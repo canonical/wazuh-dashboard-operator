@@ -7,10 +7,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 import yaml
+from charms.wazuh_server.v0 import wazuh_api
 from ops.testing import Harness
 
 from charm import OpensearchDasboardsCharm
-from charms.wazuh_server.v0 import wazuh_api
 from literals import PATHS
 
 logger = logging.getLogger(__name__)

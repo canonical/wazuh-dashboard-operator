@@ -10,6 +10,7 @@ import pytest
 import responses
 import yaml
 from ops.testing import Harness
+from requests import ReadTimeout
 
 from charm import OpensearchDasboardsCharm
 from literals import (
@@ -19,7 +20,8 @@ from literals import (
     OPENSEARCH_REL_NAME,
     SUBSTRATE,
 )
-from src.literals import MSG_STATUS_DB_DOWN
+from src.literals import MSG_STATUS_DB_DOWN, MSG_STATUS_HANGING
+from tests.unit.test_charm import MSG_STATUS_UNHEALTHY
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +40,16 @@ def harness():
     harness.add_relation("restart", CHARM_KEY)
     upgrade_rel_id = harness.add_relation("upgrade", CHARM_KEY)
     harness.update_relation_data(upgrade_rel_id, f"{CHARM_KEY}/0", {"state": "idle"})
-    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-    harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+    harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
     harness.update_relation_data(
-        opensearch_rel_id, "opensearch", {"endpoints": "111.222.333.444:9200,555.666.777.888:9200"}
+        opensearch_rel_id,
+        "wazuh-indexer",
+        {"endpoints": "111.222.333.444:9200,555.666.777.888:9200"},
     )
-    harness.update_relation_data(opensearch_rel_id, "opensearch", {"tls-ca": "<cert_data_here>"})
+    harness.update_relation_data(
+        opensearch_rel_id, "wazuh-indexer", {"tls-ca": "<cert_data_here>"}
+    )
     harness._update_config({"log_level": "INFO"})
     harness.begin()
     return harness
@@ -105,7 +111,7 @@ def test_health_status_ok(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         json=expected_response,
     )
 
@@ -119,7 +125,7 @@ def test_health_status_service_uniavail(harness):
 
     responses.add(
         method="GET",
-        url=f"{harness.charm.state.unit_server.url}/api/status",
+        url=f"{harness.charm.state.url}/api/status",
         status=503,
         body="OpenSearch Dashboards server is not ready yet",
     )
@@ -127,6 +133,21 @@ def test_health_status_service_uniavail(harness):
     response = harness.charm.health_manager.status_ok()
     assert not response[0]
     assert response[1] == MSG_STATUS_UNAVAIL
+
+
+@responses.activate
+def test_health_status_service_unresponsive(harness):
+
+    responses.add(
+        method="GET",
+        url=f"{harness.charm.state.url}/api/status",
+        status=503,
+        body=ReadTimeout(),
+    )
+
+    response = harness.charm.health_manager.status_ok()
+    assert not response[0]
+    assert response[1] == MSG_STATUS_HANGING
 
 
 @responses.activate

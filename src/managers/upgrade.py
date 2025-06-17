@@ -37,7 +37,7 @@ class UpgradeManager:
         if not (srv_version_actual := self.state.opensearch_server.version):
             return False
 
-        srv_version_required = self.dependency_model.osd_upstream.dependencies["opensearch"]
+        srv_version_required = self.dependency_model.osd_upstream.dependencies["wazuh-indexer"]
         major_actual, minor_actual = srv_version_actual.split(".")[:2]
         major_required, minor_required = srv_version_required.split(".")[:2]
         return major_actual <= major_required and minor_actual <= minor_required

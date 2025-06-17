@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 from core.cluster import SUBSTRATES, ClusterState
 from core.workload import WorkloadBase
+from literals import REQUEST_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -63,19 +64,21 @@ class APIManager:
             payload: JSON / map body payload.
 
         Raises:
+            ReadTimeout: We distinguish if the service was fully unresponsive
             RequestException (including any descendants from requests.exceptions)
         """
 
         if None in [endpoint, method]:
             raise ValueError("endpoint or method missing")
 
-        full_url = f"{self.state.unit_server.url}/api/{endpoint}"
+        full_url = f"{self.state.url}/api/{endpoint}"
 
         request_kwargs = {
             "verify": self.workload.paths.ca,
             "method": method.upper(),
             "url": full_url,
             "headers": headers,
+            "timeout": REQUEST_TIMEOUT,
         }
 
         request_kwargs["data"] = json.dumps(payload)
@@ -94,6 +97,9 @@ class APIManager:
                 )
                 resp = s.request(**request_kwargs)
                 resp.raise_for_status()
+        except requests.ReadTimeout as e:
+            logger.error(f"Hanging, no response from {full_url}: {e}.")
+            raise
         except RequestException as e:
             logger.error(f"Request {method} to {full_url} with payload: {payload} failed. \n{e}")
             raise

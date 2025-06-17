@@ -15,13 +15,16 @@ from core.workload import WorkloadBase
 from exceptions import OSDAPIError
 from literals import (
     HEALTH_OPENSEARCH_STATUS_URL,
+    MSG_STATUS_APP_REMOVED,
     MSG_STATUS_DB_DOWN,
     MSG_STATUS_DB_MISSING,
     MSG_STATUS_ERROR,
+    MSG_STATUS_HANGING,
     MSG_STATUS_UNAVAIL,
     MSG_STATUS_UNHEALTHY,
     MSG_STATUS_UNKNOWN,
     MSG_STATUS_WORKLOAD_DOWN,
+    REQUEST_TIMEOUT,
 )
 from managers.api import APIManager
 
@@ -49,8 +52,11 @@ class HealthManager:
         except HTTPError as err:
             if err.response.status_code == 503:
                 return False, MSG_STATUS_UNAVAIL
+            return False, MSG_STATUS_UNKNOWN
         except (ConnectionError, OSDAPIError):
             return False, MSG_STATUS_UNAVAIL
+        except requests.ReadTimeout:
+            return False, MSG_STATUS_HANGING
 
         if status_data["status"]["overall"]["state"] == "green":
             return True, ""
@@ -62,6 +68,9 @@ class HealthManager:
 
     def opensearch_ok(self) -> tuple[bool, str]:
         """Verify if associated Opensearch service is up and running."""
+
+        if not self.state.url:
+            return False, MSG_STATUS_APP_REMOVED
 
         if not self.state.opensearch_server or not (
             os.path.exists(self.workload.paths.opensearch_ca)
@@ -77,6 +86,7 @@ class HealthManager:
                 "method": "GET",
                 "verify": self.workload.paths.opensearch_ca,
                 "headers": None,
+                "timeout": REQUEST_TIMEOUT,
             }
 
             try:
