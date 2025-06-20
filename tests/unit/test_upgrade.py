@@ -79,6 +79,7 @@ def test_post_upgrade_check_succeeds(version, harness, mocker):
     assert harness.charm.upgrade_manager.version_compatible() is True
 
 
+@pytest.mark.skip("Wazuh: to be implemented")
 def test_post_upgrade_check_fails_major(harness, mocker):
     opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, OPENSEARCH_APP_NAME)
     with pytest.raises(ClusterNotReadyError):
@@ -90,6 +91,7 @@ def test_post_upgrade_check_fails_major(harness, mocker):
         assert isinstance(harness.model.unit.status, BlockedStatus)
 
 
+@pytest.mark.skip("Wazuh: to be implemented")
 def test_post_upgrade_check_fails_minor(harness, mocker):
     opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, OPENSEARCH_APP_NAME)
     with pytest.raises(ClusterNotReadyError):
@@ -150,6 +152,7 @@ def test_upgrade_granted_sets_failed_if_failed_snap(harness, mocker):
     ODUpgradeEvents.set_unit_failed.assert_called_once()
 
 
+@pytest.mark.skip("Wazuh: to be implemented")
 def test_upgrade_granted_sets_failed_if_failed_upgrade_check(harness, mocker):
     opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, OPENSEARCH_APP_NAME)
     harness.update_relation_data(

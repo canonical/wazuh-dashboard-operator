@@ -35,9 +35,9 @@ class WazuhManager:
             "run_as": False,
         }
         if wazuh_conf_yaml:
-             wazuh_conf_yaml["hosts"][0]["default"] = details
+            wazuh_conf_yaml["hosts"][0]["default"] = details
         else:
-             wazuh_conf_yaml = {"hosts": [{"default": details}]}
+            wazuh_conf_yaml = {"hosts": [{"default": details}]}
         self.workload.write(
             content=yaml.safe_dump(wazuh_conf_yaml, sort_keys=False),
             path=literals.PATHS["WAZUH_CONF"],
