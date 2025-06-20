@@ -696,7 +696,6 @@ def test_service_available(harness):
 
 
 @responses.activate
-@pytest.mark.skip("Wazuh: to be implemented")
 def test_wrong_opensearch_version(harness):
     expected_response = {
         "status": {
