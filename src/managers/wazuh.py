@@ -34,7 +34,10 @@ class WazuhManager:
             "password": wazuh_config.password,
             "run_as": False,
         }
-        wazuh_conf_yaml["hosts"][0]["default"] = details
+        if wazuh_conf_yaml:
+             wazuh_conf_yaml["hosts"][0]["default"] = details
+        else:
+             wazuh_conf_yaml = {"hosts": [{"default": details}]}
         self.workload.write(
             content=yaml.safe_dump(wazuh_conf_yaml, sort_keys=False),
             path=literals.PATHS["WAZUH_CONF"],
