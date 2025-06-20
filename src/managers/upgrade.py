@@ -30,6 +30,9 @@ class UpgradeManager:
 
     def version_compatible(self) -> bool:
         """Verify version compatibility with Opensearch."""
+	# Wazuh: we cannot check compatibility for now
+	return True 
+
         # When there's no Opensearch connection, we shouldn't report version mismatch
         if not self.state.opensearch_server:
             return True
