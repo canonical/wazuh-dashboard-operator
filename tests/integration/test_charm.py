@@ -68,7 +68,7 @@ async def test_build_and_deploy(
 
     config = {"ca-common-name": "CN_CA"}
     logger.warning("DEBUG A")
-    await ops_test.model.deploy(COS_AGENT_APP_NAME, channel="1/stable",  series=series)
+    await ops_test.model.deploy(COS_AGENT_APP_NAME, channel="1/stable", series=series)
     logger.warning("DEBUG B")
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
