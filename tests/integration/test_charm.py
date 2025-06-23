@@ -67,21 +67,26 @@ async def test_build_and_deploy(
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
 
     config = {"ca-common-name": "CN_CA"}
-    await ops_test.model.deploy(COS_AGENT_APP_NAME, series=series)
+    logger.warning("DEBUG A")
+    await ops_test.model.deploy(COS_AGENT_APP_NAME, channel="1/stable", series=series)
+    logger.warning("DEBUG B")
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
         channel="4.11/edge",
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )
+    logger.warning("DEBUG C")
     await ops_test.model.deploy(
         TLS_CERTIFICATES_APP_NAME, channel=TLS_STABLE_CHANNEL, config=config
     )
+    logger.warning("DEBUG D")
     await ops_test.model.deploy(application_charm, application_name=DB_CLIENT_APP_NAME)
-
+    logger.warning("DEBUG E")
     await ops_test.model.wait_for_idle(
         apps=[TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
     )
+    logger.warning("DEBUG F")
 
     # integrate it to OpenSearch to set up TLS.
     await ops_test.model.integrate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
