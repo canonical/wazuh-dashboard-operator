@@ -31,6 +31,7 @@ class UpgradeManager:
     def version_compatible(self) -> bool:
         """Verify version compatibility with Opensearch."""
         # When there's no Opensearch connection, we shouldn't report version mismatch
+        # Wazuh: change proposed upstream: https://github.com/canonical/opensearch-dashboards-operator/pull/186
         if not self.state.opensearch_server or not self.state.opensearch_server.version:
             return True
 
