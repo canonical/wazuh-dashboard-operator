@@ -154,7 +154,7 @@ Follow instructions from Wazuh documentation on
 When the index pattern is defined, data that belongs to the user will display in the Dasboards.
 
 
-# Contributing
+# Contribute
 
 `wazuh-dashboard-operator` is a fork of [`opensearch-dashboards-operator`](https://github.com/canonical/opensearch-dashboards-operator). If you're interested in adding non Wazuh specific features to the charm, consider contributing upstream.
 
