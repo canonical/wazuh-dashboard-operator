@@ -129,7 +129,9 @@ jobs:
       - name: Terraform deploy
         run: |
           pushd ./terraform/product
-          terraform apply -var='model=test' -auto-approve
+          terraform apply -var='model=test' -auto-approve \
+            -var='grafana_agent = { channel="1/edge", revision=456 }' \
+            -var='wazuh_dashboard = { channel="4.11/edge", constraints="arch=amd64 cores=2", revision=14 }'
           popd
       - name: Wait for model and applications
         run: |
