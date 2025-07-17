@@ -9,6 +9,7 @@ output "app_name" {
 output "requires" {
   value = {
     certificates      = "certificates"
+    oauth             = "oauth"
     opensearch_client = "opensearch-client"
     wazuh_api         = "wazuh-api"
   }
