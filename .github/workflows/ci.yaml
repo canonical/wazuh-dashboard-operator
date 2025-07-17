@@ -18,18 +18,8 @@ on:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-22.04
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install tox & poetry
-        run: |
-          pipx install tox
-          pipx install poetry
-      - name: Run linters
-        run: tox run -e lint
-  
+    uses: canonical/data-platform-workflows/.github/workflows/lint.yaml@v32.1.0
+
   vale:
     name: Style checker
     runs-on: ubuntu-22.04
@@ -86,7 +76,6 @@ jobs:
         run: tox run -e unit
 
   promtool:
-    if: false
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repo
@@ -105,7 +94,6 @@ jobs:
           promtool test rules tests/unit/test_alert_rules/*.yaml
 
   terraform-test:
-    if: false
     name: Terraform - Lint and Simple Deployment
     runs-on: ubuntu-22.04
     timeout-minutes: 120

@@ -73,7 +73,6 @@ async def restart_delay(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     """Tests that the charm deploys safely"""
-    logger.warning(f"DEBUG: {APP_NAME}, {NUM_UNITS_APP}, {series}")
     await ops_test.model.deploy(
         charm, application_name=APP_NAME, num_units=NUM_UNITS_APP, series=series
     )
