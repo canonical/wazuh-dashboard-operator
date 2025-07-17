@@ -4,7 +4,7 @@
 
 """Collection of global literals for the charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = "4"
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = "5"
 
 SUBSTRATE = "vm"
 CHARM_KEY = "wazuh-dashboard"
