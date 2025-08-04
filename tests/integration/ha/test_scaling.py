@@ -11,6 +11,9 @@ from pytest_operator.plugin import OpsTest
 
 from ..helpers import (
     CONFIG_OPTS,
+    OPENSEARCH_APP_NAME,
+    OPENSEARCH_CHANNEL,
+    OPENSEARCH_REVISION,
     TLS_CERTIFICATES_APP_NAME,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
@@ -21,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-OPENSEARCH_APP_NAME = "wazuh-indexer"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
     "cloudinit-userdata": """postruncmd:
@@ -48,7 +50,11 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     # NOTE: can't access 2/stable from the tests, only 'edge' available
     await ops_test.model.deploy(
-        OPENSEARCH_APP_NAME, channel="4.11/edge", num_units=2, config=CONFIG_OPTS
+        OPENSEARCH_APP_NAME,
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
+        num_units=2,
+        config=CONFIG_OPTS,
     )
 
     config = {"ca-common-name": "CN_CA"}

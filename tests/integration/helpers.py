@@ -31,6 +31,8 @@ from core.workload import ODPaths
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 OPENSEARCH_APP_NAME = "wazuh-indexer"
+OPENSEARCH_CHANNEL = "4.11"
+OPENSEARCH_REVISION = 9
 CONFIG_OPTS = {"profile": "testing"}
 
 OPENSEARCH_RELATION_NAME = "opensearch-client"

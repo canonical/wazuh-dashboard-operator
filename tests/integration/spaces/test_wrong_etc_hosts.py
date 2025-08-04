@@ -12,6 +12,8 @@ from ..helpers import (
     APP_NAME,
     CONFIG_OPTS,
     OPENSEARCH_APP_NAME,
+    OPENSEARCH_CHANNEL,
+    OPENSEARCH_REVISION,
     TLS_CERTIFICATES_APP_NAME,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
@@ -86,8 +88,9 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces, charm: str, serie
         config=config,
     )
     await ops_test.model.deploy(
-        "wazuh-indexer",
-        channel="4.11/edge",
+        OPENSEARCH_APP_NAME,
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
         constraints="spaces=alpha,client,cluster,backup",
         bind={"": "cluster"},
         num_units=3,
