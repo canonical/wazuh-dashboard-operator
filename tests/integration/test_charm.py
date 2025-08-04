@@ -298,8 +298,6 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     await ops_test.juju("remove-relation", OPENSEARCH_APP_NAME, "wazuh-dashboard")
     await ops_test.model.wait_for_idle(
         apps=[OPENSEARCH_APP_NAME],
-        channel=OPENSEARCH_CHANNEL,
-        REVISION=OPENSEARCH_REVISION,
         status="active",
         timeout=1000,
     )
