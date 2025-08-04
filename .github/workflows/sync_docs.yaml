@@ -9,6 +9,7 @@ on:
 
 jobs:
   sync-docs:
+    if: false  # Wazuh: disable for wazuh
     name: Sync docs from Discourse
     uses: canonical/data-platform-workflows/.github/workflows/_sync_docs.yaml@24.0.6
     secrets:
