@@ -15,6 +15,9 @@ from pytest_operator.plugin import OpsTest
 from .helpers import (
     CONFIG_OPTS,
     DASHBOARD_QUERY_PARAMS,
+    OPENSEARCH_APP_NAME,
+    OPENSEARCH_CHANNEL,
+    OPENSEARCH_REVISION,
     TLS_CERTIFICATES_APP_NAME,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
@@ -35,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-OPENSEARCH_APP_NAME = "wazuh-indexer"
 OPENSEARCH_RELATION_NAME = "opensearch-client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
@@ -71,7 +73,8 @@ async def test_build_and_deploy(
     await ops_test.model.deploy(COS_AGENT_APP_NAME, channel=COS_CHANNEL, series=series)
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="4.11/edge",
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )
@@ -292,8 +295,14 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     """Test HTTPS access to each dashboard unit."""
 
     logger.info("Breaking opensearch connection")
-    await ops_test.juju("remove-relation", "wazuh-indexer", "wazuh-dashboard")
-    await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="active", timeout=1000)
+    await ops_test.juju("remove-relation", OPENSEARCH_APP_NAME, "wazuh-dashboard")
+    await ops_test.model.wait_for_idle(
+        apps=[OPENSEARCH_APP_NAME],
+        channel=OPENSEARCH_CHANNEL,
+        REVISION=OPENSEARCH_REVISION,
+        status="active",
+        timeout=1000,
+    )
 
     async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked")
@@ -348,7 +357,8 @@ async def test_restore_opensearch_restores_osd(ops_test: OpsTest):
 
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="4.11/edge",
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )

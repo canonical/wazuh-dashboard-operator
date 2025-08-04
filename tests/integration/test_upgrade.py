@@ -12,6 +12,9 @@ from pytest_operator.plugin import OpsTest
 
 from .helpers import (
     CONFIG_OPTS,
+    OPENSEARCH_APP_NAME,
+    OPENSEARCH_CHANNEL,
+    OPENSEARCH_REVISION,
     TLS_CERTIFICATES_APP_NAME,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
@@ -26,7 +29,6 @@ APP_NAME = METADATA["name"]
 # FIXME: update this to 'stable' when `pre-upgrade-check` is released to 'stable'
 CHANNEL = "edge"
 
-OPENSEARCH_APP_NAME = "wazuh-indexer"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
     "cloudinit-userdata": """postruncmd:
@@ -52,7 +54,8 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="4.11/edge",
+        channel=OPENSEARCH_APP_NAME,
+        revision=OPENSEARCH_REVISION,
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )

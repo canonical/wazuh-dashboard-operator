@@ -9,7 +9,13 @@ from asyncio import gather
 # import oauth_tools
 import pytest
 import yaml
-from integration.helpers import CONFIG_OPTS, get_address
+from integration.helpers import (
+    CONFIG_OPTS,
+    OPENSEARCH_APP_NAME,
+    OPENSEARCH_CHANNEL,
+    OPENSEARCH_REVISION,
+    get_address,
+)
 from oauth_tools import (
     ExternalIdpService,
     access_application_login_page,
@@ -26,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(pathlib.Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-OPENSEARCH_APP_NAME = "wazuh-indexer"
 OPENSEARCH_RELATION_NAME = "opensearch-client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
@@ -52,7 +57,8 @@ async def test_deploy(ops_test: OpsTest, ops_test_microk8s: OpsTest, charm: str,
 
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="4.11/edge",
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
         num_units=2,
         series=series,
         config=CONFIG_OPTS,
