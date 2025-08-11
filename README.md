@@ -1,4 +1,7 @@
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 # Wazuh Dasboard Operator
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
+
 [![Charmhub](https://charmhub.io/wazuh-dashboard/badge.svg)](https://charmhub.io/wazuh-dashboard)
 [![Release](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/release.yaml/badge.svg)](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/release.yaml)
 [![Tests](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/canonical/wazuh-dashboard-operator/actions/workflows/ci.yaml)
@@ -49,7 +52,9 @@ Then, boostrap Juju over LXD:
 juju bootstrap localhost
 ```
 
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 ### Charmed Wazuh Indexer
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 Wazuh Dashboard visualizes an underlying Wazuh database.
 This means that a [Charmed Wazuh Indexer](https://charmhub.io/wazuh-indexer/)
@@ -58,8 +63,9 @@ instance also has to be ready and available.
 A straightforward installation guide is available in the charm's 
 [Github repository](https://github.com/canonical/wazuh-indexer-operator?tab=readme-ov-file#usage).
 
-
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 ## Install Charmed Wazuh Dashboard
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 The Dashboards charm requires no specific environment adjustments.
 Therefore all we need to do to deploy the charm from [Charmhub](https://charmhub.io/wazuh-dashboard) is 
@@ -96,7 +102,9 @@ portal either from the command-line or a web browser.
 
 A few pieces of information are required to do this.
 
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 ### URL
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 Construct the URL first.
 
@@ -116,8 +124,8 @@ Set up a database user by deploying the `data-integrator` [charm](https://charmh
 and integrating it with `wazuh-indexer`. The user is created automatically as a result of the integration.
 
 ```shell
-$ juju deploy data-integrator
-$ juju deploy data-integrator --config index-name=<index_name>
+juju deploy data-integrator
+juju deploy data-integrator --config index-name=<index_name>
 ```
 
 Retrieve user credentials running
@@ -133,7 +141,7 @@ at the bottom of the output you should see something like:
   username: opensearch-client_15
 ```
 
-## Access the Dashboard
+## Access the dashboard
 
 Using information from above, the dashboard URI is construted as 
 

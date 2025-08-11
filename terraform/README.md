@@ -1,11 +1,15 @@
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 # Terraform module for opensearch-dashboards-operator
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 This is a Terraform module facilitating the deployment of the OpenSearch charm with [Terraform juju provider](https://github.com/juju/terraform-provider-juju/). For more information, refer to the provider [documentation](https://registry.terraform.io/providers/juju/juju/latest/docs). 
 
 ## Requirements
 This module requires a `juju` model to be available. Refer to the [usage section](#usage) below for more details.
 
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
 ## API
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 ### Inputs
 The module offers the following configurable inputs:
@@ -66,7 +70,7 @@ module "opensearch-dashboards" {
 }
 ```
 
-### Deploy OpenSearch Module and Relate
+### Deploy OpenSearch module and relate
 
 Follow the description in: https://github.com/canonical/opensearch-operator/, in the `terraform` directory. Deploy an opensearch
 cluster and relate both of them together:
