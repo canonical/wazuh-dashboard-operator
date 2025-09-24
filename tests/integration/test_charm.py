@@ -11,6 +11,8 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
+from literals import MSG_STATUS_DB_UNHEALTHY
+
 from .helpers import (
     CONFIG_OPTS,
     DASHBOARD_QUERY_PARAMS,
@@ -316,12 +318,29 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
     assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
 
-    logger.info("Removing an opensearch unit so Opensearch gets in a 'red' state")
-    await ops_test.model.applications[APP_NAME].destroy_unit(
-        ops_test.model.applications[OPENSEARCH_APP_NAME].units[1].name
+    logger.info(
+        "Adding a new index with shards allocated to a non existent node to make the cluster health red"
     )
-    await ops_test.model.applications[APP_NAME].destroy_unit(
-        ops_test.model.applications[OPENSEARCH_APP_NAME].units[0].name
+    client_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME, DB_CLIENT_APP_NAME)[0]
+
+    payload = {
+        "settings": {
+            "index.routing.allocation.require._name": "non_existent_node",
+            "index.number_of_shards": 5,
+            "index.number_of_replicas": 0,
+        }
+    }
+
+    payload = json.dumps(payload)
+
+    unit_name = ops_test.model.applications[DB_CLIENT_APP_NAME].units[0].name
+    await client_run_db_request(
+        ops_test,
+        unit_name,
+        client_relation,
+        "PUT",
+        "/bad_index",
+        re.escape(payload),
     )
     async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked")
@@ -329,7 +348,7 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     assert await check_full_status(
         ops_test,
         status="blocked",
-        status_msg="Opensearch service is (partially or fully) down",
+        status_msg=MSG_STATUS_DB_UNHEALTHY,
     )
 
 
