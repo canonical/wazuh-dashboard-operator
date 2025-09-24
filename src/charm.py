@@ -137,9 +137,7 @@ class OpensearchDashboardsCharm(CharmBase):
         """Handler for the `on_install` event."""
         self.unit.status = MaintenanceStatus(MSG_INSTALLING)
 
-        install = self.workload.install()
-        if not install:
-            self.unit.status = BlockedStatus("unable to install Opensearch Dashboards")
+        self.workload.install()
 
         # don't complete install until passwords set
         if not self.state.peer_relation:
