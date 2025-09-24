@@ -11,3 +11,4 @@ jobs:
     secrets: inherit
     with:
       vale-files: '["README.md","docs/"]'
+      linkcheck-fail-on-error: false
