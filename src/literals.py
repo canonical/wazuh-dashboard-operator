@@ -53,6 +53,7 @@ MSG_STARTING_SERVER = "starting Opensearch Dashboards server..."
 MSG_WAITING_FOR_PEER = "waiting for peer relation"
 MSG_STATUS_DB_MISSING = "Opensearch connection is missing"
 MSG_STATUS_DB_DOWN = "Opensearch service is (partially or fully) down"
+MSG_STATUS_DB_UNHEALTHY = "The OpenSearch service health is red"
 MSG_TLS_CONFIG = "Waiting for TLS to be fully configured..."
 MSG_INCOMPATIBLE_UPGRADE = "Incompatible Opensearch and Dashboards versions"
 
@@ -66,6 +67,7 @@ MSG_STATUS_HANGING = "Application does not respond, request hanging"
 
 MSG_APP_STATUS = [
     MSG_STATUS_DB_DOWN,
+    MSG_STATUS_DB_UNHEALTHY,
 ]
 
 MSG_UNIT_STATUS = [
