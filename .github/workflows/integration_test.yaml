@@ -19,7 +19,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up environment
         run: |
-          sudo snap install charmcraft --classic
+          sudo snap install go --classic
+          go install github.com/snapcore/spread/cmd/spread@latest
           pipx install tox poetry
       - name: Collect spread jobs
         id: collect-jobs
@@ -30,8 +31,12 @@ jobs:
           import subprocess
 
           spread_jobs = (
+
               subprocess.run(
-                  ["charmcraft", "test", "--list", "github-ci"], capture_output=True, check=True, text=True
+                  [pathlib.Path.home() / "go/bin/spread", "-list", "github-ci"],
+                  capture_output=True,
+                  check=True,
+                  text=True,
               )
               .stdout.strip()
               .split("\n")
