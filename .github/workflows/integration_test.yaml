@@ -29,6 +29,7 @@ jobs:
           import json
           import os
           import subprocess
+          import pathlib
 
           spread_jobs = (
 
