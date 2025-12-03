@@ -11,6 +11,11 @@ the Wazuh Dashboard charm expands the capabilities that the OpenSearch Dashboard
 
 For the complete documentation, refer to [upstream](https://charmhub.io/opensearch-dashboards).
 
+## Specific documentation
+
+* [How-to upgrade](https://charmhub.io/wazuh-dashboard/docs/how-to/upgrade)
+
+
 ## Project and community
 
 The Wazuh Dashboard Operator is a member of the Ubuntu family. It's an open-source project that warmly welcomes community projects, contributions, suggestions, fixes, and constructive feedback.
