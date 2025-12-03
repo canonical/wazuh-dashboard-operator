@@ -77,8 +77,8 @@ async def microk8s_cloud(ops_test: OpsTest) -> AsyncGenerator[None, Any]:
         subprocess.run(["sudo", "snap", "install", "--classic", "microk8s"], check=True)
         subprocess.run(["sudo", "snap", "install", "--classic", "kubectl"], check=True)
 
-        # Configure Dockerhub Mirror 
-        # The self hosted runners would need to leverage the docker hub 
+        # Configure Dockerhub Mirror
+        # The self hosted runners would need to leverage the docker hub
         # mirror in order to alleviate the problems of rate limiting in docker
         # Please check https://canonical-self-hosted-github-runner-docs.readthedocs-hosted.com/en/latest/usage/faq/how-to-avoid-dockerhub-rate-limits/
         dockerhub_mirror = os.environ.get("DOCKERHUB_MIRROR", None)
@@ -89,10 +89,10 @@ capabilities = ["pull", "resolve"]
 """
             file_path = "/var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml"
             directory = os.path.dirname(file_path)
-            if not os.path.exists(directory): 
+            if not os.path.exists(directory):
                 logger.error("The 'hosts.toml' for docker io server configuration don't exist")
             else:
-                # Write the content 
+                # Write the content
                 print(f"Writing configuration to {file_path}...")
                 subprocess.run(
                     ["sudo", "tee", file_path],
@@ -101,15 +101,9 @@ capabilities = ["pull", "resolve"]
                     check=True,
                     stdout=subprocess.DEVNULL,  # Suppress tee output to console
                 )
-                subprocess.run(
-                    ["sudo", "microk8s", "stop"],
-                    check=True
-                )
-                subprocess.run(
-                    ["sudo", "microk8s", "start"],
-                    check=True
-                )
-        
+                subprocess.run(["sudo", "microk8s", "stop"], check=True)
+                subprocess.run(["sudo", "microk8s", "start"], check=True)
+
         subprocess.run(["sudo", "microk8s", "enable", "dns"], check=True)
         subprocess.run(["sudo", "microk8s", "enable", "hostpath-storage"], check=True)
         subprocess.run(
