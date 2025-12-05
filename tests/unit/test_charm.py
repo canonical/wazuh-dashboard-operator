@@ -53,10 +53,10 @@ def harness():
     harness.charm.upgrade_events.dependency_model = OpensearchDashboardsDependencyModel(
         **{
             "osd_upstream": {
-                "dependencies": {"wazuh-indexer": "2.19.2"},
+                "dependencies": {"wazuh-indexer": "2.19.4"},
                 "name": "wazuh-dashboard",
                 "upgrade_supported": ">=2",
-                "version": "2.19.2",
+                "version": "2.19.4",
             },
         }
     )

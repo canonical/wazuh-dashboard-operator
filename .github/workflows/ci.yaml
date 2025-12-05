@@ -110,6 +110,7 @@ jobs:
           juju model-defaults logging-config='<root>=INFO; unit=DEBUG'
           juju add-model test
 
+
   build:
     strategy:
       matrix:
