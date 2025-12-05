@@ -82,6 +82,7 @@ jobs:
       matrix:
         job: ${{ fromJSON(needs.collect-integration-tests.outputs.jobs) }}
     name: ${{ matrix.job.name }}
+    runs-on: jammy
     needs:
       - collect-integration-tests
     runs-on: ${{ matrix.job.runner }}
