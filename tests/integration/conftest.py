@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 MICROK8S_CLOUD_NAME = "uk8s"
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(autouse=True, scope="module")
 async def wrap_ops_test_deploy(ops_test):
     real_deploy = ops_test.model.deploy
 
