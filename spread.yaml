@@ -43,7 +43,7 @@ backends:
       CONCIERGE_EXTRA_SNAPS: charmcraft
       CONCIERGE_EXTRA_DEBS: pipx
     systems:
-      - ubuntu-22.04:
+      - ubuntu-24.04:
           username: runner
     prepare: |
       systemctl disable --now unattended-upgrades.service
