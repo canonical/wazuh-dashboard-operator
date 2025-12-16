@@ -17,25 +17,6 @@ MICROK8S_CLOUD_NAME = "uk8s"
 
 
 @pytest.fixture(autouse=True, scope="module")
-async def wrap_ops_test_deploy(ops_test):
-    real_deploy = ops_test.model.deploy
-
-    async def wrapped_deploy(*args, **kwargs):
-        res = await real_deploy(*args, **kwargs)
-        await sleep(30)
-        logger.info(
-            subprocess.check_output(
-                ["./tests/integration/lxc-snap-base-workaround.sh"], shell=True
-            ).decode("utf-8")
-        )
-        return res
-
-    ops_test.model.deploy = wrapped_deploy
-    yield
-    ops_test.model.deploy = real_deploy
-
-
-@pytest.fixture(autouse=True, scope="module")
 def opensearch_sysctl_settings():
     """Necessary settings for Opensearch
 
