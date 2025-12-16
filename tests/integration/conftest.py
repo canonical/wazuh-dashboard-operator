@@ -10,6 +10,7 @@ import yaml
 from pytest_operator.plugin import OpsTest
 from tenacity import Retrying, stop_after_delay, wait_fixed
 
+
 logger = logging.getLogger(__name__)
 
 MICROK8S_CLOUD_NAME = "uk8s"

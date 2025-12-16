@@ -9,7 +9,7 @@ description: |
     the management and monitoring of the Wazuh platform.
 summary: The Charmed Wazuh Dashboard operator
 maintainers: https://launchpad.net/~canonical-is-devops
-docus: https://discourse.charmhub.io/t/wazuh-dashboard-documentation-overview/16072
+docs: https://discourse.charmhub.io/t/wazuh-dashboard-documentation-overview/16072
 issues: https://github.com/canonical/wazuh-dashbaord-operator/issues
 source: https://github.com/canonical/wazuh-dashbaord-operator
 series:
