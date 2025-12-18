@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 data "juju_model" "wazuh_dashboard" {
-  name = var.model
+  uuid = var.model_uuid
 }
 
 module "wazuh_dashboard" {
@@ -11,16 +11,16 @@ module "wazuh_dashboard" {
   channel     = var.wazuh_dashboard.channel
   config      = var.wazuh_dashboard.config
   constraints = var.wazuh_dashboard.constraints
-  model       = data.juju_model.wazuh_dashboard.name
+  model_uuid  = data.juju_model.wazuh_dashboard.uuid
   revision    = var.wazuh_dashboard.revision
   base        = var.wazuh_dashboard.base
   units       = var.wazuh_dashboard.units
 }
 
 resource "juju_application" "grafana_agent" {
-  name  = var.grafana_agent.app_name
-  model = data.juju_model.wazuh_dashboard.name
-  trust = true
+  name       = var.grafana_agent.app_name
+  model_uuid = data.juju_model.wazuh_dashboard.uuid
+  trust      = true
 
   charm {
     name     = "grafana-agent"
@@ -31,7 +31,7 @@ resource "juju_application" "grafana_agent" {
 }
 
 resource "juju_integration" "grafana_agent_dashboard" {
-  model = data.juju_model.wazuh_dashboard.name
+  model_uuid = data.juju_model.wazuh_dashboard.uuid
 
   application {
     name     = module.wazuh_dashboard.app_name

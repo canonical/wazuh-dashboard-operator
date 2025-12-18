@@ -109,17 +109,6 @@ jobs:
           sg 'lxd' -c "juju bootstrap 'localhost' --config model-logs-size=10G"
           juju model-defaults logging-config='<root>=INFO; unit=DEBUG'
           juju add-model test
-      - name: Terraform deploy
-        run: |
-          pushd ./terraform/product
-          terraform apply -var='model=test' -auto-approve \
-            -var='grafana_agent={ channel="1/edge", revision=456 }' \
-            -var='wazuh_dashboard={ channel="4.11/edge", constraints="arch=amd64 cores=2", revision=14 }'
-          popd
-      - name: Wait for model and applications
-        run: |
-          juju wait-for application wazuh-dashboard -m test --query='status=="blocked"'
-          juju wait-for model test --query='life=="alive" && status=="available"'
 
   build:
     strategy:

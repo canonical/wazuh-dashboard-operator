@@ -7,7 +7,6 @@ variable "app_name" {
   default     = "wazuh-dashboard"
 }
 
-
 variable "channel" {
   description = "The channel to use when deploying a charm."
   type        = string
@@ -26,7 +25,7 @@ variable "constraints" {
   default     = ""
 }
 
-variable "model" {
+variable "model_uuid" {
   description = "Reference to a `juju_model`."
   type        = string
   default     = ""

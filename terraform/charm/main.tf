@@ -2,8 +2,7 @@
 # See LICENSE file for licensing details.
 
 resource "juju_application" "wazuh_dashboard" {
-  name  = var.app_name
-  model = var.model
+  model_uuid = var.model_uuid
 
   charm {
     name     = "wazuh-dashboard"
