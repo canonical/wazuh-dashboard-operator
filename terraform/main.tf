@@ -10,7 +10,7 @@ resource "juju_application" "opensearch-dashboards" {
     base     = var.base
   }
   config      = var.config
-  model_uuid       = var.model_uuid
+  model_uuid  = var.model_uuid
   name        = var.app_name
   units       = var.units
   constraints = var.constraints
