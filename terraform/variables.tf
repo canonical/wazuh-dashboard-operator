@@ -48,17 +48,6 @@ variable "constraints" {
   default     = "arch=amd64"
 }
 
-variable "machines" {
-  description = "List of machines for placement"
-  type        = list(string)
-  default     = []
-
-  validation {
-    condition     = length(var.machines) == 0 || length(var.machines) == var.units
-    error_message = "Machine count does not match unit count"
-  }
-}
-
 variable "endpoint_bindings" {
   description = "Map of endpoint bindings"
   type        = map(string)
