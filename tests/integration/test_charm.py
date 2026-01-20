@@ -71,15 +71,13 @@ async def test_build_and_deploy(
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
 
     config = {"ca-common-name": "CN_CA"}
-    await asyncio.gather(
-        ops_test.model.deploy(COS_AGENT_APP_NAME, series=SERIES),
-        ops_test.model.deploy(
-            OPENSEARCH_APP_NAME, channel=OPENSEARCH_CHANNEL, num_units=NUM_UNITS_DB, config=CONFIG_OPTS
-        ),
-        ops_test.model.deploy(
-            TLS_CERTIFICATES_APP_NAME, channel=TLS_STABLE_CHANNEL, config=config
-        ),
-        ops_test.model.deploy(application_charm_build, application_name=DB_CLIENT_APP_NAME),
+    await ops_test.model.deploy(COS_AGENT_APP_NAME, channel=COS_CHANNEL, series=series)
+    await ops_test.model.deploy(
+        OPENSEARCH_APP_NAME,
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
+        num_units=NUM_UNITS_DB,
+        config=CONFIG_OPTS,
     )
     await ops_test.model.deploy(
         TLS_CERTIFICATES_APP_NAME, channel=TLS_STABLE_CHANNEL, config=config
