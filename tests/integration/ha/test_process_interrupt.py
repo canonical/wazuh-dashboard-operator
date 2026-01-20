@@ -13,6 +13,9 @@ from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 from ..helpers import (
     CONFIG_OPTS,
+    OPENSEARCH_APP_NAME,
+    OPENSEARCH_CHANNEL,
+    OPENSEARCH_REVISION,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
     get_leader_name,

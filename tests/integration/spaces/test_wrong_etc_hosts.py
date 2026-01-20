@@ -90,8 +90,9 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
         config=config,
     )
     await ops_test.model.deploy(
-        "opensearch",
-        channel="2/edge",
+        OPENSEARCH_APP_NAME,
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
         constraints="spaces=alpha,client,cluster,backup",
         bind={"": "cluster"},
         num_units=3,

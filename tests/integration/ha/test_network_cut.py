@@ -13,6 +13,9 @@ from pytest_operator.plugin import OpsTest
 
 from ..helpers import (
     CONFIG_OPTS,
+    OPENSEARCH_APP_NAME,
+    OPENSEARCH_CHANNEL,
+    OPENSEARCH_REVISION,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
     all_dashboards_unavailable,
