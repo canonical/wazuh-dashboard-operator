@@ -295,7 +295,7 @@ def test_restart_sleep_no_wait_once_service_up(harness):
         harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
         harness.set_planned_units(1)
         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
-        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
         harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     expected_response = {
@@ -341,7 +341,7 @@ def test_restart_sleep_with_timeout_if_service_down(harness):
         harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
         harness.set_planned_units(1)
         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
-        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
         harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     expected_response = {
