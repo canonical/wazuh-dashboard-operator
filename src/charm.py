@@ -19,6 +19,7 @@ from events.oauth import OAuthHandler
 from events.requirer import RequirerEvents
 from events.tls import TLSEvents
 from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
+from events.wazuh_api import WazuhApiEvents
 from helpers import (
     clear_global_status,
     clear_status,
