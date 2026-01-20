@@ -309,6 +309,7 @@ class OpensearchDasboardsCharm(CharmBase):
 
         logger.debug("setting properties")
         self.config_manager.set_dashboard_properties()
+        self.wazuh_api_events.update_configuration()
 
         logger.debug("starting Opensearch Dashboards service")
 

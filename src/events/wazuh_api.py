@@ -34,6 +34,10 @@ class WazuhApiEvents(Object):
 
     def _on_wazuh_api_relation_changed(self, _: RelationEvent) -> None:
         """Handler for `wazuh-api` relation creation and changes."""
+        self.update_configuration()
+
+    def update_configuration(self) -> None:
+        """Update configuration from relation data."""
         data = self.wazuh_api.get_relation_data()
         if data:
             self.charm.wazuh_manager.set_dashboard_properties(data)
