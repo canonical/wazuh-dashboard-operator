@@ -140,11 +140,7 @@ class ODWorkload(WorkloadBase):
             cache = snap.SnapCache()
             dashboards = cache[self.SNAP_NAME]
 
-            dashboards.ensure(
-                snap.SnapState.Present,
-                revision=OPENSEARCH_DASHBOARDS_SNAP_REVISION,
-                channel="4.11/edge",
-            )
+            dashboards.ensure(snap.SnapState.Present, revision=OPENSEARCH_DASHBOARDS_SNAP_REVISION)
 
             self.dashboards = dashboards
             self.dashboards.hold()

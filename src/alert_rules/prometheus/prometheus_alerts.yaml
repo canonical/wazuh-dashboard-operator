@@ -1,5 +1,5 @@
 groups:
-- name: wazuh_dashboard.alerts
+- name: opensearch_dashboards.alerts
   rules:
 
   - alert: OpenSearchDashboardsScrapeFailed

@@ -19,7 +19,6 @@ from events.oauth import OAuthHandler
 from events.requirer import RequirerEvents
 from events.tls import TLSEvents
 from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
-from events.wazuh_api import WazuhApiEvents
 from helpers import (
     clear_global_status,
     clear_status,
@@ -126,7 +125,7 @@ class OpensearchDasboardsCharm(CharmBase):
             scrape_configs=self._scrape_config,
             refresh_events=[self.on.config_changed],
             metrics_rules_dir="./src/alert_rules/prometheus",
-            log_slots=["wazuh-dashboard:logs"],
+            log_slots=["opensearch-dashboards:logs"],
         )
 
     # --- CORE EVENT HANDLERS ---

@@ -12,8 +12,7 @@ from ..helpers import (
     APP_NAME,
     CONFIG_OPTS,
     OPENSEARCH_APP_NAME,
-    OPENSEARCH_CHANNEL,
-    OPENSEARCH_REVISION,
+    SERIES,
     TLS_CERTIFICATES_APP_NAME,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
@@ -28,9 +27,11 @@ logger = logging.getLogger(__name__)
 DEFAULT_NUM_UNITS = 3
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
-async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces, charm: str, series: str) -> None:
+async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces) -> None:
     """Build and deploy OpenSearch Dashboards.
 
     For this test, we will create a machine in multiple spaces and inject
@@ -39,6 +40,7 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces, charm: str, serie
 
     More information: gh:canonical/opensearch-dashboards-operator#121
     """
+    osd_charm = await ops_test.build_charm(".")
 
     for _ in range(DEFAULT_NUM_UNITS):
         subprocess.check_output(
@@ -47,7 +49,7 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces, charm: str, serie
                 "add-machine",
                 f"--model={ops_test.model.name}",
                 "--constraints=spaces=alpha,cluster,backup,client",
-                f"--series={series}",
+                f"--series={SERIES}",
             ]
         )
 
@@ -72,9 +74,9 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces, charm: str, serie
         )
 
     await ops_test.model.deploy(
-        charm,
+        osd_charm,
         num_units=DEFAULT_NUM_UNITS,
-        series=series,
+        series=SERIES,
         constraints="spaces=alpha,client,cluster,backup",
         bind={"": "cluster"},
         to=[str(i) for i in range(DEFAULT_NUM_UNITS)],
@@ -88,9 +90,8 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces, charm: str, serie
         config=config,
     )
     await ops_test.model.deploy(
-        OPENSEARCH_APP_NAME,
-        channel=OPENSEARCH_CHANNEL,
-        revision=OPENSEARCH_REVISION,
+        "opensearch",
+        channel="2/edge",
         constraints="spaces=alpha,client,cluster,backup",
         bind={"": "cluster"},
         num_units=3,
@@ -107,6 +108,8 @@ async def test_build_and_deploy(ops_test: OpsTest, lxd_spaces, charm: str, serie
     assert len(ops_test.model.applications[APP_NAME].units) == DEFAULT_NUM_UNITS
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_dashboard_access_http(ops_test: OpsTest):
     """Test HTTP access to each dashboard unit."""
@@ -117,6 +120,8 @@ async def test_dashboard_access_http(ops_test: OpsTest):
 ##############################################################################
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_tls_on(ops_test: OpsTest) -> None:
     """Not a real test, but only switching on TLS"""
@@ -131,6 +136,8 @@ async def test_tls_on(ops_test: OpsTest) -> None:
 ##############################################################################
 
 
+@pytest.mark.runner(["self-hosted", "linux", "X64", "jammy", "large"])
+@pytest.mark.group(1)
 @pytest.mark.abort_on_fail
 async def test_dashboard_access_https(ops_test: OpsTest):
     """Test HTTP access to each dashboard unit."""

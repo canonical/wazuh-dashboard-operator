@@ -12,9 +12,6 @@ from pytest_operator.plugin import OpsTest
 
 from .helpers import (
     CONFIG_OPTS,
-    OPENSEARCH_APP_NAME,
-    OPENSEARCH_CHANNEL,
-    OPENSEARCH_REVISION,
     TLS_CERTIFICATES_APP_NAME,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
@@ -53,11 +50,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     )
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     await ops_test.model.deploy(
-        OPENSEARCH_APP_NAME,
-        channel=OPENSEARCH_CHANNEL,
-        revision=OPENSEARCH_REVISION,
-        num_units=NUM_UNITS_DB,
-        config=CONFIG_OPTS,
+        OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB, config=CONFIG_OPTS
     )
 
     config = {"ca-common-name": "CN_CA"}

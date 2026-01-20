@@ -25,7 +25,7 @@ variable "config" {
   default     = {}
 }
 
-variable "model_uuid" {
+variable "model" {
   description = "Model name"
   type        = string
 }
@@ -46,6 +46,17 @@ variable "constraints" {
   description = "String listing constraints for this application"
   type        = string
   default     = "arch=amd64"
+}
+
+variable "machines" {
+  description = "List of machines for placement"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.machines) == 0 || length(var.machines) == var.units
+    error_message = "Machine count does not match unit count"
+  }
 }
 
 variable "endpoint_bindings" {

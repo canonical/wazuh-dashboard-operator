@@ -150,14 +150,6 @@ class ClusterState(Object):
         )
 
     @property
-    def oauth(self) -> OAuth:
-        """The oauth relation state."""
-        return OAuth(
-            relation=self.oauth_relation,
-            client_secret=self.cluster.oauth_client_secret,
-        )
-
-    @property
     def bind_address(self) -> IPv4Address | IPv6Address | str | None:
         """The network binding address from the peer relation."""
         bind_address = None
