@@ -363,6 +363,7 @@ async def test_restore_opensearch_restores_osd(ops_test: OpsTest):
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )
+
     await ops_test.model.integrate(OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME)
     async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="blocked")
