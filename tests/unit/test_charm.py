@@ -296,7 +296,7 @@ def test_restart_sleep_no_wait_once_service_up(harness):
         harness.set_planned_units(1)
         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
         opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-        harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     expected_response = {
         "status": {
@@ -342,7 +342,7 @@ def test_restart_sleep_with_timeout_if_service_down(harness):
         harness.set_planned_units(1)
         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
         opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-        harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     expected_response = {
         "status": {
@@ -551,12 +551,12 @@ def test_service_unhealthy(harness):
         patch(
             "core.models.ODServer.hostname",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "core.models.ODServer.fqdn",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "managers.api.APIManager.request",
@@ -611,12 +611,12 @@ def test_service_error(harness):
         patch(
             "core.models.ODServer.hostname",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "core.models.ODServer.fqdn",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "managers.api.APIManager.request",
@@ -671,12 +671,12 @@ def test_service_available(harness):
         patch(
             "core.models.ODServer.hostname",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "core.models.ODServer.fqdn",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "managers.api.APIManager.request",

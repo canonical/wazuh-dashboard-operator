@@ -10,7 +10,7 @@ resource "juju_application" "opensearch-dashboards" {
     base     = var.base
   }
   config      = var.config
-  model       = var.model
+  model_uuid  = var.model_uuid
   name        = var.app_name
   units       = var.units
   constraints = var.constraints
@@ -35,7 +35,7 @@ resource "juju_application" "opensearch-dashboards" {
 resource "juju_application" "self-signed-certificates" {
   for_each = var.tls ? { "deployed" = true } : {}
 
-  model = var.model
+  model_uuid = var.model_uuid
 
   charm {
     name     = "self-signed-certificates"
@@ -53,7 +53,7 @@ resource "juju_application" "self-signed-certificates" {
 resource "juju_integration" "tls-opensearch_dashboards_integration" {
   for_each = var.tls ? { "deployed" = true } : {}
 
-  model = var.model
+  model_uuid = var.model_uuid
 
   application {
     name = juju_application.self-signed-certificates["deployed"].name

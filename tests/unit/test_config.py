@@ -29,7 +29,7 @@ opensearch_security.multitenancy.tenants.preferred:
 - Global
 opensearch_security.readonly_mode.roles:
 - kibana_read_only
-path.data: /var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards
+path.data: /var/snap/wazuh-dashboard/common/var/lib/opensearch-dashboards
 server.host: {ip}
 server.ssl.enabled: false
 """
@@ -60,7 +60,7 @@ def test_log_level_changed(harness):
     ):
         assert harness.charm.config_manager.config_changed()
         content = DEFAULT_CONF.format(ip=harness.charm.state.bind_address)
-        path = "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/opensearch_dashboards.yml"
+        path = "/var/snap/wazuh-dashboard/current/etc/opensearch-dashboards/opensearch_dashboards.yml"
         write.assert_called_with(content=content, path=path)
 
 
