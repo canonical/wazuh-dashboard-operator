@@ -100,14 +100,14 @@ resource "juju_integration" "opensearch-and-dashboard" {
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.6 |
-| <a name="requirement_juju"></a> [juju](#requirement\_juju) | >= 0.14.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.6.6 |
+| <a name="requirement_juju"></a> [juju](#requirement\_juju) | ~> 1.1.1 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_juju"></a> [juju](#provider\_juju) | >= 0.14.0 |
+| <a name="provider_juju"></a> [juju](#provider\_juju) | ~> 1.1.1 |
 
 ## Modules
 
@@ -132,8 +132,7 @@ No modules.
 | <a name="input_constraints"></a> [constraints](#input\_constraints) | String listing constraints for this application | `string` | `"arch=amd64"` | no |
 | <a name="input_endpoint_bindings"></a> [endpoint\_bindings](#input\_endpoint\_bindings) | Map of endpoint bindings | `map(string)` | `{}` | no |
 | <a name="input_expose"></a> [expose](#input\_expose) | Expose the application | `bool` | `false` | no |
-| <a name="input_machines"></a> [machines](#input\_machines) | List of machines for placement | `list(string)` | `[]` | no |
-| <a name="input_model"></a> [model](#input\_model) | Model name | `string` | n/a | yes |
+| <a name="input_model_uuid"></a> [model\_uuid](#input\_model\_uuid) | Model name | `string` | n/a | yes |
 | <a name="input_revision"></a> [revision](#input\_revision) | Charm revision | `number` | `null` | no |
 | <a name="input_self-signed-certificates"></a> [self-signed-certificates](#input\_self-signed-certificates) | Configuration for the self-signed-certificates app | <pre>object({<br/>    channel     = optional(string, "latest/stable")<br/>    revision    = optional(string, null)<br/>    base        = optional(string, "ubuntu@22.04")<br/>    constraints = optional(string, "arch=amd64")<br/>    machines    = optional(list(string), [])<br/>    config      = optional(map(string), { "ca-common-name" : "CA" })<br/>  })</pre> | `{}` | no |
 | <a name="input_tls"></a> [tls](#input\_tls) | Whether TLS should be enabled | `bool` | `false` | no |
