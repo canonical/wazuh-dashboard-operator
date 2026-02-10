@@ -27,7 +27,7 @@ DEFAULT_WAZUH_CONFIG = {
                 "port": 55000,
                 "username": "wazuh-wui",
                 "password": "wazuh-wui",
-                "run_as": False,
+                "run_as": True,
             }
         }
     ]
@@ -72,7 +72,7 @@ def test_wazuh_properties_changed():
                         "port": 55000,
                         "username": wazuh_config.user,
                         "password": wazuh_config.password,
-                        "run_as": False,
+                        "run_as": True,
                     }
                 }
             ]

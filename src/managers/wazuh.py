@@ -32,7 +32,7 @@ class WazuhManager:
             "port": url.port,
             "username": wazuh_config.user,
             "password": wazuh_config.password,
-            "run_as": False,
+            "run_as": True,
         }
         if wazuh_conf_yaml:
             wazuh_conf_yaml["hosts"][0]["default"] = details
