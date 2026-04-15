@@ -251,6 +251,7 @@ linkcheck_ignore = [
     "http://127.0.0.1:8000",
     "https://github.com/canonical/ACME/*",
     r"https://matrix\.to/.*",
+    r"https://github\.com/.*",
     ]
 
 

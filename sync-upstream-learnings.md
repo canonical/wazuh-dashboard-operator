@@ -60,9 +60,13 @@ The `linkcheck` step in `automatic-doc-checks.yml` uses Sphinx's linkchecker. `m
 
 MD022 (`blanks-around-headings`) enforces exactly 1 blank line above/below headings, not ≥ 1. A heading preceded by 2 blank lines (`Actual: 2; Above`) is also a violation. Clean up any double blank lines before headings in fork-specific markdown files.
 
----
+### 8. GitHub URLs return 502 in Sphinx linkchecker (rate limiting)
 
-## General rules for future syncs
+Sphinx `linkcheck` sends many HTTP requests to GitHub in rapid succession. GitHub responds with 502 Bad Gateway after rate limiting, even with `linkcheck_retries = 3`. The `linkcheck_anchors_ignore_for_url` setting (already in the upstream conf.py) only skips anchor validation — the URL itself is still fetched and fails.
+
+**Fix**: Add `r"https://github\.com/.*"` to `linkcheck_ignore` in `conf.py`. This skips all GitHub URL validation in CI. It is a pragmatic trade-off: GitHub links are generally reliable and developer-visible, so the cost of skipping the CI check is low compared to the flakiness introduced by rate limiting.
+
+---
 
 - After importing upstream docs, always run `make lint-md` locally before pushing.
 - After updating `docs/index.md` or toctrees, run `make html` locally with `--fail-on-warning`.
