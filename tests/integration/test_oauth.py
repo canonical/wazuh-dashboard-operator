@@ -54,7 +54,6 @@ async def test_deploy(ops_test: OpsTest, ops_test_microk8s: OpsTest, charm: str,
         OPENSEARCH_APP_NAME,
         channel="2/edge",
         num_units=2,
-        series=series,
         config=CONFIG_OPTS,
     )
 
@@ -73,7 +72,7 @@ async def test_deploy_identity_bundle(
     """Deploy identity platform on K8s and wait for both models to complete deployments."""
     await deploy_identity_bundle(
         ops_test=ops_test_microk8s,
-        bundle_channel="latest/edge",
+        bundle_url="./tests/integration/bundle-iam.yaml",
         ext_idp_service=ext_idp_service,
     )
     await gather(

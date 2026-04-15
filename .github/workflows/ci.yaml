@@ -8,6 +8,10 @@ concurrency:
 
 on:
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.gitignore'
   schedule:
     - cron: '53 0 * * *' # Daily at 00:53 UTC
   # Triggered on push to branch "main" by .github/workflows/release.yaml
@@ -109,7 +113,16 @@ jobs:
           sg 'lxd' -c "juju bootstrap 'localhost' --config model-logs-size=10G"
           juju model-defaults logging-config='<root>=INFO; unit=DEBUG'
           juju add-model test
-
+      - name: Terraform deploy
+        run: |
+          MODEL_UUID=$(juju show-model test | grep "model-uuid" | awk '{split($0, a, ": "); print a[2]}')
+          pushd ./terraform
+          terraform apply -var="model_uuid=$MODEL_UUID" -auto-approve
+          popd
+      - name: Wait for model and applications
+        run: |
+          juju wait-for application wazuh-dashboard -m test --query='status=="blocked"'
+          juju wait-for model test --query='life=="alive" && status=="available"'
 
   build:
     strategy:
