@@ -23,6 +23,6 @@ The Wazuh Dashboard Operator is a member of the Ubuntu family. It's an open-sour
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)
-- [Contribute](https://github.com/canonical/opensearch-operator/blob/2/edge/CONTRIBUTING.md)
+- [Contribute](https://github.com/canonical/wazuh-dashboard-operator/blob/main/CONTRIBUTING.md)
 
 Thinking about using the Wazuh Dashboard Operator for your next project? [Get in touch](https://matrix.to/#/#charmhub-charmdev:ubuntu.com)!
