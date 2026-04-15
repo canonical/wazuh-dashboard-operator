@@ -72,3 +72,9 @@ Sphinx `linkcheck` sends many HTTP requests to GitHub in rapid succession. GitHu
 - After updating `docs/index.md` or toctrees, run `make html` locally with `--fail-on-warning`.
 - Check `linkcheck_ignore` in `conf.py` covers all fork-specific external links.
 - Any file linked from docs must actually exist in the fork (CONTRIBUTING.md, SECURITY.md, etc.).
+
+### 9. `terraform apply` requires `terraform init` — lock file must exist or init must run first
+
+The upstream `ci.yaml` sync added a `terraform apply` step in `./terraform` but did not include a preceding `terraform init`. Terraform requires either a `.terraform.lock.hcl` lock file (committed to git) or `terraform init` to run first; without either, `apply` fails with "Inconsistent dependency lock file: provider juju/juju required but no version selected".
+
+**Fix**: Add `terraform init` before `terraform apply` in the CI workflow's "Terraform deploy" step. Do not rely on a committed lock file unless you intentionally manage it — `terraform init` is the standard way to initialize providers in CI.
