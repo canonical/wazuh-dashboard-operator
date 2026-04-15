@@ -1,4 +1,5 @@
 (dashboard-reference-release-notes-index)=
+
 # Release notes
 
 ```{toctree}

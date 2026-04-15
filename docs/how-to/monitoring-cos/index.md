@@ -1,4 +1,5 @@
 (dashboard-how-to-monitoring-cos-index)=
+
 # Monitoring (COS)
 
 The Canonical Observability Stack (COS) is a set of tools that facilitates gathering,

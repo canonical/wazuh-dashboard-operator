@@ -1,4 +1,5 @@
 (dashboard-how-to-deploy)=
+
 # Deploy the Opensearch Dashboards charm
 
 Please follow the [Tutorial](dashboards-tutorial) for detailed instructions on

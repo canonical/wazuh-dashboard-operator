@@ -1,4 +1,5 @@
 (dashboard-how-to-index)=
+
 # How-to guides
 
 The following guides cover key processes and common tasks for Charmed OpenSearch Dashboards.
@@ -27,4 +28,5 @@ Enable TLS <enable-tls>
 Enable JWT Auth <enable-jwt-authentication>
 Access using OAuth <access-using-oauth>
 monitoring-cos/index
+Upgrade <upgrade>
 ```

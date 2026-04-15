@@ -1,4 +1,5 @@
 (dashboard-reference-index)=
+
 # Reference
 
 ```{toctree}

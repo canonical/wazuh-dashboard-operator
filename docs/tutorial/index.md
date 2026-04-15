@@ -1,4 +1,5 @@
 (dashboards-tutorial)=
+
 # Tutorial
 
 This tutorial guides you through how to get Charmed Opensearch Dashboards up and running.
@@ -16,6 +17,7 @@ This tutorial focuses on Opensearch Dashboards deployment, assuming that you hav
 * The [Charmed Opensearch Operator](https://charmhub.io/opensearch)
 
 (dashboards-setup-environment)=
+
 ## Set up the environment
 
 In this section, you will set up your environment by:
@@ -25,6 +27,7 @@ In this section, you will set up your environment by:
 * setting up a graphical interface with Multipass
 
 (dashboards-install-multipass)=
+
 ### Install and set up Multipass
 
 [Multipass](https://multipass.run/) is a quick and easy way to launch virtual machines
@@ -61,6 +64,7 @@ multipass shell my-vm
 You can exit the Multipass VM using `Ctrl + D` or the exit command.
 
 (dashboards-install-juju)=
+
 ### Install and set up Juju
 
 The next step is to install Juju and initialize [LXD](https://canonical.com/lxd)
@@ -100,6 +104,7 @@ Model "admin/tutorial" is empty.
 ```
 
 (dashboards-graphical-interface)=
+
 ### Set up a graphical interface
 
 There are graphical interfaces available for Multipass (see more details in the
@@ -126,6 +131,7 @@ You probably want to do this before installing the services within
 (as some may require re-initialization after a reboot otherwise).
 
 (dashboards-deploy)=
+
 ## Get OpenSearch Dashboards up and running
 
 The objective of Opensearch Dashboard is to display the contents of an Opensearch database.
@@ -194,6 +200,7 @@ juju status --watch 1s
 ```
 
 (dashboards-enable-tls)=
+
 ## Enable TLS encryption
 
 Charmed Opensearch Dashboards supports HTTPS connections.
@@ -207,6 +214,7 @@ juju integrate self-signed-certificates opensearch-dashboards
 Once the two charms are successfully related, you should be able to access the same URL now using HTTPS.
 
 (dashboards-access)=
+
 ## Access Opensearch Dashboards
 
 Assuming that you have a virtual environment available
@@ -225,6 +233,7 @@ You should see something like this:
 ![Openserach Dashboards - Multipass Desktop](img/multipass-desktop.jpeg)
 
 (dashboards-setup-user)=
+
 ### Set up an Opensearch user
 
 Set up a user using the `data-integrator` [charm](https://charmhub.io/data-integrator).
@@ -270,6 +279,7 @@ username: opensearch-client_15
 ```
 
 (dashboards-index-pattern)=
+
 ### Create the "index pattern"
 
 Log in to the Dashboard using these credentials.
@@ -293,6 +303,7 @@ Click on the **Next step** button, and finalize the index pattern creation.
 As a verification, the user's index metadata will display.
 
 (dashboards-visualize)=
+
 ### Add and visualize data
 
 For test purposes, a simple method could do. Like generating data from the command-line, via the Opensearch API:
@@ -312,6 +323,7 @@ This is how raw data gets displayed in the Dashboard
 ![Opensearch Dashboards - Data](img/data.png)
 
 (dashboards-data-visualization)=
+
 ### Data Visualization
 
 Opensearch Dashboards offers a variety of diagrams and data displays.
@@ -321,6 +333,7 @@ Choose **Dashboards** in the main left-side menu, and you will be presented to t
 ![Opensearch Dashboards - Visualization](img/visualization.png)
 
 (dashboards-cleanup)=
+
 ## Clean up the environment
 
 In case you may want to remove the Juju model, you should run:
