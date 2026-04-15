@@ -8,16 +8,14 @@ import re
 from pathlib import Path
 
 import pytest
-import requests
 import yaml
 from pytest_operator.plugin import OpsTest
+
+from literals import MSG_STATUS_DB_UNHEALTHY
 
 from .helpers import (
     CONFIG_OPTS,
     DASHBOARD_QUERY_PARAMS,
-    OPENSEARCH_APP_NAME,
-    OPENSEARCH_CHANNEL,
-    OPENSEARCH_REVISION,
     TLS_CERTIFICATES_APP_NAME,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
@@ -38,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
+OPENSEARCH_APP_NAME = "opensearch"
 OPENSEARCH_RELATION_NAME = "opensearch-client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
@@ -73,8 +72,7 @@ async def test_build_and_deploy(
     await ops_test.model.deploy(COS_AGENT_APP_NAME, channel=COS_CHANNEL, series=series)
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel=OPENSEARCH_CHANNEL,
-        revision=OPENSEARCH_REVISION,
+        channel="2/edge",
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )
@@ -142,16 +140,14 @@ async def test_dashboard_access_https(ops_test: OpsTest):
         apps=[APP_NAME, TLS_CERTIFICATES_APP_NAME], status="active", timeout=1000
     )
 
-    # Event thought the TLS connection is not there, we do NOT switch back to HTTP
-    with pytest.raises(requests.exceptions.ConnectionError):
-        await access_all_dashboards(ops_test, opensearch_relation.id)
-
-    # Instead, HTTPS works uninterrupted
-    assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
-
-    server_cert = "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/certificates/server.pem"
+    server_cert = (
+        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/server.pem"
+    )
     unit = ops_test.model.applications[APP_NAME].units[0]
     host_cert = get_file_contents(ops_test, unit, server_cert)
+
+    # TLS Broken on relation removal we check the connection on HTTP
+    await access_all_dashboards(ops_test, opensearch_relation.id)
 
     # Restore relation for further tests
     await ops_test.model.integrate(APP_NAME, TLS_CERTIFICATES_APP_NAME)
@@ -255,7 +251,7 @@ async def test_log_level_change(ops_test: OpsTest):
         assert count_lines_with(
             ops_test.model_full_name,
             unit.name,
-            "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard/opensearch_dashboards.log",
+            "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
             "debug",
         )
 
@@ -268,7 +264,7 @@ async def test_log_level_change(ops_test: OpsTest):
         debug_lines = count_lines_with(
             ops_test.model_full_name,
             unit.name,
-            "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard/opensearch_dashboards.log",
+            "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
             "debug",
         )
 
@@ -276,7 +272,7 @@ async def test_log_level_change(ops_test: OpsTest):
             count_lines_with(
                 ops_test.model_full_name,
                 unit.name,
-                "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard/opensearch_dashboards.log",
+                "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
                 "debug",
             )
             == debug_lines
@@ -295,12 +291,8 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     """Test HTTPS access to each dashboard unit."""
 
     logger.info("Breaking opensearch connection")
-    await ops_test.juju("remove-relation", OPENSEARCH_APP_NAME, "wazuh-dashboard")
-    await ops_test.model.wait_for_idle(
-        apps=[OPENSEARCH_APP_NAME],
-        status="active",
-        timeout=1000,
-    )
+    await ops_test.juju("remove-relation", "opensearch", "opensearch-dashboards")
+    await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="active", timeout=1000)
 
     async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked")
@@ -326,12 +318,29 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     opensearch_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME)[0]
     assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
 
-    logger.info("Removing an opensearch unit so Opensearch gets in a 'red' state")
-    await ops_test.model.applications[APP_NAME].destroy_unit(
-        ops_test.model.applications[OPENSEARCH_APP_NAME].units[1].name
+    logger.info(
+        "Adding a new index with shards allocated to a non existent node to make the cluster health red"
     )
-    await ops_test.model.applications[APP_NAME].destroy_unit(
-        ops_test.model.applications[OPENSEARCH_APP_NAME].units[0].name
+    client_relation = get_relations(ops_test, OPENSEARCH_RELATION_NAME, DB_CLIENT_APP_NAME)[0]
+
+    payload = {
+        "settings": {
+            "index.routing.allocation.require._name": "non_existent_node",
+            "index.number_of_shards": 5,
+            "index.number_of_replicas": 0,
+        }
+    }
+
+    payload = json.dumps(payload)
+
+    unit_name = ops_test.model.applications[DB_CLIENT_APP_NAME].units[0].name
+    await client_run_db_request(
+        ops_test,
+        unit_name,
+        client_relation,
+        "PUT",
+        "/bad_index",
+        re.escape(payload),
     )
     async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked")
@@ -339,7 +348,7 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     assert await check_full_status(
         ops_test,
         status="blocked",
-        status_msg="Opensearch service is (partially or fully) down",
+        status_msg=MSG_STATUS_DB_UNHEALTHY,
     )
 
 
@@ -355,8 +364,7 @@ async def test_restore_opensearch_restores_osd(ops_test: OpsTest):
 
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel=OPENSEARCH_CHANNEL,
-        revision=OPENSEARCH_REVISION,
+        channel="2/edge",
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )

@@ -13,6 +13,7 @@ PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch-client"
 CERTS_REL_NAME = "certificates"
 OAUTH_REL_NAME = "oauth"
+JWT_REL_NAME = "jwt-configuration"
 DASHBOARD_INDEX = ".wazuh-dashboard"
 DASHBOARD_USER = "kibanaserver"
 DASHBOARD_ROLE = "kibana_server"
@@ -52,6 +53,7 @@ MSG_STARTING_SERVER = "starting Opensearch Dashboards server..."
 MSG_WAITING_FOR_PEER = "waiting for peer relation"
 MSG_STATUS_DB_MISSING = "Opensearch connection is missing"
 MSG_STATUS_DB_DOWN = "Opensearch service is (partially or fully) down"
+MSG_STATUS_DB_UNHEALTHY = "The OpenSearch service health is red"
 MSG_TLS_CONFIG = "Waiting for TLS to be fully configured..."
 MSG_INCOMPATIBLE_UPGRADE = "Incompatible Opensearch and Dashboards versions"
 
@@ -62,9 +64,11 @@ MSG_STATUS_WORKLOAD_DOWN = "Workload is not alive"
 MSG_STATUS_UNKNOWN = "Workload status is not known"
 MSG_STATUS_APP_REMOVED = "remove-application was requested: leaving..."
 MSG_STATUS_HANGING = "Application does not respond, request hanging"
+MSG_STATUS_OAUTH_INFO_FAILED = "Failed to get OAuth provider info from relation"
 
 MSG_APP_STATUS = [
     MSG_STATUS_DB_DOWN,
+    MSG_STATUS_DB_UNHEALTHY,
 ]
 
 MSG_UNIT_STATUS = [

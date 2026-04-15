@@ -1653,6 +1653,7 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Charmed Wazuh Dashboard",
+  "uid": "df1e16cfa7d31daf0fd9df185d6fdf5730d3a5b4",
   "version": 14,
   "weekStart": ""
 }

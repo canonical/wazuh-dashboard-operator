@@ -11,7 +11,7 @@ from ops.charm import RelationEvent
 from ops.framework import Object
 
 if TYPE_CHECKING:
-    from charm import OpensearchDasboardsCharm
+    from charm import OpensearchDashboardsCharm
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class WazuhApiEvents(Object):
 
     def __init__(self, charm):
         super().__init__(charm, RELATION_NAME)
-        self.charm: "OpensearchDasboardsCharm" = charm
+        self.charm: "OpensearchDashboardsCharm" = charm
         self.wazuh_api = wazuh_api.WazuhApiRequires(self.charm)
 
         self.framework.observe(

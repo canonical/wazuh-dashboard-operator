@@ -15,6 +15,7 @@ from ops.main import main
 from ops.model import BlockedStatus, MaintenanceStatus, WaitingStatus
 
 from core.cluster import ClusterState
+from events.jwt_auth import JwtEvents
 from events.oauth import OAuthHandler
 from events.requirer import RequirerEvents
 from events.tls import TLSEvents
@@ -38,9 +39,11 @@ from literals import (
     MSG_STARTING_SERVER,
     MSG_STATUS_DB_MISSING,
     MSG_STATUS_HANGING,
+    MSG_STATUS_OAUTH_INFO_FAILED,
     MSG_TLS_CONFIG,
     MSG_UNIT_STATUS,
     MSG_WAITING_FOR_PEER,
+    OAUTH_REL_NAME,
     PEER,
     RESTART_TIMEOUT,
     SERVER_PORT,
@@ -58,7 +61,7 @@ from workload import ODWorkload
 logger = logging.getLogger(__name__)
 
 
-class OpensearchDasboardsCharm(CharmBase):
+class OpensearchDashboardsCharm(CharmBase):
     """Charmed Operator for Opensearch Dashboards."""
 
     def __init__(self, *args):
@@ -75,6 +78,7 @@ class OpensearchDasboardsCharm(CharmBase):
         self.upgrade_events = ODUpgradeEvents(self, dependency_model=dependency_model)
         self.wazuh_api_events = WazuhApiEvents(self)
         self.oauth = OAuthHandler(self)
+        self.jwt_events = JwtEvents(self)
 
         # --- MANAGERS ---
 
@@ -135,9 +139,7 @@ class OpensearchDasboardsCharm(CharmBase):
         """Handler for the `on_install` event."""
         self.unit.status = MaintenanceStatus(MSG_INSTALLING)
 
-        install = self.workload.install()
-        if not install:
-            self.unit.status = BlockedStatus("unable to install Opensearch Dashboards")
+        self.workload.install()
 
         # don't complete install until passwords set
         if not self.state.peer_relation:
@@ -214,9 +216,9 @@ class OpensearchDasboardsCharm(CharmBase):
 
         # Regular health-check
         # Checks that may modify the 'app' state as well
-        app_healthy, app_msg = self.health_manager.app_healthy()
-        if not app_healthy:
-            set_global_status(self, BlockedStatus(app_msg))
+        opensearch_healthy, opensearch_msg = self.health_manager.opensearch_ok()
+        if not opensearch_healthy:
+            set_global_status(self, BlockedStatus(opensearch_msg))
             return
         else:
             outdated_status += MSG_APP_STATUS
@@ -231,6 +233,11 @@ class OpensearchDasboardsCharm(CharmBase):
             return
         else:
             outdated_status += MSG_UNIT_STATUS
+
+        # check oauth status and make sure we have received the oauth_client_secret
+        if self.model.get_relation(OAUTH_REL_NAME) and not self.state.cluster.oauth_client_secret:
+            set_global_status(self, BlockedStatus(MSG_STATUS_OAUTH_INFO_FAILED))
+            return
 
         # Clear all possible irrelevant statuses
         for status in outdated_status:
@@ -343,4 +350,4 @@ class OpensearchDasboardsCharm(CharmBase):
 
 
 if __name__ == "__main__":
-    main(OpensearchDasboardsCharm)
+    main(OpensearchDashboardsCharm)

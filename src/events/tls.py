@@ -20,7 +20,7 @@ from ops.framework import EventBase, Object
 from literals import CERTS_REL_NAME
 
 if TYPE_CHECKING:
-    from charm import OpensearchDasboardsCharm
+    from charm import OpensearchDashboardsCharm
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class TLSEvents(Object):
 
     def __init__(self, charm):
         super().__init__(charm, "tls")
-        self.charm: "OpensearchDasboardsCharm" = charm
+        self.charm: "OpensearchDashboardsCharm" = charm
         self.certificates = TLSCertificatesRequiresV3(self.charm, CERTS_REL_NAME)
 
         self.framework.observe(
@@ -144,8 +144,7 @@ class TLSEvents(Object):
     def _on_certs_relation_broken(self, _) -> None:
         """Handler for `certificates_relation_broken` event."""
         # In case we have valid certificates, we keep them for smooth service function
-        if self.charm.state.unit_server.tls and not self.charm.tls_manager.certificate_valid():
-            self._remove_certificates()
+        self._remove_certificates()
 
     def _set_tls_private_key(self, event: ActionEvent) -> None:
         """Handler for `set-tls-privat-key` event when user manually specifies private-keys for a unit."""

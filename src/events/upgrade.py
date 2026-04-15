@@ -18,6 +18,7 @@ from charms.data_platform_libs.v0.upgrade import (
 from ops.model import BlockedStatus
 from typing_extensions import override
 
+from exceptions import OSDInstallError
 from literals import MSG_INCOMPATIBLE_UPGRADE
 
 if TYPE_CHECKING:
@@ -61,7 +62,11 @@ class ODUpgradeEvents(DataUpgrade):
     @override
     def build_upgrade_stack(self) -> list[int]:
         upgrade_stack = []
-        units = [self.charm.unit] + list(self.charm.state.peer_relation.units)
+
+        units = [self.charm.unit]
+        if self.charm.state.peer_relation:
+            units.extend(list(self.charm.state.peer_relation.units))
+
         for unit in units:
             upgrade_stack.append(int(unit.name.split("/")[-1]))
 
@@ -84,7 +89,9 @@ class ODUpgradeEvents(DataUpgrade):
     def _on_upgrade_granted(self, event: UpgradeGrantedEvent) -> None:
         self.charm.workload.stop()
 
-        if not self.charm.workload.install():
+        try:
+            self.charm.workload.install()
+        except OSDInstallError:
             logger.error("Unable to install OpensearchDashboards...")
             self.set_unit_failed(cause="Workload install failed")
             return

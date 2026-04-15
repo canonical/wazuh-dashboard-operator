@@ -13,9 +13,6 @@ from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 from ..helpers import (
     CONFIG_OPTS,
-    OPENSEARCH_APP_NAME,
-    OPENSEARCH_CHANNEL,
-    OPENSEARCH_REVISION,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
     get_leader_name,
@@ -39,6 +36,7 @@ UPDATE_STATUS_INTERVAL = 60
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
+OPENSEARCH_APP_NAME = "opensearch"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
     "update-status-hook-interval": f"{UPDATE_STATUS_INTERVAL}s",
@@ -83,11 +81,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     # NOTE: can't access 2/stable from the tests, only 'edge' available
     await ops_test.model.deploy(
-        OPENSEARCH_APP_NAME,
-        channel=OPENSEARCH_CHANNEL,
-        revision=OPENSEARCH_REVISION,
-        num_units=NUM_UNITS_DB,
-        config=CONFIG_OPTS,
+        OPENSEARCH_APP_NAME, channel="2/edge", num_units=NUM_UNITS_DB, config=CONFIG_OPTS
     )
 
     config = {"ca-common-name": "CN_CA"}

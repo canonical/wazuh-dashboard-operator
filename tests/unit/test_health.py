@@ -12,7 +12,7 @@ import yaml
 from ops.testing import Harness
 from requests import ReadTimeout
 
-from charm import OpensearchDasboardsCharm
+from charm import OpensearchDashboardsCharm
 from literals import (
     CHARM_KEY,
     CONTAINER,
@@ -20,7 +20,7 @@ from literals import (
     OPENSEARCH_REL_NAME,
     SUBSTRATE,
 )
-from src.literals import MSG_STATUS_DB_DOWN, MSG_STATUS_HANGING
+from src.literals import MSG_STATUS_DB_DOWN, MSG_STATUS_DB_UNHEALTHY, MSG_STATUS_HANGING
 from tests.unit.test_charm import MSG_STATUS_UNHEALTHY
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ METADATA = str(yaml.safe_load(Path("./metadata.yaml").read_text()))
 
 @pytest.fixture
 def harness():
-    harness = Harness(OpensearchDasboardsCharm, meta=METADATA, config=CONFIG, actions=ACTIONS)
+    harness = Harness(OpensearchDashboardsCharm, meta=METADATA, config=CONFIG, actions=ACTIONS)
 
     if SUBSTRATE == "k8s":
         harness.set_can_connect(CONTAINER, True)
@@ -196,7 +196,11 @@ def test_health_opensearch_not_ok(harness, status):
     )
 
     with patch("os.path.exists", return_value=True), patch("os.path.getsize", return_value=1):
-        assert (False, MSG_STATUS_DB_DOWN) == harness.charm.health_manager.opensearch_ok()
+        # We should make a distinction between unhealthy and down
+        if status == "red":
+            assert (False, MSG_STATUS_DB_UNHEALTHY) == harness.charm.health_manager.opensearch_ok()
+        else:
+            assert (True, "") == harness.charm.health_manager.opensearch_ok()
 
 
 @responses.activate

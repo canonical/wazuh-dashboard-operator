@@ -9,9 +9,8 @@ import pytest
 import yaml
 from ops.testing import Harness
 
-from charm import OpensearchDasboardsCharm
+from charm import OpensearchDashboardsCharm
 from literals import CERTS_REL_NAME, CHARM_KEY, PEER
-from src.events.tls import TLSEvents
 
 CONFIG = str(yaml.safe_load(Path("./config.yaml").read_text()))
 ACTIONS = str(yaml.safe_load(Path("./actions.yaml").read_text()))
@@ -20,7 +19,7 @@ METADATA = str(yaml.safe_load(Path("./metadata.yaml").read_text()))
 
 @pytest.fixture
 def harness():
-    harness = Harness(OpensearchDasboardsCharm, meta=METADATA, config=CONFIG, actions=ACTIONS)
+    harness = Harness(OpensearchDashboardsCharm, meta=METADATA, config=CONFIG, actions=ACTIONS)
     harness.add_relation(PEER, CHARM_KEY)
     harness.begin()
     return harness
@@ -130,13 +129,12 @@ def test_certificates_broken(harness):
 
         harness.remove_relation(certs_rel_id)
 
-        # While the TLS relation is gone
+        # While the TLS relation and certs are gone
         assert not harness.charm.state.cluster.tls
-        # ...we've still preserved certs locally
-        assert harness.charm.state.unit_server.certificate
-        assert harness.charm.state.unit_server.ca
-        assert harness.charm.state.unit_server.csr
-        assert harness.charm.state.unit_server.tls
+        assert not harness.charm.state.unit_server.certificate
+        assert not harness.charm.state.unit_server.ca
+        assert not harness.charm.state.unit_server.csr
+        assert not harness.charm.state.unit_server.tls
 
         assert workload_config.assert_called_once
 

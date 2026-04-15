@@ -23,6 +23,7 @@ cloudinit-userdata.yaml
 #
 ########################################################
 
+
 # Local .terraform directories
 **/.terraform/*
 *.terraform.lock.hcl

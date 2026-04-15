@@ -1,6 +1,6 @@
-summary: test_wrong_etc_hosts.py
+summary: test_jwt_auth.py
 environment:
-  TEST_MODULE: spaces/test_wrong_etc_hosts.py
+  TEST_MODULE: test_jwt_auth.py
 execute: |
   tox run -e integration -- "tests/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
 artifacts:

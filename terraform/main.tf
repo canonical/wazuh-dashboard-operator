@@ -46,7 +46,7 @@ resource "juju_application" "self-signed-certificates" {
   constraints = var.self-signed-certificates.constraints
   config      = var.self-signed-certificates.config
 
-  placement = length(var.self-signed-certificates.machines) == 1 ? var.self-signed-certificates.machines[0] : null
+  machines = (var.self-signed-certificates.machines == null || length(var.self-signed-certificates.machines) == 0) ? null : var.self-signed-certificates.machines
 }
 
 # Integrate with the self-signed-certificates if tls is enabled
