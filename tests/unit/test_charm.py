@@ -30,7 +30,7 @@ CONFIG = str(yaml.safe_load(Path("./config.yaml").read_text()))
 ACTIONS = str(yaml.safe_load(Path("./actions.yaml").read_text()))
 METADATA = str(yaml.safe_load(Path("./metadata.yaml").read_text()))
 
-OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_APP_NAME = "wazuh-indexer"
 
 
 @pytest.fixture
@@ -48,8 +48,8 @@ def harness():
     harness.charm.upgrade_events.dependency_model = OpensearchDashboardsDependencyModel(
         **{
             "osd_upstream": {
-                "dependencies": {"opensearch": "2.12"},
-                "name": "opensearch-dashboards",
+                "dependencies": {"wazuh-indexer": "2.12"},
+                "name": "wazuh-dashboard",
                 "upgrade_supported": ">=2",
                 "version": "2.12",
             },
@@ -81,14 +81,16 @@ def patch_test_relation_changed_starts_units():
 
 def set_healthy_opensearch_connection(harness):
     """Set up a functional opensearch mock."""
-    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-    harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+    harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
     harness.update_relation_data(
         opensearch_rel_id,
-        "opensearch",
+        "wazuh-indexer",
         {"endpoints": "111.222.333.444:9200,555.666.777.888:9200"},
     )
-    harness.update_relation_data(opensearch_rel_id, "opensearch", {"tls-ca": "<cert_data_here>"})
+    harness.update_relation_data(
+        opensearch_rel_id, "wazuh-indexer", {"tls-ca": "<cert_data_here>"}
+    )
     harness.update_relation_data(
         opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "2.12.1"}
     )
@@ -208,8 +210,8 @@ def test_relation_changed_starts_units(harness):
 
 def test_relation_changed_emitted_for_opensearch_relation_changed(harness):
     with harness.hooks_disabled():
-        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-        harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     with patch("events.requirer.RequirerEvents._on_client_relation_changed") as patched:
         harness.charm.on.opensearch_client_relation_changed.emit(
@@ -293,8 +295,8 @@ def test_restart_sleep_no_wait_once_service_up(harness):
         harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
         harness.set_planned_units(1)
         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
-        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-        harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     expected_response = {
         "status": {
@@ -339,8 +341,8 @@ def test_restart_sleep_with_timeout_if_service_down(harness):
         harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
         harness.set_planned_units(1)
         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
-        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-        harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     expected_response = {
         "status": {
@@ -498,8 +500,8 @@ def test_service_unavailable_blocked_status(harness):
         harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}", {"monitor-password": "bla"})
         harness.set_leader(True)
 
-        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-        harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+        opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+        harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
 
     with (
         patch("workload.ODWorkload.alive", return_value=True),
@@ -549,12 +551,12 @@ def test_service_unhealthy(harness):
         patch(
             "core.models.ODServer.hostname",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "core.models.ODServer.fqdn",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "managers.api.APIManager.request",
@@ -609,12 +611,12 @@ def test_service_error(harness):
         patch(
             "core.models.ODServer.hostname",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "core.models.ODServer.fqdn",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "managers.api.APIManager.request",
@@ -669,12 +671,12 @@ def test_service_available(harness):
         patch(
             "core.models.ODServer.hostname",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "core.models.ODServer.fqdn",
             new_callable=PropertyMock,
-            return_value="opensearch-dashboards",
+            return_value="wazuh-dashboard",
         ),
         patch(
             "managers.api.APIManager.request",

@@ -40,12 +40,16 @@ def harness():
     harness.add_relation("restart", CHARM_KEY)
     upgrade_rel_id = harness.add_relation("upgrade", CHARM_KEY)
     harness.update_relation_data(upgrade_rel_id, f"{CHARM_KEY}/0", {"state": "idle"})
-    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "opensearch")
-    harness.add_relation_unit(opensearch_rel_id, "opensearch/0")
+    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, "wazuh-indexer")
+    harness.add_relation_unit(opensearch_rel_id, "wazuh-indexer/0")
     harness.update_relation_data(
-        opensearch_rel_id, "opensearch", {"endpoints": "111.222.333.444:9200,555.666.777.888:9200"}
+        opensearch_rel_id,
+        "wazuh-indexer",
+        {"endpoints": "111.222.333.444:9200,555.666.777.888:9200"},
     )
-    harness.update_relation_data(opensearch_rel_id, "opensearch", {"tls-ca": "<cert_data_here>"})
+    harness.update_relation_data(
+        opensearch_rel_id, "wazuh-indexer", {"tls-ca": "<cert_data_here>"}
+    )
     harness._update_config({"log_level": "INFO"})
     harness.begin()
     return harness

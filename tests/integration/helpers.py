@@ -30,10 +30,11 @@ from core.workload import ODPaths
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-OPENSEARCH_APP_NAME = "opensearch"
+OPENSEARCH_APP_NAME = "wazuh-indexer"
+OPENSEARCH_CHANNEL = "4.11"
+OPENSEARCH_REVISION = 9
 CONFIG_OPTS = {"profile": "testing"}
 
-OPENSEARCH_APP_NAME = "opensearch"
 OPENSEARCH_RELATION_NAME = "opensearch-client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
@@ -334,7 +335,7 @@ def get_dashboard_ca_cert(model_full_name: str, unit: str):
                 "-c",
                 f"JUJU_MODEL={model_full_name} juju scp "
                 f"ubuntu@{unit}:"
-                "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/ca.pem ./",
+                "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/certificates/ca.pem ./",
             ],
             timeout=30,
         )
@@ -363,9 +364,9 @@ def get_file_contents(ops_test: OpsTest, unit: Unit, filename: str) -> str:
 
 def dump_all(ops_test: OpsTest, unit: Unit):
     for file in [
-        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/ca.pem",
-        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/opensearch_dashboards.yml",
-        "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
+        "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/certificates/ca.pem",
+        "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/opensearch_dashboards.yml",
+        "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboards/opensearch_dashboards.log",
     ]:
         output = get_file_contents(ops_test, unit, file)
         if output:

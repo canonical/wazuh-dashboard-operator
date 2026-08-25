@@ -15,6 +15,9 @@ from pytest_operator.plugin import OpsTest
 from .helpers import (
     CONFIG_OPTS,
     DASHBOARD_QUERY_PARAMS,
+    OPENSEARCH_APP_NAME,
+    OPENSEARCH_CHANNEL,
+    OPENSEARCH_REVISION,
     TLS_CERTIFICATES_APP_NAME,
     TLS_STABLE_CHANNEL,
     access_all_dashboards,
@@ -35,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
-OPENSEARCH_APP_NAME = "opensearch"
 OPENSEARCH_RELATION_NAME = "opensearch-client"
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
@@ -47,6 +49,7 @@ OPENSEARCH_CONFIG = {
     """,
 }
 COS_AGENT_APP_NAME = "grafana-agent"
+COS_CHANNEL = "1/stable"
 COS_AGENT_RELATION_NAME = "cos-agent"
 DB_CLIENT_APP_NAME = "application"
 
@@ -67,10 +70,11 @@ async def test_build_and_deploy(
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
 
     config = {"ca-common-name": "CN_CA"}
-    await ops_test.model.deploy(COS_AGENT_APP_NAME, series=series)
+    await ops_test.model.deploy(COS_AGENT_APP_NAME, channel=COS_CHANNEL, series=series)
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="2/edge",
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )
@@ -145,9 +149,7 @@ async def test_dashboard_access_https(ops_test: OpsTest):
     # Instead, HTTPS works uninterrupted
     assert await access_all_dashboards(ops_test, opensearch_relation.id, https=True)
 
-    server_cert = (
-        "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards/certificates/server.pem"
-    )
+    server_cert = "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard/certificates/server.pem"
     unit = ops_test.model.applications[APP_NAME].units[0]
     host_cert = get_file_contents(ops_test, unit, server_cert)
 
@@ -253,7 +255,7 @@ async def test_log_level_change(ops_test: OpsTest):
         assert count_lines_with(
             ops_test.model_full_name,
             unit.name,
-            "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
+            "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard/opensearch_dashboards.log",
             "debug",
         )
 
@@ -266,7 +268,7 @@ async def test_log_level_change(ops_test: OpsTest):
         debug_lines = count_lines_with(
             ops_test.model_full_name,
             unit.name,
-            "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
+            "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard/opensearch_dashboards.log",
             "debug",
         )
 
@@ -274,7 +276,7 @@ async def test_log_level_change(ops_test: OpsTest):
             count_lines_with(
                 ops_test.model_full_name,
                 unit.name,
-                "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards/opensearch_dashboards.log",
+                "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard/opensearch_dashboards.log",
                 "debug",
             )
             == debug_lines
@@ -293,8 +295,12 @@ async def test_dashboard_status_changes(ops_test: OpsTest):
     """Test HTTPS access to each dashboard unit."""
 
     logger.info("Breaking opensearch connection")
-    await ops_test.juju("remove-relation", "opensearch", "opensearch-dashboards")
-    await ops_test.model.wait_for_idle(apps=[OPENSEARCH_APP_NAME], status="active", timeout=1000)
+    await ops_test.juju("remove-relation", OPENSEARCH_APP_NAME, "wazuh-dashboard")
+    await ops_test.model.wait_for_idle(
+        apps=[OPENSEARCH_APP_NAME],
+        status="active",
+        timeout=1000,
+    )
 
     async with ops_test.fast_forward("30s"):
         await ops_test.model.wait_for_idle(apps=[APP_NAME], status="blocked")
@@ -349,7 +355,8 @@ async def test_restore_opensearch_restores_osd(ops_test: OpsTest):
 
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="2/edge",
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
         num_units=NUM_UNITS_DB,
         config=CONFIG_OPTS,
     )
