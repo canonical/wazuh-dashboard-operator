@@ -125,8 +125,7 @@ prepare: |
 
   if [[ $SPREAD_TASK == *"oauth"* ]]
   then
-    # Running on IS-hosted runner; set up microk8s (as a second cloud for the oauth tests)
-    # and, if configured, use the Docker Hub mirror to avoid rate limiting.
+    # Running on IS-hosted runner; configure microk8s to use Docker Hub mirror
     # Run before concierge prepare because of https://github.com/canonical/concierge/issues/75
 
     sudo snap install microk8s  --classic
@@ -142,12 +141,10 @@ prepare: |
         echo "MicroK8s has not yet configured iptables."
         sleep 10
       done
-
-      tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml << EOF
-      server = "$DOCKERHUB_MIRROR"
-      [host."${DOCKERHUB_MIRROR#'https://'}"]
-      capabilities = ["pull", "resolve"]
-  EOF
+      # Use printf to avoid YAML/Heredoc indentation issues
+      printf 'server = "%s"\n[host."%s"]\ncapabilities = ["pull", "resolve"]\n' \
+        "$DOCKERHUB_MIRROR" "${DOCKERHUB_MIRROR#'https://'}" \
+        | sudo tee /var/snap/microk8s/current/args/certs.d/docker.io/hosts.toml > /dev/null
     fi
     microk8s stop
     microk8s start
