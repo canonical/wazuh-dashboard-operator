@@ -4,35 +4,36 @@
 
 """Collection of global literals for the charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = "30"
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = "5"
 
 SUBSTRATE = "vm"
-CHARM_KEY = "opensearch-dashboards"
+CHARM_KEY = "wazuh-dashboard"
 
 PEER = "dashboard_peers"
 OPENSEARCH_REL_NAME = "opensearch-client"
 CERTS_REL_NAME = "certificates"
 OAUTH_REL_NAME = "oauth"
-DASHBOARD_INDEX = ".opensearch-dashboards"
+DASHBOARD_INDEX = ".wazuh-dashboard"
 DASHBOARD_USER = "kibanaserver"
 DASHBOARD_ROLE = "kibana_server"
-CONTAINER = "opensearch-dashboards"
+CONTAINER = "wazuh-dashboard"
 SERVER_PORT = 5601
 
 DEPENDENCIES = {
     "osd_upstream": {
-        "dependencies": {"opensearch": "2.19.1"},
-        "name": "opensearch-dashboards",
+        "dependencies": {"wazuh-indexer": "2.16.1"},
+        "name": "wazuh-dashboard",
         "upgrade_supported": ">=2",
-        "version": "2.19.1",
+        "version": "2.16.1",
     },
 }
 
 PATHS = {
-    "CONF": "/var/snap/opensearch-dashboards/current/etc/opensearch-dashboards",
-    "DATA": "/var/snap/opensearch-dashboards/common/var/lib/opensearch-dashboards",
-    "LOGS": "/var/snap/opensearch-dashboards/common/var/log/opensearch-dashboards",
-    "BIN": "/snap/opensearch-dashboards/current/opt/opensearch-dashboards",
+    "CONF": "/var/snap/wazuh-dashboard/current/etc/wazuh-dashboard",
+    "DATA": "/var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard",
+    "LOGS": "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard",
+    "BIN": "/snap/wazuh-dashboard/current/opt/wazuh-dashboard",
+    "WAZUH_CONF": "/var/snap/wazuh-dashboard/current/config/wazuh/config/wazuh.yml",
 }
 
 PEER_APP_SECRETS = ["monitor-username", "monitor-password", "oauth-client-secret"]

@@ -31,13 +31,14 @@ class UpgradeManager:
     def version_compatible(self) -> bool:
         """Verify version compatibility with Opensearch."""
         # When there's no Opensearch connection, we shouldn't report version mismatch
-        if not self.state.opensearch_server:
+        # Wazuh: change proposed upstream: https://github.com/canonical/opensearch-dashboards-operator/pull/186
+        if not self.state.opensearch_server or not self.state.opensearch_server.version:
             return True
 
         if not (srv_version_actual := self.state.opensearch_server.version):
             return False
 
-        srv_version_required = self.dependency_model.osd_upstream.dependencies["opensearch"]
+        srv_version_required = self.dependency_model.osd_upstream.dependencies["wazuh-indexer"]
         major_actual, minor_actual = srv_version_actual.split(".")[:2]
         major_required, minor_required = srv_version_required.split(".")[:2]
         return major_actual <= major_required and minor_actual <= minor_required

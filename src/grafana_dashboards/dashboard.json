@@ -1652,8 +1652,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Charmed Opensearch Dashboards",
-  "uid": "df1e16cfa7d31daf0fd9df185d6fdf5730d3a5b4",
-  "version": 1,
+  "title": "Charmed Wazuh Dashboard",
+  "version": 14,
   "weekStart": ""
 }

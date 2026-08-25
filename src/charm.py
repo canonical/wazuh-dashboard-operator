@@ -19,6 +19,7 @@ from events.oauth import OAuthHandler
 from events.requirer import RequirerEvents
 from events.tls import TLSEvents
 from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
+from events.wazuh_api import WazuhApiEvents
 from helpers import (
     clear_global_status,
     clear_status,
@@ -51,6 +52,7 @@ from managers.config import ConfigManager
 from managers.health import HealthManager
 from managers.tls import TLSManager
 from managers.upgrade import UpgradeManager
+from managers.wazuh import WazuhManager
 from workload import ODWorkload
 
 logger = logging.getLogger(__name__)
@@ -71,6 +73,7 @@ class OpensearchDasboardsCharm(CharmBase):
         self.requirer_events = RequirerEvents(self)
         dependency_model = OpensearchDashboardsDependencyModel(**DEPENDENCIES)
         self.upgrade_events = ODUpgradeEvents(self, dependency_model=dependency_model)
+        self.wazuh_api_events = WazuhApiEvents(self)
         self.oauth = OAuthHandler(self)
 
         # --- MANAGERS ---
@@ -93,6 +96,7 @@ class OpensearchDasboardsCharm(CharmBase):
             substrate=SUBSTRATE,
             dependency_model=dependency_model,
         )
+        self.wazuh_manager = WazuhManager(workload=self.workload)
 
         # --- LIB EVENT HANDLERS ---
 
@@ -122,7 +126,7 @@ class OpensearchDasboardsCharm(CharmBase):
             scrape_configs=self._scrape_config,
             refresh_events=[self.on.config_changed],
             metrics_rules_dir="./src/alert_rules/prometheus",
-            log_slots=["opensearch-dashboards:logs"],
+            log_slots=["wazuh-dashboard:logs"],
         )
 
     # --- CORE EVENT HANDLERS ---
@@ -305,6 +309,7 @@ class OpensearchDasboardsCharm(CharmBase):
 
         logger.debug("setting properties")
         self.config_manager.set_dashboard_properties()
+        self.wazuh_api_events.update_configuration()
 
         logger.debug("starting Opensearch Dashboards service")
 
