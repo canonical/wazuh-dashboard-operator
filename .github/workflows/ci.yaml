@@ -12,11 +12,16 @@ on:
       - 'docs/**'
       - '**.md'
       - '.gitignore'
-  # Manual trigger, useful for rebase-sync branches/PRs whose `mergeable`
-  # status is `CONFLICTING` (expected for this fork's rebase strategy, see
-  # FORK.md): GitHub can't build a merge-test-ref for those, so the
-  # `pull_request` event above never fires. Run with:
+  # push (scoped to sync/* branches) and workflow_dispatch both exist for
+  # rebase-sync branches/PRs whose `mergeable` status is `CONFLICTING`
+  # (expected for this fork's rebase strategy, see FORK.md): GitHub can't
+  # build a merge-test-ref for those, so the `pull_request` event above
+  # never fires. `push` runs automatically on every push to a sync/*
+  # branch; workflow_dispatch lets you (re-)run manually with:
   #   gh workflow run ci.yaml --ref <branch>
+  push:
+    branches:
+      - 'sync/**'
   workflow_dispatch:
   schedule:
     - cron: '53 0 * * *' # Daily at 00:53 UTC

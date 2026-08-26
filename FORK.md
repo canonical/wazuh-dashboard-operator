@@ -194,13 +194,14 @@ build that merge ref, it never dispatches the `pull_request` event, so no
 run is created at all — it's not a failed/errored run, it simply never
 starts.
 
-To validate the actual code on a sync branch:
-- Run `tox -e lint` / `tox -e unit` locally (or in CI) against the branch.
-- Or manually trigger the "Tests" workflow, which supports
-  `workflow_dispatch` for exactly this reason:
-  ```shell
-  gh workflow run ci.yaml --ref <sync-branch>
-  ```
+To validate the actual code on a sync branch, the "Tests" workflow
+(`ci.yaml`) runs automatically whenever you push to a branch named
+`sync/**`, and can also be triggered/re-run manually at any time:
+```shell
+gh workflow run ci.yaml --ref <sync-branch>
+```
+(or `tox -e lint` / `tox -e unit` locally, if you'd rather not wait on
+GitHub Actions).
 
 ## Landing PRs when GitHub can't sign a rebase merge
 
