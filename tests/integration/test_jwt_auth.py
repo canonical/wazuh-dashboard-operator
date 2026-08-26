@@ -12,6 +12,10 @@ from pytest_operator.plugin import OpsTest
 
 from .helpers import (
     CONFIG_OPTS,
+    OPENSEARCH_APP_NAME,
+    OPENSEARCH_CHANNEL,
+    OPENSEARCH_CONFIG,
+    OPENSEARCH_REVISION,
     TLS_CERTIFICATES_APP_NAME,
     TLS_STABLE_CHANNEL,
     get_bind_address,
@@ -24,17 +28,6 @@ METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 JWT_APP_NAME = "jwt-integrator"
 JWT_REL_NAME = "jwt-configuration"
-OPENSEARCH_APP_NAME = "opensearch"
-OPENSEARCH_RELATION_NAME = "opensearch-client"
-OPENSEARCH_CONFIG = {
-    "logging-config": "<root>=INFO;unit=DEBUG",
-    "cloudinit-userdata": """postruncmd:
-        - [ 'sysctl', '-w', 'vm.max_map_count=262144' ]
-        - [ 'sysctl', '-w', 'fs.file-max=1048576' ]
-        - [ 'sysctl', '-w', 'vm.swappiness=0' ]
-        - [ 'sysctl', '-w', 'net.ipv4.tcp_retries2=5' ]
-    """,
-}
 
 
 @pytest.mark.abort_on_fail
@@ -45,7 +38,8 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     config = {"ca-common-name": "CN_CA"}
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
-        channel="2/edge",
+        channel=OPENSEARCH_CHANNEL,
+        revision=OPENSEARCH_REVISION,
         num_units=3,
         config=CONFIG_OPTS,
     )
