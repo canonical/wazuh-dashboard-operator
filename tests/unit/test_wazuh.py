@@ -10,7 +10,7 @@ import yaml
 from charms.wazuh_server.v0 import wazuh_api
 from ops.testing import Harness
 
-from charm import OpensearchDasboardsCharm
+from charm import OpensearchDashboardsCharm
 from literals import PATHS
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ def test_wazuh_properties_changed():
         patch("workload.ODWorkload.read_raw", return_value=yaml.safe_dump(DEFAULT_WAZUH_CONFIG)),
         patch("workload.ODWorkload.write") as write,
     ):
-        harness = Harness(OpensearchDasboardsCharm, meta=METADATA, config=CONFIG, actions=ACTIONS)
+        harness = Harness(OpensearchDashboardsCharm, meta=METADATA, config=CONFIG, actions=ACTIONS)
         harness.begin()
 
         harness.add_relation(
