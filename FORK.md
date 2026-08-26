@@ -175,9 +175,59 @@ during a rebase (carried over from the previous merge-based workflow):
 - New upstream relations added to `metadata.yaml` must also be wired in
   `src/literals.py`, `src/core/cluster.py`, and `src/charm.py`.
 
-## History note
+## Landing PRs when GitHub can't sign a rebase merge
 
-`chore/sync-upstream-2.19.4` contains a further sync (to upstream 2.19.4)
-done with the old merge-based strategy, before this document existed. It
-should be redone as the next rebase cycle on top of the new `2/edge`
-baseline described here, rather than merged as-is.
+Both `main` and `2/edge` require signed commits (`required_signatures`) and
+linear history (`required_linear_history`), but this repo currently only has
+**"Rebase and merge" enabled** as a merge strategy (squash and merge-commit
+are disabled). This combination doesn't work: when GitHub performs a
+rebase-merge via the button, it creates brand-new commit objects for every
+commit in the PR, and it cannot sign those on your behalf. The merge button
+fails with:
+
+> Base branch requires signed commits. Rebase merges cannot be automatically
+> signed by GitHub.
+
+Squash-merge and merge-commit *can* be auto-signed by GitHub (it produces a
+single new commit that it signs as `GitHub <noreply@github.com>`), but
+enabling those isn't something to do lightly on this repo, since it changes
+merge behavior for everyone and could impact the fork maintenance.
+
+### Workaround: fast-forward push your already-signed commits
+
+If your PR's commits are already GPG-signed locally (as they should be if
+you sign your own commits — check with `git log --show-signature`), you
+don't need GitHub to create/sign anything: you can land the PR with a plain
+fast-forward push, bypassing the merge button entirely. This requires admin
+access, since it's a direct push to a protected branch (`enforce_admins` is
+`false` on both `main` and `2/edge`, so admins can bypass the button).
+
+1. Confirm all commits on your branch are already signed with your own key:
+
+   ```shell
+   git log --show-signature origin/<base-branch>..<your-branch>
+   ```
+
+   Look for `gpg: Good signature from ...` on every commit.
+
+2. Confirm the push will be a clean fast-forward (the base branch hasn't
+   moved past what your PR was rebased onto):
+
+   ```shell
+   git fetch origin <base-branch>
+   git merge-base --is-ancestor origin/<base-branch> <your-branch> && echo "safe to fast-forward"
+   ```
+
+3. Confirm CI is green and the PR shows as mergeable
+   (`gh pr checks <number>`, `gh pr view <number> --json mergeable,mergeStateStatus`).
+
+4. Push directly to the base branch:
+
+   ```shell
+   git push origin <your-branch>:<base-branch>
+   ```
+
+   Because this is a fast-forward of already-signed commits, GitHub accepts
+   it even though "Rebase and merge" wouldn't have worked. GitHub detects
+   the PR's commits landed on the base branch and automatically marks the
+   PR as merged/closed — no further action needed.
