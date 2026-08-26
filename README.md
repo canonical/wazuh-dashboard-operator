@@ -1,5 +1,5 @@
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
-# Wazuh Dasboard Operator
+# Wazuh Dashboard Operator
 <!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 [![Charmhub](https://charmhub.io/wazuh-dashboard/badge.svg)](https://charmhub.io/wazuh-dashboard)
@@ -47,7 +47,7 @@ sudo snap install juju --classic --channel=3.1/stable
 sudo snap install lxd
 lxd init --auto
 ```
-Then, boostrap Juju over LXD:
+Then, bootstrap Juju over LXD:
 ```shell
 juju bootstrap localhost
 ```
@@ -61,7 +61,7 @@ This means that a [Charmed Wazuh Indexer](https://charmhub.io/wazuh-indexer/)
 instance also has to be ready and available.
 
 A straightforward installation guide is available in the charm's 
-[Github repository](https://github.com/canonical/wazuh-indexer-operator?tab=readme-ov-file#usage).
+[GitHub repository](https://github.com/canonical/wazuh-indexer-operator?tab=readme-ov-file#usage).
 
 <!-- vale Canonical.007-Headings-sentence-case = NO -->
 ## Install Charmed Wazuh Dashboard
@@ -143,7 +143,7 @@ at the bottom of the output you should see something like:
 
 ## Access the dashboard
 
-Using information from above, the dashboard URI is construted as 
+Using information from above, the dashboard URI is constructed as 
 
 ```text
 https://<IP>:5601
@@ -153,13 +153,13 @@ Log in with the credentials of the new user.
 
 ![Wazuh Dashboard login](./docs/opensearch_dashboard_login.png)
 
-You must create an "index pattern" that enables the Dasboard to access the user's data.
+You must create an "index pattern" that enables the Dashboard to access the user's data.
 It should specify the `index_name` that was used to create the user with `data-integrator`.
 
 Follow instructions from Wazuh documentation on 
 [How to create an index pattern](https://documentation.wazuh.com/current/user-manual/wazuh-indexer/wazuh-indexer-indices.html)
 
-When the index pattern is defined, data that belongs to the user will display in the Dasboards.
+When the index pattern is defined, data that belongs to the user will display in the Dashboards.
 
 
 # License
