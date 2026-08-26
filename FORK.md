@@ -175,6 +175,33 @@ during a rebase (carried over from the previous merge-based workflow):
 - New upstream relations added to `metadata.yaml` must also be wired in
   `src/literals.py`, `src/core/cluster.py`, and `src/charm.py`.
 
+## PR checks don't auto-run on sync branches (expected)
+
+When you open a PR from a rebase-sync branch against `2/edge`, GitHub will
+usually show `mergeable: CONFLICTING` / `mergeStateStatus: DIRTY`
+(`gh pr view <number> --json mergeable,mergeStateStatus`), and **no
+`pull_request`-triggered workflow runs will appear** on the PR (`gh pr
+checks <number>` shows nothing, `gh run list --branch <branch>` is empty).
+
+This is expected, not a bug in the sync: `pull_request` events run against
+a synthetic `base + head` merge commit that GitHub computes for the PR. A
+rebase replays the fork's own commits with brand-new SHAs on top of
+upstream's new tip, so a real 3-way merge against the *old* `2/edge` tip
+reproduces the same conflicts you already resolved by hand during the
+rebase (you can confirm this yourself with `git merge --no-commit --no-ff
+<sync-branch>` from a scratch checkout of `2/edge`). Since GitHub can't
+build that merge ref, it never dispatches the `pull_request` event, so no
+run is created at all — it's not a failed/errored run, it simply never
+starts.
+
+To validate the actual code on a sync branch:
+- Run `tox -e lint` / `tox -e unit` locally (or in CI) against the branch.
+- Or manually trigger the "Tests" workflow, which supports
+  `workflow_dispatch` for exactly this reason:
+  ```shell
+  gh workflow run ci.yaml --ref <sync-branch>
+  ```
+
 ## Landing PRs when GitHub can't sign a rebase merge
 
 Both `main` and `2/edge` require signed commits (`required_signatures`) and
