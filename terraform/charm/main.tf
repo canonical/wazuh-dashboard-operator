@@ -4,8 +4,10 @@
 resource "juju_application" "wazuh_dashboard" {
   model_uuid = var.model_uuid
 
+  name = var.app_name
+
   charm {
-    name     = var.app_name
+    name     = "wazuh-dashboard"
     channel  = var.channel
     revision = var.revision
     base     = var.base
