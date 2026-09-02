@@ -36,12 +36,12 @@ all the necessary parts automatically.
 
 Installation of Multipass from [Snap](https://snapcraft.io/multipass) and launching a new VM using
 "[charm-dev](https://github.com/canonical/multipass-blueprints/blob/main/v1/charm-dev.yaml)"
-cloud-init config goes as:
+cloud-init config goes as (tune CPU/RAM/HDD accordingly to your needs):
 
 ```shell
 sudo snap install multipass && \
 
-multipass launch --cpus 4 --memory 8G --disk 30G --name my-vm charm-dev # tune CPU/RAM/HDD accordingly to your needs
+multipass launch --cpus 4 --memory 8G --disk 30G --name my-vm charm-dev
 ```
 
 The full set of launch parameters is described in the
@@ -109,11 +109,11 @@ Model "admin/tutorial" is empty.
 There are graphical interfaces available for Multipass (see more details in the
 [Multipass Graphical Interface chapter](https://multipass.run/docs/set-up-a-graphical-interface)).
 
-We recommend to use RDP:
+We recommend to use RDP. Install the desktop and RDP packages, then set a password for the `ubuntu` user:
 
 ```shell
 sudo apt install ubuntu-desktop xrdp remmina-plugin-rdp remmina
-sudo passwd ubuntu # Set password here
+sudo passwd ubuntu
 ```
 
 Now you should be able to connect using the IP of the earlier Multipass list command:
@@ -211,7 +211,7 @@ juju integrate self-signed-certificates opensearch-dashboards
 Once the two charms are successfully related, you should be able to access the same URL now using HTTPS.
 
 (dashboards-access)=
-## Access Opensearch Dashboards
+## Access OpenSearch dashboards
 
 Assuming that you have a virtual environment available
 (as described in [Set up the environment](dashboards-setup-environment)),
@@ -316,7 +316,7 @@ This is how raw data gets displayed in the Dashboard
 ![Opensearch Dashboards - Data](img/data.png)
 
 (dashboards-data-visualization)=
-### Data Visualization
+### Data visualization
 
 Opensearch Dashboards offers a variety of diagrams and data displays.
 
@@ -339,7 +339,7 @@ If it's the whole Multipass instance that you would like to delete, you should e
 multipass delete --purge my-vm
 ```
 
-## What's next?
+## What's next
 
 Congratulations! You have successfully deployed Charmed OpenSearch Dashboards,
 configured TLS encryption, and explored data visualization capabilities.

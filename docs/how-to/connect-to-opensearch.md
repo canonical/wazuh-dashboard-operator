@@ -8,10 +8,10 @@ This guide explains how to connect OpenSearch Dashboards with OpenSearch via Juj
 A Juju model containing:
 
 * An active `opensearch` application
-* A TLS certificate provider charm (e.g. `self-signed-certificates`)
+* A TLS certificate provider charm (such as `self-signed-certificates`)
  integrated with `opensearch`
 
-To learn how to set up and deploy an OpenSearch application, see steps 1, 2, and 3 of the
+To learn how to set up and deploy an OpenSearch application, see steps one, two, and three of the
 [OpenSearch Tutorial](https://canonical-charmed-opensearch.readthedocs-hosted.com/2/tutorial/1-set-up-the-environment/).
 
 ## Deploy and integrate

@@ -9,7 +9,7 @@ By the end, you will be able to sign in to OpenSearch Dashboards with an admin u
 
 ## Prerequisites
 
-* A deployed charmed OpenSearch cluster on LXD.  
+* A deployed charmed OpenSearch cluster on LXD.
 * A deployed charmed OpenSearch Dashboards on LXD and integrated with OpenSearch.
 See: [How to Connect to OpenSearch](dashboard-how-to-connect-to-opensearch).
 * A deployed Canonical Identity Platform on Kubernetes.
@@ -37,7 +37,7 @@ cat ~/.kube/config | juju add-k8s microk8s-cluster --cluster-name=microk8s-clust
 juju bootstrap microk8s-cluster k8s-controller
 ```
 
-## Deploy OpenSearch Dashboards
+## Deploy OpenSearch dashboards
 
 On the LXD model where OpenSearch is deployed, deploy OpenSearch Dashboards,
 and integrate it with OpenSearch charm.
@@ -53,7 +53,9 @@ Now, we will wait for the OpenSearch and OpenSearch Dashboards to become active 
 juju status --watch 2s 
 ```
 
-## Integrate OpenSearch Dashboards with Canonical Identity Platform
+<!-- vale Canonical.007-Headings-sentence-case = NO -->
+## Integrate OpenSearch dashboards with Canonical Identity Platform
+<!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 Switch to the MicroK8s model and verify the identity platform bundle is ready:
 
@@ -139,7 +141,7 @@ where you specify the user’s password.
 
 Once the password is set, you will then be prompted to configure 2FA (mandatory).
 
-## Access Opensearch Dashboards using Single Sign-On
+## Access OpenSearch dashboards using single sign-on
 
 To access OpenSearch Dashboards, use the IP address on the `opensearch-dashboards/0`
 unit to form the URL: `https://<ip-address>:5601`.
@@ -181,5 +183,5 @@ After a successful login, you will be redirected to the OpenSearch Dashboards ho
 
 ## Next steps
 
-* Review the *roles mapping* section in [*How to access OpenSearch using OAuth*](https://canonical-charmed-opensearch.readthedocs-hosted.com/2/how-to/access-using-oauth/) to assign permissions.  
+* Review the *roles mapping* section in [*How to access OpenSearch using OAuth*](https://canonical-charmed-opensearch.readthedocs-hosted.com/2/how-to/access-using-oauth/) to assign permissions.
 * Follow the guide [How to manage external identity providers](https://canonical-identity.readthedocs-hosted.com/how-to/manage-external-identity-providers/) to enable logins with providers like GitHub.

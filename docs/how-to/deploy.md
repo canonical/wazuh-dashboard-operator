@@ -1,5 +1,5 @@
 (dashboard-how-to-deploy)=
-# Deploy the Opensearch Dashboards charm
+# Deploy the OpenSearch dashboards charm
 
 Please follow the [Tutorial](dashboards-tutorial) for detailed instructions on
 how to deploy the charm on LXD.
@@ -54,7 +54,9 @@ Machine  State    Address        Inst id        Base          AZ  Message
 1        started  10.34.169.242  juju-df6483-1  ubuntu@22.04      Running
 2        started  10.34.169.5    juju-df6483-2  ubuntu@22.04      Running
 3        started  10.34.169.173  juju-df6483-3  ubuntu@22.04      Running
+```
 
+```text
 Integration provider                   Requirer                                 Interface           Type     Message
 opensearch-dashboards:dashboard_peers  opensearch-dashboards:dashboard_peers    dashboard_peers     peer     
 opensearch-dashboards:restart          opensearch-dashboards:restart            rolling_op          peer     

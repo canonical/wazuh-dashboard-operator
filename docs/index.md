@@ -3,7 +3,7 @@
 <!-- vale Canonical.007-Headings-sentence-case = YES -->
 
 The [Wazuh Dashboard](https://documentation.wazuh.com/current/user-manual/wazuh-dashboard/index.html)
-is a component for analyzing and visualizing security data data based on [OpenSearch](http://opensearch.org/). Consequently,
+is a component for analyzing and visualizing security data based on [OpenSearch](http://opensearch.org/). Consequently,
 this charm is a  [Charmed OpenSearch Dashboards](https://github.com/canonical/opensearch-dashboards-operator) fork.
 
 When deployed and integrated with the [Wazuh Server charm](https://charmhub.io/wazuh-server),

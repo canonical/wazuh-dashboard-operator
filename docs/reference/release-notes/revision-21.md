@@ -1,6 +1,6 @@
 (dashboard-reference-release-notes-revision-21)=
 # Revision 21
-<sub>24 September 2024</sub>
+<sub>September 24, 2024</sub>
 
 Charmed OpenSearch Dashboards Revision 22 has been deployed to the
 [`2/stable` channel](https://charmhub.io/opensearch-dashboards?channel=2/stable) on Charmhub.

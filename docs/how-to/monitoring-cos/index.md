@@ -65,7 +65,7 @@ web interface at `Home > Explore`.
 
 To get OpenSearch Dashboards logs, go to the `Label filters` field and set to
 `juju_application = opensearch-dashboards`, select one operation,
-e.g. `Line contains` and run the query.
+such as `Line contains` and run the query.
 
 > See also: [How to connect to the Grafana web interface](dashboard-how-to-monitoring-enable-cos)
 
