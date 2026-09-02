@@ -24,7 +24,9 @@ In this section, you will set up your environment by:
 * installing Juju and bootstrapping LXD
 * setting up a graphical interface with Multipass
 
+<!-- vale Canonical.004-Canonical-product-names = NO -->
 (dashboards-install-multipass)=
+<!-- vale Canonical.004-Canonical-product-names = YES -->
 ### Install and set up Multipass
 
 [Multipass](https://multipass.run/) is a quick and easy way to launch virtual machines
@@ -60,7 +62,9 @@ multipass shell my-vm
 
 You can exit the Multipass VM using `Ctrl + D` or the exit command.
 
+<!-- vale Canonical.004-Canonical-product-names = NO -->
 (dashboards-install-juju)=
+<!-- vale Canonical.004-Canonical-product-names = YES -->
 ### Install and set up Juju
 
 The next step is to install Juju and initialize [LXD](https://canonical.com/lxd)
