@@ -19,7 +19,7 @@ from typing_extensions import override
 
 from core.workload import WorkloadBase
 from exceptions import OSDInstallError
-from literals import OPENSEARCH_DASHBOARDS_SNAP_REVISION
+from literals import OPENSEARCH_DASHBOARDS_SNAP_CHANNEL, OPENSEARCH_DASHBOARDS_SNAP_REVISION
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ class ODWorkload(WorkloadBase):
             dashboards.ensure(
                 snap.SnapState.Present,
                 revision=OPENSEARCH_DASHBOARDS_SNAP_REVISION,
-                channel="4.11/edge",
+                channel=OPENSEARCH_DASHBOARDS_SNAP_CHANNEL,
             )
 
             self.dashboards = dashboards

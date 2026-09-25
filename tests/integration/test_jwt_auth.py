@@ -32,8 +32,8 @@ JWT_REL_NAME = "jwt-configuration"
 
 @pytest.mark.skip(
     reason=(
-        "wazuh-indexer (pinned to 4.11/revision 9, see OPENSEARCH_REVISION in "
-        "helpers.py) does not yet expose the jwt-configuration relation that "
+        "wazuh-indexer (pinned to 4.14/edge, see OPENSEARCH_CHANNEL/OPENSEARCH_REVISION "
+        "in helpers.py) does not yet expose the jwt-configuration relation that "
         "upstream's opensearch charm has: integrate() fails with "
         "'no relations found'. Re-enable once a wazuh-indexer revision with "
         "jwt-configuration support is available and pinned."
@@ -98,7 +98,7 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
 @pytest.mark.skip(
     reason=(
         "Depends on test_build_and_deploy, which is skipped (see reason "
-        "there): wazuh-indexer 4.11/revision 9 lacks the jwt-configuration "
+        "there): wazuh-indexer 4.14/edge lacks the jwt-configuration "
         "relation."
     )
 )
