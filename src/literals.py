@@ -4,7 +4,8 @@
 
 """Collection of global literals for the charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = "5"
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = "13"
+OPENSEARCH_DASHBOARDS_SNAP_CHANNEL = "4.14/edge"
 
 SUBSTRATE = "vm"
 CHARM_KEY = "wazuh-dashboard"
@@ -22,10 +23,10 @@ SERVER_PORT = 5601
 
 DEPENDENCIES = {
     "osd_upstream": {
-        "dependencies": {"wazuh-indexer": "2.16.1"},
+        "dependencies": {"wazuh-indexer": "2.19.5"},
         "name": "wazuh-dashboard",
         "upgrade_supported": ">=2",
-        "version": "2.16.1",
+        "version": "2.19.5",
     },
 }
 

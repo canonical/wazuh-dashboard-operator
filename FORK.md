@@ -163,7 +163,7 @@ during a rebase (carried over from the previous merge-based workflow):
   logic/classes, keep Wazuh-specific values and event handler wiring.
 - `.github/workflows/ci.yaml`, `.github/workflows/release.yaml` — take
   upstream job/version updates, keep Wazuh-specific overrides (disabled
-  lib-check, `terraform/product` lint path, release track `"4.11"`).
+  lib-check, `terraform/product` lint path, release track `"4.14"`).
 - `metadata.yaml` — take upstream's new relations, keep Wazuh-specific
   relations (`wazuh-api`).
 - `pyproject.toml`, unit tests — take upstream updates, keep Wazuh mock
