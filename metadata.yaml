@@ -7,6 +7,8 @@ description: |
     The Wazuh dashboard is a flexible and intuitive web user interface for mining,
     analyzing, and visualizing security events and alerts data. It is also used for
     the management and monitoring of the Wazuh platform.
+
+    Wazuh 4.11 is no longer supported; Wazuh 4.14 is the supported version.
 summary: The Charmed Wazuh Dashboard operator
 maintainers: https://launchpad.net/~canonical-is-devops
 docs: https://discourse.charmhub.io/t/wazuh-dashboard-documentation-overview/16072

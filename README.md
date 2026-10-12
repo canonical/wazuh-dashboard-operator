@@ -18,6 +18,9 @@
 
 # Description
 
+> [!IMPORTANT]
+> Wazuh 4.11 is no longer supported; Wazuh 4.14 is the supported version.
+
 [Wazuh Dashboard](https://documentation.wazuh.com/current/user-manual/wazuh-dashboard/)) 
 is a frontend application that for visualizing data stored in an Wazuh Indexer
 database. Charmed Wazuh Dashboard is the adaptation of the 
