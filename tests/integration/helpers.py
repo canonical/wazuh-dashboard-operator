@@ -116,20 +116,6 @@ async def get_secret_by_label(ops_test, label: str) -> Dict[str, str]:
     return secret_data[secret_id]["content"]["Data"]
 
 
-async def get_user_password(ops_test: OpsTest, user: str, num_unit=0) -> str:
-    """Use the charm action to retrieve the password for user.
-
-    Return:
-        String with the password stored on the peer relation databag.
-    """
-    params = {"username": user}
-    action = await ops_test.model.units.get(f"{APP_NAME}/{num_unit}").run_action(
-        "get-password", **params
-    )
-    password = await action.wait()
-    return password.results[f"{user}-password"]
-
-
 async def set_password(
     ops_test: OpsTest, username="kibanaserver", password=None, num_unit=0
 ) -> str:
