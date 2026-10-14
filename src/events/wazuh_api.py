@@ -7,7 +7,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from charms.wazuh_server.v0 import wazuh_api
-from ops.charm import RelationEvent
+from ops.charm import RelationEvent, SecretChangedEvent
 from ops.framework import Object
 
 if TYPE_CHECKING:
@@ -31,9 +31,24 @@ class WazuhApiEvents(Object):
             self.charm.on[RELATION_NAME].relation_changed,
             self._on_wazuh_api_relation_changed,
         )
+        self.framework.observe(self.charm.on.secret_changed, self._on_secret_changed)
 
     def _on_wazuh_api_relation_changed(self, _: RelationEvent) -> None:
         """Handler for `wazuh-api` relation creation and changes."""
+        self.update_configuration()
+
+    def _on_secret_changed(self, event: SecretChangedEvent) -> None:
+        """Handler for rotation of the secret holding the Wazuh API credentials."""
+        relation = self.model.get_relation(RELATION_NAME)
+        if not relation or not relation.app:
+            return
+        secret_id = relation.data[relation.app].get("user_credentials_secret")
+        if not secret_id or _short_secret_id(secret_id) != _short_secret_id(event.secret.id):
+            return
+
+        logger.info("Wazuh API credentials secret changed, refreshing configuration")
+        # Moves the unit to the latest revision, otherwise get_content() keeps returning the old one.
+        event.secret.get_content(refresh=True)
         self.update_configuration()
 
     def update_configuration(self) -> None:
@@ -41,3 +56,8 @@ class WazuhApiEvents(Object):
         data = self.wazuh_api.get_relation_data()
         if data:
             self.charm.wazuh_manager.set_dashboard_properties(data)
+
+
+def _short_secret_id(secret_id: str | None) -> str:
+    """Strip the `secret:` / `secret://<model-uuid>/` prefix to compare secret IDs."""
+    return (secret_id or "").rsplit("/", 1)[-1].removeprefix("secret:")
