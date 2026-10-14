@@ -94,7 +94,7 @@ def _begin_with_wazuh_relation() -> Harness:
     return harness
 
 
-def test_wazuh_secret_changed_refreshes_and_updates_configuration():
+def test_wazuh_secret_changed_updates_configuration():
     harness = _begin_with_wazuh_relation()
     event = MagicMock()
     event.secret.id = "secret:cjqub6vubg2s77p3nio0"
@@ -102,8 +102,24 @@ def test_wazuh_secret_changed_refreshes_and_updates_configuration():
     with patch.object(harness.charm.wazuh_api_events, "update_configuration") as update:
         harness.charm.wazuh_api_events._on_secret_changed(event)
 
-    event.secret.get_content.assert_called_once_with(refresh=True)
     update.assert_called_once_with()
+
+
+def test_wazuh_update_configuration_refreshes_secret():
+    harness = _begin_with_wazuh_relation()
+    secret = MagicMock()
+
+    with (
+        patch.object(harness.charm.model, "get_secret", return_value=secret) as get_secret,
+        patch(
+            "charms.wazuh_server.v0.wazuh_api.WazuhApiRequires.get_relation_data",
+            return_value=None,
+        ),
+    ):
+        harness.charm.wazuh_api_events.update_configuration()
+
+    get_secret.assert_called_once_with(id=SAMPLE_RELATION_DATA["user_credentials_secret"])
+    secret.get_content.assert_called_once_with(refresh=True)
 
 
 def test_wazuh_secret_changed_ignores_unrelated_secret():
@@ -114,5 +130,4 @@ def test_wazuh_secret_changed_ignores_unrelated_secret():
     with patch.object(harness.charm.wazuh_api_events, "update_configuration") as update:
         harness.charm.wazuh_api_events._on_secret_changed(event)
 
-    event.secret.get_content.assert_not_called()
     update.assert_not_called()

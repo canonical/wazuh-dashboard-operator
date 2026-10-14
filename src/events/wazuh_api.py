@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from charms.wazuh_server.v0 import wazuh_api
 from ops.charm import RelationEvent, SecretChangedEvent
 from ops.framework import Object
+from ops.model import ModelError, SecretNotFoundError
 
 if TYPE_CHECKING:
     from charm import OpensearchDashboardsCharm
@@ -47,12 +48,28 @@ class WazuhApiEvents(Object):
             return
 
         logger.info("Wazuh API credentials secret changed, refreshing configuration")
-        # Moves the unit to the latest revision, otherwise get_content() keeps returning the old one.
-        event.secret.get_content(refresh=True)
         self.update_configuration()
+
+    def _refresh_credentials_secret(self) -> None:
+        """Track the latest revision of the credentials secret.
+
+        Without this, get_content() keeps returning the revision first observed by the unit,
+        including after the relation is recreated.
+        """
+        relation = self.model.get_relation(RELATION_NAME)
+        if not relation or not relation.app:
+            return
+        secret_id = relation.data[relation.app].get("user_credentials_secret")
+        if not secret_id:
+            return
+        try:
+            self.model.get_secret(id=secret_id).get_content(refresh=True)
+        except (SecretNotFoundError, ModelError):
+            logger.debug("Could not refresh secret %s", secret_id)
 
     def update_configuration(self) -> None:
         """Update configuration from relation data."""
+        self._refresh_credentials_secret()
         data = self.wazuh_api.get_relation_data()
         if data:
             self.charm.wazuh_manager.set_dashboard_properties(data)
