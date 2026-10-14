@@ -165,8 +165,17 @@ Follow instructions from Wazuh documentation on
 When the index pattern is defined, data that belongs to the user will display in the Dashboards.
 
 
+## Development checks
+
+Use `just` to list the development tasks. With `uv` and `just` installed, run
+`just install-requirements` to install the existing test tools and enable prek
+commit checks. The checks run linting, static analysis, and unit tests.
+
+Run `just test -k wazuh` for the Wazuh API and configuration tests, or `just test`
+for the full unit suite. Use `just lint` and `just static` for quality checks.
+These tasks reuse the existing tox and Poetry environments.
+
 # License
 
 The Charmed Wazuh Dashboard Operator is free software, distributed under the Apache
 Software License, version 2.0. See [LICENSE](./LICENSE) for more information.
-
