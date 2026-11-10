@@ -46,10 +46,12 @@ class WazuhManager:
             "password": wazuh_config.password,
             "run_as": True,
         }
-        if hosts and isinstance(hosts[0], dict):
-            hosts[0]["default"] = details
+        for host in hosts:
+            if isinstance(host, dict) and "default" in host:
+                host["default"] = details
+                break
         else:
-            hosts[:1] = [{"default": details}]
+            hosts.insert(0, {"default": details})
         self.workload.write(
             content=yaml.safe_dump(wazuh_conf_yaml, sort_keys=False),
             path=literals.PATHS["WAZUH_CONF"],

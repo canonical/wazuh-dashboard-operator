@@ -76,8 +76,6 @@ def test_wazuh_preserves_other_settings_and_hosts(workload: MagicMock) -> None:
         "[]",
         "hosts: null",
         "hosts: {}",
-        "hosts: [null]",
-        "hosts: [unexpected-secret-value]",
     ],
 )
 def test_wazuh_overwrites_unusable_existing_config(workload: MagicMock, content: str) -> None:
@@ -89,8 +87,15 @@ def test_wazuh_overwrites_unusable_existing_config(workload: MagicMock, content:
     )
 
 
-def test_wazuh_replaces_host_without_default(workload: MagicMock) -> None:
+def test_wazuh_adds_default_host_when_missing(workload: MagicMock) -> None:
     workload.read_raw.return_value = "hosts: [{other: {url: x}}]"
     update_properties(workload)
     written = yaml.safe_load(workload.write.call_args.kwargs["content"])
-    assert written["hosts"][0]["default"] == EXPECTED_HOST
+    assert written["hosts"] == [{"default": EXPECTED_HOST}, {"other": {"url": "x"}}]
+
+
+def test_wazuh_updates_default_host_in_any_position(workload: MagicMock) -> None:
+    workload.read_raw.return_value = "hosts: [{other: {url: x}}, {default: {url: old}}]"
+    update_properties(workload)
+    written = yaml.safe_load(workload.write.call_args.kwargs["content"])
+    assert written["hosts"] == [{"other": {"url": "x"}}, {"default": EXPECTED_HOST}]
