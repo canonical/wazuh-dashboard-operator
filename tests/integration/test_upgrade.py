@@ -10,6 +10,8 @@ import pytest
 import yaml
 from pytest_operator.plugin import OpsTest
 
+from literals import OPENSEARCH_DASHBOARDS_SNAP_CHANNEL, OPENSEARCH_DASHBOARDS_SNAP_REVISION
+
 from .helpers import (
     CONFIG_OPTS,
     OPENSEARCH_APP_NAME,
@@ -26,8 +28,7 @@ logger = logging.getLogger(__name__)
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
 APP_NAME = METADATA["name"]
 
-# FIXME: update this to 'stable' when `pre-upgrade-check` is released to 'stable'
-CHANNEL = "edge"
+CHANNEL = f"{OPENSEARCH_DASHBOARDS_SNAP_CHANNEL.split('/')[0]}/stable"
 
 OPENSEARCH_CONFIG = {
     "logging-config": "<root>=INFO;unit=DEBUG",
@@ -45,12 +46,10 @@ NUM_UNITS_DB = 3
 
 @pytest.mark.abort_on_fail
 @pytest.mark.skip_if_deployed
-async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
+async def test_build_and_deploy(ops_test: OpsTest, series: str):
     """Deploying all charms required for the tests, and wait for their complete setup to be done."""
 
-    await ops_test.model.deploy(
-        charm, application_name=APP_NAME, num_units=NUM_UNITS_APP, series=series
-    )
+    await ops_test.model.deploy(APP_NAME, channel=CHANNEL, num_units=NUM_UNITS_APP, series=series)
     await ops_test.model.set_config(OPENSEARCH_CONFIG)
     await ops_test.model.deploy(
         OPENSEARCH_APP_NAME,
@@ -89,6 +88,29 @@ async def test_build_and_deploy(ops_test: OpsTest, charm: str, series: str):
     await ops_test.model.wait_for_idle(
         apps=[OPENSEARCH_APP_NAME, APP_NAME], status="active", timeout=1000
     )
+
+
+@pytest.mark.abort_on_fail
+async def test_plain_refresh_from_charmhub(ops_test: OpsTest, charm: str):
+    """Refresh current stable without pre-checks and verify snap and dashboard access."""
+    await ops_test.model.applications[APP_NAME].refresh(path=charm)
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, OPENSEARCH_APP_NAME, TLS_CERTIFICATES_APP_NAME],
+        status="active",
+        timeout=1200,
+        idle_period=120,
+    )
+
+    for unit in ops_test.model.applications[APP_NAME].units:
+        _, stdout, _ = await ops_test.juju(
+            "ssh", unit.name, "--", "snap", "list", "wazuh-dashboard", check=True
+        )
+        installed = stdout.strip().splitlines()[-1].split()
+        assert installed[2] == OPENSEARCH_DASHBOARDS_SNAP_REVISION, stdout
+        assert installed[3] == OPENSEARCH_DASHBOARDS_SNAP_CHANNEL, stdout
+        assert installed[-1] == "held", stdout
+
+    assert await access_all_dashboards(ops_test)
 
 
 @pytest.mark.abort_on_fail

@@ -13,7 +13,6 @@ from charms.data_platform_libs.v0.upgrade import (
     ClusterNotReadyError,
     DataUpgrade,
     DependencyModel,
-    UpgradeGrantedEvent,
 )
 from ops.charm import UpgradeCharmEvent
 from ops.framework import EventBase
@@ -95,14 +94,10 @@ class ODUpgradeEvents(DataUpgrade):
             return
 
         logger.info("No upgrade stack found; refreshing the stateless workload directly")
-        self._upgrade_workload(event)
+        self._on_upgrade_granted(event)
 
     @override
-    def _on_upgrade_granted(self, event: UpgradeGrantedEvent) -> None:
-        self._upgrade_workload(event)
-
-    def _upgrade_workload(self, event: EventBase) -> None:
-        """Install the pinned workload snap and validate the upgraded unit."""
+    def _on_upgrade_granted(self, event: EventBase) -> None:
         self.charm.workload.stop()
 
         try:
