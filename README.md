@@ -168,7 +168,7 @@ When the index pattern is defined, data that belongs to the user will display in
 ## Development checks
 
 Use `just` to list the development tasks. With `uv` and `just` installed, run
-`just install-requirements` to install the existing test tools and enable prek
+`just install-requirements` to install the existing test tools and enable `prek`
 commit checks. The checks run linting, static analysis, and unit tests.
 
 Run `just test -k wazuh` for the Wazuh API and configuration tests, or `just test`
