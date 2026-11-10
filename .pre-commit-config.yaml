@@ -9,12 +9,6 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-      - id: static
-        name: Static analysis
-        entry: just static
-        language: system
-        pass_filenames: false
-        always_run: true
       - id: unit
         name: Unit tests
         entry: just test

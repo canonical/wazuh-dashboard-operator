@@ -169,10 +169,10 @@ When the index pattern is defined, data that belongs to the user will display in
 
 Use `just` to list the development tasks. With `uv` and `just` installed, run
 `just install-requirements` to install the existing test tools and enable `prek`
-commit checks. The checks run linting, static analysis, and unit tests.
+commit checks. The checks run linting and unit tests.
 
 Run `just test -k wazuh` for the Wazuh API and configuration tests, or `just test`
-for the full unit suite. Use `just lint` and `just static` for quality checks.
+for the full unit suite. Use `just lint` for quality checks.
 These tasks reuse the existing tox and Poetry environments.
 
 # License

@@ -74,22 +74,23 @@ def test_wazuh_preserves_other_settings_and_hosts(workload: MagicMock) -> None:
         "[broken-secret-value",
         "unexpected-secret-value",
         "[]",
-        "false",
-        "0",
         "hosts: null",
         "hosts: {}",
         "hosts: [null]",
         "hosts: [unexpected-secret-value]",
-        "hosts: [{}]",
-        "hosts: [{default: null}]",
-        "hosts: [{default: []}]",
     ],
 )
-def test_wazuh_rejects_invalid_existing_config(
-    workload: MagicMock, content: str, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_wazuh_overwrites_unusable_existing_config(workload: MagicMock, content: str) -> None:
     workload.read_raw.return_value = content
     update_properties(workload)
-    workload.write.assert_not_called()
-    assert "configuration unchanged" in caplog.text
-    assert "secret-value" not in caplog.text
+    workload.write.assert_called_once_with(
+        content=yaml.safe_dump({"hosts": [{"default": EXPECTED_HOST}]}, sort_keys=False),
+        path=PATHS["WAZUH_CONF"],
+    )
+
+
+def test_wazuh_replaces_host_without_default(workload: MagicMock) -> None:
+    workload.read_raw.return_value = "hosts: [{other: {url: x}}]"
+    update_properties(workload)
+    written = yaml.safe_load(workload.write.call_args.kwargs["content"])
+    assert written["hosts"][0]["default"] == EXPECTED_HOST

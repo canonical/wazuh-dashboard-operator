@@ -18,6 +18,12 @@ def patched_pebble_restart(mocker):
 
 
 @pytest.fixture(autouse=True)
+def patched_snap_cache(mocker):
+    """Avoid querying snapd: the wazuh-dashboard snap is not installed in unit tests."""
+    mocker.patch("workload.snap.SnapCache")
+
+
+@pytest.fixture(autouse=True)
 def patched_healthy(mocker):
     mocker.patch("workload.ODWorkload.healthy", new_callable=PropertyMock, return_value=True)
 

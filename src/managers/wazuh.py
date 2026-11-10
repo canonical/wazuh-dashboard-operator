@@ -27,24 +27,16 @@ class WazuhManager:
 
     def set_dashboard_properties(self, wazuh_config: wazuh_api.WazuhApiRelationData) -> None:
         """Writes the Wazuh config file."""
-        wazuh_conf = self.workload.read_raw(literals.PATHS["WAZUH_CONF"])
         try:
-            wazuh_conf_yaml = yaml.safe_load(wazuh_conf)
+            wazuh_conf_yaml = yaml.safe_load(self.workload.read_raw(literals.PATHS["WAZUH_CONF"]))
         except yaml.YAMLError:
-            logger.warning("Wazuh API configuration unchanged: invalid YAML")
-            return
-        if wazuh_conf_yaml is None:
-            wazuh_conf_yaml = {}
+            logger.warning("Existing Wazuh configuration is not valid YAML, overwriting it")
+            wazuh_conf_yaml = None
         if not isinstance(wazuh_conf_yaml, dict):
-            logger.warning("Wazuh API configuration unchanged: expected a YAML mapping")
-            return
-        hosts = wazuh_conf_yaml.get("hosts", [])
-        if not isinstance(hosts, list) or (
-            hosts
-            and (not isinstance(hosts[0], dict) or not isinstance(hosts[0].get("default"), dict))
-        ):
-            logger.warning("Wazuh API configuration unchanged: invalid default host structure")
-            return
+            wazuh_conf_yaml = {}
+        hosts = wazuh_conf_yaml.get("hosts")
+        if not isinstance(hosts, list):
+            hosts = wazuh_conf_yaml["hosts"] = []
 
         url = urlparse(str(wazuh_config.endpoint))
         details = {
@@ -54,10 +46,10 @@ class WazuhManager:
             "password": wazuh_config.password,
             "run_as": True,
         }
-        if hosts:
+        if hosts and isinstance(hosts[0], dict):
             hosts[0]["default"] = details
         else:
-            wazuh_conf_yaml["hosts"] = [{"default": details}]
+            hosts[:1] = [{"default": details}]
         self.workload.write(
             content=yaml.safe_dump(wazuh_conf_yaml, sort_keys=False),
             path=literals.PATHS["WAZUH_CONF"],

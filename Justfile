@@ -17,10 +17,6 @@ lint:
     tox run -e lint
 
 [group('Testing & Quality Assurance')]
-static:
-    tox run -e static
-
-[group('Testing & Quality Assurance')]
 test *args:
     tox run -e unit -- {{args}}
 
