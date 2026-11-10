@@ -8,7 +8,11 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-from charms.data_platform_libs.v0.upgrade import ClusterNotReadyError, DependencyModel
+from charms.data_platform_libs.v0.upgrade import (
+    ClusterNotReadyError,
+    DependencyModel,
+    VersionError,
+)
 from ops.model import BlockedStatus
 from ops.testing import Harness
 
@@ -134,12 +138,51 @@ def test_dashboards_dependency_model():
 
 def test_upgrade_charm_without_upgrade_stack_refreshes_workload(harness, mocker):
     """A plain juju refresh upgrades the workload without requiring pre-upgrade-check."""
+    mocker.patch.object(ODWorkload, "alive", return_value=True)
     mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
     mock_event = mocker.MagicMock()
 
     harness.charm.upgrade_events._on_upgrade_charm(mock_event)
 
     ODUpgradeEvents._on_upgrade_granted.assert_called_once_with(mock_event)
+
+
+def test_upgrade_charm_without_upgrade_stack_blocks_if_workload_down(harness, mocker):
+    """A plain juju refresh does not touch the snap if the workload is unhealthy."""
+    mocker.patch.object(ODWorkload, "alive", return_value=False)
+    mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
+
+    harness.charm.upgrade_events._on_upgrade_charm(mocker.MagicMock())
+
+    ODUpgradeEvents._on_upgrade_granted.assert_not_called()
+    assert isinstance(harness.charm.unit.status, BlockedStatus)
+    assert harness.charm.unit.status.message == "Unit workload is not running"
+
+
+def test_upgrade_charm_without_stack_fails_if_versions_incompatible(harness, mocker):
+    """A plain juju refresh runs the dependency gate on the leader."""
+    mocker.patch.object(ODWorkload, "alive", return_value=True)
+    mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
+    mocker.patch.object(
+        ODUpgradeEvents,
+        "stored_dependencies",
+        new_callable=mocker.PropertyMock,
+        return_value=mocker.MagicMock(),
+    )
+    mocker.patch.object(
+        ODUpgradeEvents,
+        "_upgrade_supported_check",
+        side_effect=VersionError(message="Versions incompatible", cause="Upgrade unsupported"),
+    )
+    mocker.patch.object(ODUpgradeEvents, "set_unit_failed")
+
+    with harness.hooks_disabled():
+        harness.set_leader(True)
+
+    harness.charm.upgrade_events._on_upgrade_charm(mocker.MagicMock())
+
+    ODUpgradeEvents._on_upgrade_granted.assert_not_called()
+    ODUpgradeEvents.set_unit_failed.assert_called_once()
 
 
 def test_upgrade_granted_sets_failed_if_failed_snap(harness, mocker):
