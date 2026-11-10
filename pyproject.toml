@@ -81,6 +81,7 @@ ops = "^2.23.0"
 optional = true
 
 [tool.poetry.group.unit.dependencies]
+ops = { version = "^2.23.0", extras = ["testing"] }
 pytest = "^8.4.1"
 coverage = { extras = ["toml"], version = "^7.9.1" }
 pytest-mock = "^3.14.1"
