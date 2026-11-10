@@ -123,7 +123,7 @@ prepare: |
   cd "$SPREAD_PATH"
   snap install --classic concierge
 
-  if [[ $SPREAD_TASK == *"oauth"* ]]
+  if [[ $SPREAD_TASK == *"oauth"* || $SPREAD_TASK == *"charmhub_upgrade"* ]]
   then
     # Running on IS-hosted runner; configure microk8s to use Docker Hub mirror
     # Run before concierge prepare because of https://github.com/canonical/concierge/issues/75
@@ -164,7 +164,7 @@ prepare: |
   # Install charmcraft & pipx (on lxd-vm backend)
   concierge prepare --trace
 
-  if [[ $SPREAD_TASK == *"oauth"* ]]
+  if [[ $SPREAD_TASK == *"oauth"* || $SPREAD_TASK == *"charmhub_upgrade"* ]]
   then
     /snap/bin/juju add-k8s uk8s --client --controller $(/snap/bin/juju show-controller | yq "keys | .[0]")
   fi

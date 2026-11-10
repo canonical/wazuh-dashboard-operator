@@ -132,6 +132,16 @@ def test_dashboards_dependency_model():
         assert DependencyModel(**value)
 
 
+def test_upgrade_charm_without_upgrade_stack_refreshes_workload(harness, mocker):
+    """A plain juju refresh upgrades the workload without requiring pre-upgrade-check."""
+    mocker.patch.object(ODUpgradeEvents, "_upgrade_workload")
+    mock_event = mocker.MagicMock()
+
+    harness.charm.upgrade_events._on_upgrade_charm(mock_event)
+
+    ODUpgradeEvents._upgrade_workload.assert_called_once_with(mock_event)
+
+
 def test_upgrade_granted_sets_failed_if_failed_snap(harness, mocker):
     mocker.patch.object(ODWorkload, "stop")
     mocker.patch.object(ODWorkload, "restart")

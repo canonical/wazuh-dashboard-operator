@@ -15,6 +15,8 @@ from charms.data_platform_libs.v0.upgrade import (
     DependencyModel,
     UpgradeGrantedEvent,
 )
+from ops.charm import UpgradeCharmEvent
+from ops.framework import EventBase
 from ops.model import BlockedStatus
 from typing_extensions import override
 
@@ -86,7 +88,21 @@ class ODUpgradeEvents(DataUpgrade):
         return
 
     @override
+    def _on_upgrade_charm(self, event: UpgradeCharmEvent) -> None:
+        """Refresh the stateless workload when no coordinated upgrade was requested."""
+        if self.upgrade_stack:
+            super()._on_upgrade_charm(event)
+            return
+
+        logger.info("No upgrade stack found; refreshing the stateless workload directly")
+        self._upgrade_workload(event)
+
+    @override
     def _on_upgrade_granted(self, event: UpgradeGrantedEvent) -> None:
+        self._upgrade_workload(event)
+
+    def _upgrade_workload(self, event: EventBase) -> None:
+        """Install the pinned workload snap and validate the upgraded unit."""
         self.charm.workload.stop()
 
         try:
