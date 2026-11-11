@@ -7,7 +7,6 @@
 import logging
 import time
 
-from charms.data_platform_libs.v0.upgrade import DependencyModel
 from charms.grafana_agent.v0.cos_agent import COSAgentProvider
 from charms.rolling_ops.v0.rollingops import RollingOpsManager
 from ops.charm import CharmBase, InstallEvent, SecretChangedEvent
@@ -75,9 +74,7 @@ class OpensearchDashboardsCharm(CharmBase):
 
         self.tls_events = TLSEvents(self)
         self.requirer_events = RequirerEvents(self)
-        dependency_model = OpensearchDashboardsDependencyModel(
-            osd_upstream=DependencyModel(**DEPENDENCIES["osd_upstream"])
-        )
+        dependency_model = OpensearchDashboardsDependencyModel(**DEPENDENCIES)
         self.upgrade_events = ODUpgradeEvents(self, dependency_model=dependency_model)
         self.wazuh_api_events = WazuhApiEvents(self)
         self.oauth = OAuthHandler(self)

@@ -5,9 +5,10 @@
 """Manager for building necessary files for TLS auth."""
 import logging
 
+from charms.data_platform_libs.v0.upgrade import DependencyModel
+
 from core.cluster import SUBSTRATES, ClusterState
 from core.workload import WorkloadBase
-from events.upgrade import OpensearchDashboardsDependencyModel
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class UpgradeManager:
         state: ClusterState,
         workload: WorkloadBase,
         substrate: SUBSTRATES,
-        dependency_model: OpensearchDashboardsDependencyModel,
+        dependency_model: DependencyModel,
     ):
         self.state = state
         self.workload = workload

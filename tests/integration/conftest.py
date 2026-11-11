@@ -7,6 +7,7 @@ from typing import Any, AsyncGenerator
 import pytest
 from pytest_operator.plugin import OpsTest
 
+
 logger = logging.getLogger(__name__)
 
 
