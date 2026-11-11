@@ -112,6 +112,7 @@ class ODUpgradeEvents(DataUpgrade):
                 return
 
         self._on_upgrade_granted(event)
+        self.on_upgrade_changed(event)
 
     @override
     def _on_upgrade_granted(self, event: EventBase) -> None:
