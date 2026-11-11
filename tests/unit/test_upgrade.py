@@ -140,11 +140,13 @@ def test_upgrade_charm_without_upgrade_stack_refreshes_workload(harness, mocker)
     """A plain juju refresh upgrades the workload without requiring pre-upgrade-check."""
     mocker.patch.object(ODWorkload, "alive", return_value=True)
     mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
+    mocker.patch.object(ODUpgradeEvents, "on_upgrade_changed")
     mock_event = mocker.MagicMock()
 
     harness.charm.upgrade_events._on_upgrade_charm(mock_event)
 
     ODUpgradeEvents._on_upgrade_granted.assert_called_once_with(mock_event)
+    ODUpgradeEvents.on_upgrade_changed.assert_called_once_with(mock_event)
 
 
 def test_upgrade_charm_without_upgrade_stack_blocks_if_workload_down(harness, mocker):
@@ -159,8 +161,9 @@ def test_upgrade_charm_without_upgrade_stack_blocks_if_workload_down(harness, mo
     assert harness.charm.unit.status.message == "Unit workload is not running"
 
 
-def test_upgrade_charm_without_stack_fails_if_versions_incompatible(harness, mocker):
-    """A plain juju refresh runs the dependency gate on the leader."""
+@pytest.mark.parametrize("is_leader", [False, True])
+def test_upgrade_charm_without_stack_fails_if_versions_incompatible(harness, mocker, is_leader):
+    """A plain juju refresh runs the dependency gate on every unit."""
     mocker.patch.object(ODWorkload, "alive", return_value=True)
     mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
     mocker.patch.object(
@@ -177,12 +180,28 @@ def test_upgrade_charm_without_stack_fails_if_versions_incompatible(harness, moc
     mocker.patch.object(ODUpgradeEvents, "set_unit_failed")
 
     with harness.hooks_disabled():
-        harness.set_leader(True)
+        harness.set_leader(is_leader)
 
     harness.charm.upgrade_events._on_upgrade_charm(mocker.MagicMock())
 
     ODUpgradeEvents._on_upgrade_granted.assert_not_called()
     ODUpgradeEvents.set_unit_failed.assert_called_once()
+
+
+@pytest.mark.parametrize("state", ["failed", "recovery"])
+def test_upgrade_charm_without_stack_retries_if_workload_down(harness, mocker, state):
+    """A failed or recovering unit can retry a plain refresh with its workload stopped."""
+    mocker.patch.object(ODWorkload, "alive", return_value=False)
+    mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
+
+    with harness.hooks_disabled():
+        harness.charm.upgrade_events.peer_relation.data[harness.charm.unit].update({"state": state})
+
+    mock_event = mocker.MagicMock()
+    harness.charm.upgrade_events._on_upgrade_charm(mock_event)
+
+    ODWorkload.alive.assert_not_called()
+    ODUpgradeEvents._on_upgrade_granted.assert_called_once_with(mock_event)
 
 
 def test_upgrade_granted_sets_failed_if_failed_snap(harness, mocker):
