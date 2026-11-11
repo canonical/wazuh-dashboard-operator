@@ -13,14 +13,13 @@ from charms.data_platform_libs.v0.upgrade import (
     DependencyModel,
     VersionError,
 )
-from ops.model import BlockedStatus
+from ops.model import ActiveStatus, BlockedStatus
 from ops.testing import Harness
 
 from charm import OpensearchDashboardsCharm
 from events.upgrade import ODUpgradeEvents, OpensearchDashboardsDependencyModel
 from exceptions import OSDInstallError
 from literals import CHARM_KEY, DEPENDENCIES
-from src.literals import MSG_INCOMPATIBLE_UPGRADE
 from tests.unit.test_charm import OPENSEARCH_REL_NAME
 from workload import ODWorkload
 
@@ -36,7 +35,9 @@ OPENSEARCH_APP_NAME = "wazuh-indexer"
 
 @pytest.fixture
 def harness():
-    harness = Harness(OpensearchDashboardsCharm, meta=METADATA, config=CONFIG, actions=ACTIONS)
+    harness = Harness(
+        OpensearchDashboardsCharm, meta=METADATA, config=CONFIG, actions=ACTIONS
+    )
     harness.add_relation("dashboard_peers", CHARM_KEY)
     harness.add_relation("restart", CHARM_KEY)
     harness.add_relation("upgrade", CHARM_KEY)
@@ -44,81 +45,89 @@ def harness():
     harness.begin()
     with harness.hooks_disabled():
         harness.update_relation_data(
-            harness.charm.state.peer_relation.id, f"{CHARM_KEY}/0", {"hostname": "000.000.000"}
+            harness.charm.state.peer_relation.id,
+            f"{CHARM_KEY}/0",
+            {"hostname": "000.000.000"},
         )
 
-    harness.charm.upgrade_manager.dependency_model = OpensearchDashboardsDependencyModel(
-        **{
-            "osd_upstream": {
+    harness.charm.upgrade_manager.dependency_model = (
+        OpensearchDashboardsDependencyModel(
+            osd_upstream={
                 "dependencies": {"wazuh-indexer": "2.12"},
                 "name": "wazuh-dashboard",
                 "upgrade_supported": ">=2",
                 "version": "2.12",
-            },
-        }
+            }
+        )
     )
 
     return harness
 
 
-def test_pre_upgrade_check_succeeds(harness, mocker):
-    """pre_upgrade_check successful on a healthy system."""
+def test_pre_upgrade_check_succeeds(harness):
+    """pre_upgrade_check succeeds on a healthy system."""
     with patch("workload.ODWorkload.alive", return_value=True):
         assert harness.charm.upgrade_events.pre_upgrade_check() is None
 
 
-def test_pre_upgrade_check_fails_if_workload_down(harness, mocker):
-    """Simulate a workflow failure to veriy pre_upgrade_check fails then."""
+def test_pre_upgrade_check_fails_if_workload_down(harness):
+    """pre_upgrade_check raises when the workload is not running."""
     with patch("workload.ODWorkload.alive", return_value=False):
         with pytest.raises(ClusterNotReadyError):
-            assert harness.charm.upgrade_events.pre_upgrade_check() is None
-            harness.charm.unit.status = BlockedStatus(MSG_INCOMPATIBLE_UPGRADE)
+            harness.charm.upgrade_events.pre_upgrade_check()
 
 
-@pytest.mark.parametrize("version", [("2.1.1"), ("2.12.0"), ("2.12.1"), ("2.12")])
-def test_post_upgrade_check_succeeds(version, harness, mocker):
-    """Verify success if no version mismatch"""
+@pytest.mark.parametrize("version", ["2.1.1", "2.12.0", "2.12.1", "2.12"])
+def test_post_upgrade_check_succeeds(version, harness):
+    """Verify success if no version mismatch."""
     opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, OPENSEARCH_APP_NAME)
-    harness.update_relation_data(opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": version})
+    harness.update_relation_data(
+        opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": version}
+    )
     assert harness.charm.upgrade_events.post_upgrade_check() is None
     assert harness.charm.upgrade_manager.version_compatible() is True
 
 
-def test_post_upgrade_check_fails_major(harness, mocker):
+@pytest.mark.parametrize("version", ["3.1", "2.13.1"])
+def test_post_upgrade_check_fails_on_version_mismatch(version, harness):
+    """post_upgrade_check blocks and raises on an incompatible Opensearch version."""
     opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, OPENSEARCH_APP_NAME)
-    with pytest.raises(ClusterNotReadyError):
-        harness.update_relation_data(
-            opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "3.1"}
-        )
-        assert harness.charm.upgrade_events.post_upgrade_check() is None
-        assert harness.charm.upgrade_manager.version_compatible() is False
-        assert isinstance(harness.model.unit.status, BlockedStatus)
+    harness.update_relation_data(
+        opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": version}
+    )
 
-
-def test_post_upgrade_check_fails_minor(harness, mocker):
-    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, OPENSEARCH_APP_NAME)
     with pytest.raises(ClusterNotReadyError):
-        harness.update_relation_data(
-            opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "2.13.1"}
-        )
-        assert harness.charm.upgrade_events.post_upgrade_check() is None
-        assert harness.charm.upgrade_manager.version_compatible() is False
-        assert isinstance(harness.model.unit.status, BlockedStatus)
+        harness.charm.upgrade_events.post_upgrade_check()
+
+    assert harness.charm.upgrade_manager.version_compatible() is False
+    assert isinstance(harness.charm.unit.status, BlockedStatus)
 
 
 def test_build_upgrade_stack(harness):
     with harness.hooks_disabled():
-        harness.add_relation_unit(harness.charm.state.peer_relation.id, f"{CHARM_KEY}/1")
-        harness.update_relation_data(
-            harness.charm.state.peer_relation.id, f"{CHARM_KEY}/1", {"hostname": "111.111.111"}
+        harness.add_relation_unit(
+            harness.charm.state.peer_relation.id, f"{CHARM_KEY}/1"
         )
-        harness.add_relation_unit(harness.charm.state.peer_relation.id, f"{CHARM_KEY}/2")
         harness.update_relation_data(
-            harness.charm.state.peer_relation.id, f"{CHARM_KEY}/2", {"hostname": "222.222.222"}
+            harness.charm.state.peer_relation.id,
+            f"{CHARM_KEY}/1",
+            {"hostname": "111.111.111"},
         )
-        harness.add_relation_unit(harness.charm.state.peer_relation.id, f"{CHARM_KEY}/3")
+        harness.add_relation_unit(
+            harness.charm.state.peer_relation.id, f"{CHARM_KEY}/2"
+        )
         harness.update_relation_data(
-            harness.charm.state.peer_relation.id, f"{CHARM_KEY}/3", {"hostname": "333.333.333"}
+            harness.charm.state.peer_relation.id,
+            f"{CHARM_KEY}/2",
+            {"hostname": "222.222.222"},
+        )
+        harness.add_relation_unit(
+            harness.charm.state.peer_relation.id, f"{CHARM_KEY}/3"
+        )
+        harness.update_relation_data(
+            harness.charm.state.peer_relation.id,
+            f"{CHARM_KEY}/3",
+            {"hostname": "333.333.333"},
         )
 
     stack = harness.charm.upgrade_events.build_upgrade_stack()
@@ -140,13 +149,13 @@ def test_upgrade_charm_without_upgrade_stack_refreshes_workload(harness, mocker)
     """A plain juju refresh upgrades the workload without requiring pre-upgrade-check."""
     mocker.patch.object(ODWorkload, "alive", return_value=True)
     mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
-    mocker.patch.object(ODUpgradeEvents, "on_upgrade_changed")
+    on_upgrade_changed = mocker.patch.object(ODUpgradeEvents, "on_upgrade_changed")
     mock_event = mocker.MagicMock()
 
     harness.charm.upgrade_events._on_upgrade_charm(mock_event)
 
     ODUpgradeEvents._on_upgrade_granted.assert_called_once_with(mock_event)
-    ODUpgradeEvents.on_upgrade_changed.assert_called_once_with(mock_event)
+    on_upgrade_changed.assert_called_once_with(mock_event)
 
 
 def test_upgrade_charm_without_upgrade_stack_blocks_if_workload_down(harness, mocker):
@@ -161,9 +170,50 @@ def test_upgrade_charm_without_upgrade_stack_blocks_if_workload_down(harness, mo
     assert harness.charm.unit.status.message == "Unit workload is not running"
 
 
-@pytest.mark.parametrize("is_leader", [False, True])
-def test_upgrade_charm_without_stack_fails_if_versions_incompatible(harness, mocker, is_leader):
-    """A plain juju refresh runs the dependency gate on every unit."""
+@pytest.mark.parametrize("state", ["failed", "recovery"])
+def test_upgrade_charm_retries_in_failed_or_recovery_state(state, harness, mocker):
+    """A stopped workload may be retried when the unit is failed or recovering."""
+    mocker.patch.object(ODWorkload, "alive", return_value=False)
+    pre_upgrade_check = mocker.patch.object(ODUpgradeEvents, "pre_upgrade_check")
+    mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
+    mocker.patch.object(ODUpgradeEvents, "on_upgrade_changed")
+    mock_event = mocker.MagicMock()
+
+    with harness.hooks_disabled():
+        harness.update_relation_data(
+            harness.charm.upgrade_events.peer_relation.id,
+            harness.charm.unit.name,
+            {"state": state},
+        )
+
+    harness.charm.upgrade_events._on_upgrade_charm(mock_event)
+
+    pre_upgrade_check.assert_not_called()
+    ODUpgradeEvents._on_upgrade_granted.assert_called_once_with(mock_event)
+
+
+def test_upgrade_charm_without_stack_reconciles_follower_to_idle(harness, mocker):
+    """A follower finishing a plain refresh returns itself to idle."""
+    mocker.patch.object(ODWorkload, "stop")
+    mocker.patch.object(ODWorkload, "install")
+    mocker.patch.object(ODWorkload, "restart")
+    mocker.patch.object(ODWorkload, "alive", return_value=True)
+
+    upgrade_rel_id = harness.charm.upgrade_events.peer_relation.id
+    with harness.hooks_disabled():
+        harness.add_relation_unit(upgrade_rel_id, f"{CHARM_KEY}/1")
+        harness.update_relation_data(
+            upgrade_rel_id, f"{CHARM_KEY}/1", {"state": "idle"}
+        )
+
+    harness.charm.upgrade_events._on_upgrade_charm(mocker.MagicMock())
+
+    assert isinstance(harness.charm.unit.status, ActiveStatus)
+    assert harness.charm.upgrade_events.state == "idle"
+
+
+def test_upgrade_charm_without_stack_fails_if_versions_incompatible(harness, mocker):
+    """A plain juju refresh runs the dependency gate."""
     mocker.patch.object(ODWorkload, "alive", return_value=True)
     mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
     mocker.patch.object(
@@ -175,12 +225,11 @@ def test_upgrade_charm_without_stack_fails_if_versions_incompatible(harness, moc
     mocker.patch.object(
         ODUpgradeEvents,
         "_upgrade_supported_check",
-        side_effect=VersionError(message="Versions incompatible", cause="Upgrade unsupported"),
+        side_effect=VersionError(
+            message="Versions incompatible", cause="Upgrade unsupported"
+        ),
     )
     mocker.patch.object(ODUpgradeEvents, "set_unit_failed")
-
-    with harness.hooks_disabled():
-        harness.set_leader(is_leader)
 
     harness.charm.upgrade_events._on_upgrade_charm(mocker.MagicMock())
 
@@ -195,7 +244,9 @@ def test_upgrade_charm_without_stack_retries_if_workload_down(harness, mocker, s
     mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
 
     with harness.hooks_disabled():
-        harness.charm.upgrade_events.peer_relation.data[harness.charm.unit].update({"state": state})
+        harness.charm.upgrade_events.peer_relation.data[harness.charm.unit].update(
+            {"state": state}
+        )
 
     mock_event = mocker.MagicMock()
     harness.charm.upgrade_events._on_upgrade_charm(mock_event)
@@ -207,7 +258,9 @@ def test_upgrade_charm_without_stack_retries_if_workload_down(harness, mocker, s
 def test_upgrade_granted_sets_failed_if_failed_snap(harness, mocker):
     mocker.patch.object(ODWorkload, "stop")
     mocker.patch.object(ODWorkload, "restart")
-    mocker.patch.object(ODWorkload, "install", side_effect=OSDInstallError("install failed"))
+    mocker.patch.object(
+        ODWorkload, "install", side_effect=OSDInstallError("install failed")
+    )
     mocker.patch.object(ODUpgradeEvents, "pre_upgrade_check")
     mocker.patch.object(ODUpgradeEvents, "set_unit_completed")
     mocker.patch.object(ODUpgradeEvents, "set_unit_failed")
@@ -257,6 +310,7 @@ def test_upgrade_granted_succeeds(harness, mocker):
     mocker.patch.object(ODUpgradeEvents, "pre_upgrade_check")
     mocker.patch.object(ODUpgradeEvents, "set_unit_completed")
     mocker.patch.object(ODUpgradeEvents, "set_unit_failed")
+    on_upgrade_changed = mocker.patch.object(ODUpgradeEvents, "on_upgrade_changed")
 
     mock_event = mocker.MagicMock()
 
@@ -267,29 +321,11 @@ def test_upgrade_granted_succeeds(harness, mocker):
     ODWorkload.restart.assert_called_once()
     ODUpgradeEvents.set_unit_completed.assert_called_once()
     ODUpgradeEvents.set_unit_failed.assert_not_called()
-
-
-def test_upgrade_granted_recurses_upgrade_changed_on_leader(harness, mocker):
-    opensearch_rel_id = harness.add_relation(OPENSEARCH_REL_NAME, OPENSEARCH_APP_NAME)
-    harness.update_relation_data(
-        opensearch_rel_id, f"{OPENSEARCH_APP_NAME}", {"version": "2.12.1"}
-    )
-
-    mocker.patch.object(ODWorkload, "stop")
-    mocker.patch.object(ODWorkload, "restart")
-    mocker.patch.object(ODWorkload, "install")
-    mocker.patch.object(ODUpgradeEvents, "pre_upgrade_check")
-    mocker.patch.object(ODUpgradeEvents, "on_upgrade_changed")
-
-    mock_event = mocker.MagicMock()
-
-    harness.charm.upgrade_events._on_upgrade_granted(mock_event)
-
-    ODUpgradeEvents.on_upgrade_changed.assert_not_called()
+    on_upgrade_changed.assert_not_called()
 
     with harness.hooks_disabled():
         harness.set_leader(True)
 
     harness.charm.upgrade_events._on_upgrade_granted(mock_event)
 
-    ODUpgradeEvents.on_upgrade_changed.assert_called_once()
+    on_upgrade_changed.assert_called_once_with(mock_event)

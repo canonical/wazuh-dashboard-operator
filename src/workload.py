@@ -12,14 +12,17 @@ import subprocess
 
 from charms.operator_libs_linux.v2 import snap
 from tenacity import retry, retry_if_exception_type
-from tenacity.retry import retry_any, retry_if_exception, retry_if_not_result
+from tenacity.retry import retry_any, retry_if_not_result
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_fixed
 from typing_extensions import override
 
 from core.workload import WorkloadBase
 from exceptions import OSDInstallError
-from literals import OPENSEARCH_DASHBOARDS_SNAP_CHANNEL, OPENSEARCH_DASHBOARDS_SNAP_REVISION
+from literals import (
+    OPENSEARCH_DASHBOARDS_SNAP_CHANNEL,
+    OPENSEARCH_DASHBOARDS_SNAP_REVISION,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +58,7 @@ class ODWorkload(WorkloadBase):
         retry_error_callback=lambda state: state.outcome.result(),  # type: ignore
         retry=retry_any(
             retry_if_not_result(lambda result: True if result else False),
-            retry_if_exception(snap.SnapError),
+            retry_if_exception_type(snap.SnapError),
         ),
     )
     def restart(self) -> bool:

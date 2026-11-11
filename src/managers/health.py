@@ -83,9 +83,9 @@ class HealthManager:
 
         def log_retry(retry_state: RetryCallState) -> None:
             """Log retry attempts."""
+            exception = retry_state.outcome.exception() if retry_state.outcome else None
             logger.debug(
-                f"Retrying... Attempt {retry_state.attempt_number}"
-                f"\tException: {retry_state.outcome.exception()}"
+                f"Retrying... Attempt {retry_state.attempt_number}\tException: {exception}"
             )
 
         for endpoint in self.state.opensearch_server.endpoints:

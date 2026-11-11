@@ -7,7 +7,10 @@
 import pytest
 from pytest_operator.plugin import OpsTest
 
-from literals import OPENSEARCH_DASHBOARDS_SNAP_CHANNEL, OPENSEARCH_DASHBOARDS_SNAP_REVISION
+from literals import (
+    OPENSEARCH_DASHBOARDS_SNAP_CHANNEL,
+    OPENSEARCH_DASHBOARDS_SNAP_REVISION,
+)
 
 from .helpers import (
     APP_NAME,
