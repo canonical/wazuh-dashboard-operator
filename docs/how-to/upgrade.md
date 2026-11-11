@@ -46,10 +46,6 @@ wazuh-dashboard  4.14.7   15   4.14/edge  arturo-seijas  held
 
 Check the following:
 
-- `Rev` matches the snap revision pinned by the refreshed charm
-  (`OPENSEARCH_DASHBOARDS_SNAP_REVISION`). The exact value changes between charm revisions.
-- `Tracking` matches the snap channel pinned by the refreshed charm
-  (`OPENSEARCH_DASHBOARDS_SNAP_CHANNEL`).
 - `Notes` contains `held`, which prevents snapd from refreshing the snap outside the
   charm's control.
 - The charm's channel track and the snap's `Tracking` track match. For example, a charm
