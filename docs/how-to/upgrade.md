@@ -37,7 +37,25 @@ juju status
 juju ssh wazuh-dashboard/0 -- snap list wazuh-dashboard
 ```
 
-The snap should match the revision pinned by the new charm revision and be marked as held.
+The `snap list` output should look similar to this:
+
+```text
+Name             Version  Rev  Tracking   Publisher      Notes
+wazuh-dashboard  4.14.7   15   4.14/edge  arturo-seijas  held
+```
+
+Check the following:
+
+- `Rev` matches the snap revision pinned by the refreshed charm
+  (`OPENSEARCH_DASHBOARDS_SNAP_REVISION`). The exact value changes between charm revisions.
+- `Tracking` matches the snap channel pinned by the refreshed charm
+  (`OPENSEARCH_DASHBOARDS_SNAP_CHANNEL`).
+- `Notes` contains `held`, which prevents snapd from refreshing the snap outside the
+  charm's control.
+- The charm's channel track and the snap's `Tracking` track match. For example, a charm
+  from the `4.14/stable` channel must run a snap tracking the `4.14` track. If the charm
+  is on the `4.14` track but the snap still tracks `4.11/edge`, the upgrade did not
+  complete.
 
 ## Recover from a failed upgrade
 
@@ -48,3 +66,6 @@ recovery, then refresh back to the previous revision:
 juju run wazuh-dashboard/leader pre-upgrade-check
 juju refresh wazuh-dashboard --revision=<previous-revision>
 ```
+
+If the failure involves the Wazuh indexer or the OpenSearch cluster, follow the
+[Charmed OpenSearch upgrade, rollback, and recovery guide](https://canonical.com/data/opensearch/docs/latest/how-to/upgrade/).
