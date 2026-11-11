@@ -112,7 +112,3 @@ reportImportCycles = false
 reportMissingModuleSource = true
 reportMissingImports = false
 stubPath = ""
-# Pyright 1.1.403 follows Python 3.14's `string` -> `templatelib` import and
-# reports t-string errors against the configured Python 3.10 target. The module
-# is stdlib-only, so ignore it instead of raising the type-check target.
-ignore = ["/**/templatelib.py"]

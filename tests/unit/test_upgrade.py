@@ -8,12 +8,8 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-from charms.data_platform_libs.v0.upgrade import (
-    ClusterNotReadyError,
-    DependencyModel,
-    VersionError,
-)
-from ops.model import ActiveStatus, BlockedStatus
+from charms.data_platform_libs.v0.upgrade import ClusterNotReadyError, DependencyModel
+from ops.model import BlockedStatus
 from ops.testing import Harness
 
 from charm import OpensearchDashboardsCharm
@@ -134,94 +130,6 @@ def test_dashboards_dependency_model():
 
     for value in DEPENDENCIES.values():
         assert DependencyModel(**value)
-
-
-def test_upgrade_charm_without_upgrade_stack_refreshes_workload(harness, mocker):
-    """A plain juju refresh upgrades the workload without requiring pre-upgrade-check."""
-    mocker.patch.object(ODWorkload, "alive", return_value=True)
-    mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
-    mocker.patch.object(ODUpgradeEvents, "on_upgrade_changed")
-    mock_event = mocker.MagicMock()
-
-    harness.charm.upgrade_events._on_upgrade_charm(mock_event)
-
-    ODUpgradeEvents._on_upgrade_granted.assert_called_once_with(mock_event)
-    ODUpgradeEvents.on_upgrade_changed.assert_called_once_with(mock_event)
-
-
-def test_upgrade_charm_without_upgrade_stack_blocks_if_workload_down(harness, mocker):
-    """A plain juju refresh does not touch the snap if the workload is unhealthy."""
-    mocker.patch.object(ODWorkload, "alive", return_value=False)
-    mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
-
-    harness.charm.upgrade_events._on_upgrade_charm(mocker.MagicMock())
-
-    ODUpgradeEvents._on_upgrade_granted.assert_not_called()
-    assert isinstance(harness.charm.unit.status, BlockedStatus)
-    assert harness.charm.unit.status.message == "Unit workload is not running"
-
-
-@pytest.mark.parametrize("is_leader", [False, True])
-def test_upgrade_charm_without_stack_fails_if_versions_incompatible(harness, mocker, is_leader):
-    """A plain juju refresh runs the dependency gate on every unit."""
-    mocker.patch.object(ODWorkload, "alive", return_value=True)
-    mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
-    mocker.patch.object(
-        ODUpgradeEvents,
-        "stored_dependencies",
-        new_callable=mocker.PropertyMock,
-        return_value=mocker.MagicMock(),
-    )
-    mocker.patch.object(
-        ODUpgradeEvents,
-        "_upgrade_supported_check",
-        side_effect=VersionError(message="Versions incompatible", cause="Upgrade unsupported"),
-    )
-    mocker.patch.object(ODUpgradeEvents, "set_unit_failed")
-
-    with harness.hooks_disabled():
-        harness.set_leader(is_leader)
-
-    harness.charm.upgrade_events._on_upgrade_charm(mocker.MagicMock())
-
-    ODUpgradeEvents._on_upgrade_granted.assert_not_called()
-    ODUpgradeEvents.set_unit_failed.assert_called_once()
-
-
-@pytest.mark.parametrize("state", ["failed", "recovery"])
-def test_upgrade_charm_without_stack_retries_if_workload_down(harness, mocker, state):
-    """A failed or recovering unit can retry a plain refresh with its workload stopped."""
-    mocker.patch.object(ODWorkload, "alive", return_value=False)
-    mocker.patch.object(ODUpgradeEvents, "_on_upgrade_granted")
-
-    with harness.hooks_disabled():
-        harness.charm.upgrade_events.peer_relation.data[harness.charm.unit].update(
-            {"state": state}
-        )
-
-    mock_event = mocker.MagicMock()
-    harness.charm.upgrade_events._on_upgrade_charm(mock_event)
-
-    ODWorkload.alive.assert_not_called()
-    ODUpgradeEvents._on_upgrade_granted.assert_called_once_with(mock_event)
-
-
-def test_upgrade_charm_without_stack_reconciles_follower_to_idle(harness, mocker):
-    """A follower finishing a plain refresh returns itself to idle."""
-    mocker.patch.object(ODWorkload, "stop")
-    mocker.patch.object(ODWorkload, "install")
-    mocker.patch.object(ODWorkload, "restart")
-    mocker.patch.object(ODWorkload, "alive", return_value=True)
-
-    upgrade_rel_id = harness.charm.upgrade_events.peer_relation.id
-    with harness.hooks_disabled():
-        harness.add_relation_unit(upgrade_rel_id, f"{CHARM_KEY}/1")
-        harness.update_relation_data(upgrade_rel_id, f"{CHARM_KEY}/1", {"state": "idle"})
-
-    harness.charm.upgrade_events._on_upgrade_charm(mocker.MagicMock())
-
-    assert isinstance(harness.charm.unit.status, ActiveStatus)
-    assert harness.charm.upgrade_events.state == "idle"
 
 
 def test_upgrade_granted_sets_failed_if_failed_snap(harness, mocker):

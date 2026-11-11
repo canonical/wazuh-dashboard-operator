@@ -13,10 +13,8 @@ from charms.data_platform_libs.v0.upgrade import (
     ClusterNotReadyError,
     DataUpgrade,
     DependencyModel,
-    VersionError,
+    UpgradeGrantedEvent,
 )
-from ops.charm import UpgradeCharmEvent
-from ops.framework import EventBase
 from ops.model import BlockedStatus
 from typing_extensions import override
 
@@ -88,35 +86,7 @@ class ODUpgradeEvents(DataUpgrade):
         return
 
     @override
-    def _on_upgrade_charm(self, event: UpgradeCharmEvent) -> None:
-        """Refresh the stateless workload when no coordinated upgrade was requested."""
-        if self.upgrade_stack:
-            super()._on_upgrade_charm(event)
-            return
-
-        logger.info("No upgrade stack found; refreshing the stateless workload directly")
-
-        if self.state not in ("failed", "recovery"):
-            try:
-                self.pre_upgrade_check()
-            except ClusterNotReadyError as e:
-                logger.error(e.cause)
-                self.charm.unit.status = BlockedStatus(e.cause)
-                return
-
-        if self.stored_dependencies:
-            try:
-                self._upgrade_supported_check()
-            except VersionError as e:
-                logger.error(e)
-                self.set_unit_failed()
-                return
-
-        self._on_upgrade_granted(event)
-        self.on_upgrade_changed(event)
-
-    @override
-    def _on_upgrade_granted(self, event: EventBase) -> None:
+    def _on_upgrade_granted(self, event: UpgradeGrantedEvent) -> None:
         self.charm.workload.stop()
 
         try:

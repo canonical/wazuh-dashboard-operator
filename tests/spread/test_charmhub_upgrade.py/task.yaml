@@ -1,7 +1,0 @@
-summary: Upgrade the current Charmhub stable dashboard to the locally built charm
-environment:
-  TEST_MODULE: test_charmhub_upgrade.py
-execute: |
-  tox run -e integration -- "tests/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
-artifacts:
-  - allure-results
