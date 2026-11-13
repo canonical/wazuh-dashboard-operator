@@ -37,6 +37,7 @@ TRAEFIK_APP = "traefik-k8s"
 STACK_CHANNEL = "4.14/stable"
 TLS_CHANNEL = TLS_STABLE_CHANNEL
 TRAEFIK_CHANNEL = "latest/edge"
+TRAEFIK_REVISION = 233
 
 WAZUH_CONF = PATHS["WAZUH_CONF"]
 LEGACY_WAZUH_CONF = PATHS["LEGACY_WAZUH_CONF"]
@@ -107,6 +108,7 @@ async def test_deploy_and_integrate_wazuh_stack(
     await k8s.deploy(
         TRAEFIK_APP,
         channel=TRAEFIK_CHANNEL,
+        revision=TRAEFIK_REVISION,
         trust=True,
         config={"external_hostname": "wazuh-server.local"},
     )
