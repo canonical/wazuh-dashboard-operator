@@ -110,6 +110,8 @@ class OpensearchDashboardsCharm(CharmBase):
 
         self.framework.observe(getattr(self.on, "install"), self._on_install)
 
+        self.framework.observe(self.on.upgrade_charm, self.reconcile)
+
         self.framework.observe(getattr(self.on, "start"), self._start)
 
         self.framework.observe(getattr(self.on, "update_status"), self.reconcile)
@@ -150,6 +152,12 @@ class OpensearchDashboardsCharm(CharmBase):
 
     def reconcile(self, event: EventBase) -> None:
         """Generic handler for all 'something changed, update' events across all relations."""
+        # Keep reconcile idempotent: this also migrates the Wazuh config on
+        # charm upgrade and refreshes it from relation data without an
+        # upgrade-specific event handler.
+        self.wazuh_manager.migrate_config()
+        self.wazuh_api_events.update_configuration()
+
         # 1. Block until peer relation is set
         if not self.state.peer_relation:
             self.unit.status = WaitingStatus(MSG_WAITING_FOR_PEER)

@@ -25,10 +25,36 @@ class WazuhManager:
     ) -> None:
         self.workload = workload
 
+    def migrate_config(self) -> None:
+        """Copy the pre-4.14 Wazuh config to the path used by the 4.14 snap.
+
+        Wazuh 4.14 resolves its configuration from OpenSearch Dashboards'
+        ``path.data`` ($SNAP_COMMON), while older revisions used
+        $SNAP_DATA/current/config. Copy the old file to the new location when
+        the new file does not exist yet so charm upgrades preserve the existing
+        settings. Relation data is applied afterwards by
+        ``set_dashboard_properties``.
+        """
+        self.workload.prepare_wazuh_config()
+
+        legacy_config = self.workload.read_raw(literals.PATHS["LEGACY_WAZUH_CONF"])
+        if not legacy_config:
+            return
+
+        if self.workload.read_raw(literals.PATHS["WAZUH_CONF"]):
+            return
+
+        self.workload.write(
+            content=legacy_config,
+            path=literals.PATHS["WAZUH_CONF"],
+        )
+
     def set_dashboard_properties(self, wazuh_config: wazuh_api.WazuhApiRelationData) -> None:
         """Writes the Wazuh config file."""
+        self.workload.prepare_wazuh_config()
+        wazuh_conf = self.workload.read_raw(literals.PATHS["WAZUH_CONF"])
         try:
-            wazuh_conf_yaml = yaml.safe_load(self.workload.read_raw(literals.PATHS["WAZUH_CONF"]))
+            wazuh_conf_yaml = yaml.safe_load(wazuh_conf)
         except yaml.YAMLError:
             logger.warning("Existing Wazuh configuration is not valid YAML, overwriting it")
             wazuh_conf_yaml = None
@@ -52,7 +78,12 @@ class WazuhManager:
                 break
         else:
             hosts.insert(0, {"default": details})
+
+        content = yaml.safe_dump(wazuh_conf_yaml, sort_keys=False)
+        if content == wazuh_conf:
+            return
+
         self.workload.write(
-            content=yaml.safe_dump(wazuh_conf_yaml, sort_keys=False),
+            content=content,
             path=literals.PATHS["WAZUH_CONF"],
         )
