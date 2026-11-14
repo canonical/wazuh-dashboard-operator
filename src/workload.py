@@ -19,7 +19,11 @@ from typing_extensions import override
 
 from core.workload import WorkloadBase
 from exceptions import OSDInstallError
-from literals import OPENSEARCH_DASHBOARDS_SNAP_CHANNEL, OPENSEARCH_DASHBOARDS_SNAP_REVISION
+from literals import (
+    OPENSEARCH_DASHBOARDS_SNAP_CHANNEL,
+    OPENSEARCH_DASHBOARDS_SNAP_REVISION,
+    PATHS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,13 +88,11 @@ class ODWorkload(WorkloadBase):
 
     @override
     def read_raw(self, path: str) -> str:
-        if not os.path.exists(path):
-            return ""
-        else:
+        try:
             with open(path) as f:
-                content = f.read()
-
-        return content
+                return f.read()
+        except FileNotFoundError:
+            return ""
 
     @override
     def write(self, content: str, path: str) -> None:
@@ -101,6 +103,29 @@ class ODWorkload(WorkloadBase):
             f.write(content)
 
         shutil.chown(path, user="snap_daemon", group="root")
+
+    @override
+    def prepare_wazuh_config(self) -> None:
+        """Create the Wazuh data directories with snap_daemon ownership.
+
+        Wazuh 4.14 creates its data directories under OpenSearch Dashboards'
+        path.data. If the charm creates wazuh.yml first, the parent Wazuh
+        directory is root-owned, which prevents the plugin (running as
+        snap_daemon) from creating the downloads directory. Prepare the full
+        tree with the workload user as owner.
+        """
+        if not os.path.isdir(PATHS["DATA"]):
+            logger.debug("Wazuh data directory %s does not exist; skipping", PATHS["DATA"])
+            return
+
+        wazuh_root = os.path.dirname(os.path.dirname(PATHS["WAZUH_CONF"]))
+        for path in (
+            wazuh_root,
+            os.path.join(wazuh_root, "config"),
+            os.path.join(wazuh_root, "downloads"),
+        ):
+            os.makedirs(path, exist_ok=True)
+            shutil.chown(path, user="snap_daemon", group="root")
 
     @override
     def exec(self, command: list[str], working_dir: str | None = None) -> str:

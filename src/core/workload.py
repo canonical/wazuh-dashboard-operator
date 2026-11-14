@@ -111,6 +111,11 @@ class WorkloadBase(ABC):
         ...
 
     @abstractmethod
+    def prepare_wazuh_config(self) -> None:
+        """Creates the Wazuh data directories owned by the workload user."""
+        ...
+
+    @abstractmethod
     def exec(self, command: list[str], working_dir: str | None = None) -> None:
         """Runs a command on the workload substrate."""
         ...
