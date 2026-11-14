@@ -163,9 +163,11 @@ async def test_deploy_and_integrate_wazuh_stack(
         ),
     )
 
+    # The provider's app data is visible on the requirer side, so inspect the
+    # dashboard unit's `wazuh-api` relation rather than the server unit's.
     server_data = get_app_relation_data(
-        model_full_name=ops_test_microk8s.model_full_name,
-        unit=f"{SERVER_APP}/0",
+        model_full_name=ops_test.model_full_name,
+        unit=f"{DASHBOARD_APP}/0",
         endpoint="wazuh-api",
     )
     assert server_data.get("endpoint"), "Server did not publish a Wazuh API endpoint"
@@ -190,7 +192,11 @@ async def test_upgrade_dashboard_writes_common_path(
     machine = ops_test.model
 
     dashboard = machine.applications[DASHBOARD_APP]
-    leader = next(unit for unit in dashboard.units if await unit.is_leader_from_status())
+    leader = None
+    for unit in dashboard.units:
+        if await unit.is_leader_from_status():
+            leader = unit
+    assert leader, "No leader unit found for the dashboard"
     action = await leader.run_action("pre-upgrade-check")
     await action.wait()
 
@@ -203,8 +209,8 @@ async def test_upgrade_dashboard_writes_common_path(
     )
 
     server_data = get_app_relation_data(
-        model_full_name=ops_test_microk8s.model_full_name,
-        unit=f"{SERVER_APP}/0",
+        model_full_name=ops_test.model_full_name,
+        unit=f"{DASHBOARD_APP}/0",
         endpoint="wazuh-api",
     )
     endpoint = server_data["endpoint"]
