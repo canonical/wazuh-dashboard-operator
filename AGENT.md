@@ -103,10 +103,26 @@ There is no `Justfile`; use the `tox` environments above and the top-level
 - `SUBSTRATE` is `"vm"` for this charm; some managers/models still accept a
   `substrate` param for parity with the k8s-capable upstream code — preserve
   that parameter even though only "vm" is exercised here.
-- Unit tests use `ops.testing.Harness` with `pytest-mock`'s `mocker` fixture;
-  common autouse fixtures live in `tests/unit/conftest.py` (e.g. patching
-  `tenacity` sleep, `Container.restart`, `ODWorkload.healthy`,
-  `JujuVersion.has_secrets`). Add new cross-cutting mocks there rather than
-  repeating them per test module.
+- Unit tests inherited from upstream use `ops.testing.Harness` with
+  `pytest-mock`'s `mocker` fixture; common autouse fixtures live in
+  `tests/unit/conftest.py` (e.g. patching `tenacity` sleep, `Container.restart`,
+  `ODWorkload.healthy`, `JujuVersion.has_secrets`, `SnapCache` so the
+  `wazuh-dashboard` snap need not be installed). Add new cross-cutting mocks
+  there rather than repeating them per test module.
+- New Wazuh-specific tests do not extend the upstream Harness tests: they use
+  `ops.testing` state-transition tests (`Context`/`State`/`Relation`/`Secret`,
+  provided by the `ops[testing]` extra of the `unit` dependency group) and live
+  in `tests/unit/scenario/`, with their own `conftest.py`. Upstream-owned test
+  files are left untouched. Pure manager tests (e.g. `tests/unit/test_wazuh.py`)
+  use a mocked workload.
+- `WazuhManager.set_dashboard_properties` owns the `default` entry of `hosts` in
+  `wazuh.yml`: it updates it wherever it sits in the list (inserting it first when
+  missing) and preserves every other setting and host. Unusable existing content
+  (invalid YAML, non-mapping file, non-list `hosts`) is overwritten with a warning.
+- Credentials come from the Wazuh server's `wazuh_api` library (published on
+  Charmhub, `charmcraft fetch-lib charms.wazuh_server.v0.wazuh_api`), which
+  refreshes the secret revision on every read; the dashboard only re-renders on
+  `relation_changed` and on `secret_changed` of the credentials secret. Fixes to
+  credential retrieval belong in the library, not in the dashboard.
 - `responses` is used to mock outbound HTTP calls (Wazuh/OpenSearch API)
   in unit tests.
