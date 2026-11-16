@@ -163,10 +163,12 @@ class OpensearchDashboardsCharm(CharmBase):
         # relation and survives host reboots, but the snap services are
         # disabled, so they do not come back on their own. Retry the startup
         # whenever the workload is not actually running.
-        if not self.state.unit_server.started or (
-            self.upgrade_events.idle and not self.workload.alive()
-        ):
+        retried_startup = False
+        if not self.state.unit_server.started:
             self.init_server()
+        elif self.upgrade_events.idle and not self.workload.alive():
+            self.init_server()
+            retried_startup = True
 
         # don't delay scale-down leader ops by restarting dying unit
         if getattr(event, "departing_unit", None) == self.unit:
@@ -176,6 +178,14 @@ class OpensearchDashboardsCharm(CharmBase):
 
         # Evaluate unit health at this point (as it may trigger a restart)
         unit_healthy, unit_msg = self.health_manager.unit_healthy()
+
+        if retried_startup:
+            # init_server() only issues the snap start; wait for the dashboard
+            # API so a booting workload is not reported as blocked.
+            start_time = time.time()
+            while not unit_healthy and time.time() - start_time < SERVICE_AVAILABLE_TIMEOUT:
+                time.sleep(5)
+                unit_healthy, unit_msg = self.health_manager.unit_healthy()
 
         if (
             (not unit_healthy and unit_msg == MSG_STATUS_HANGING)
