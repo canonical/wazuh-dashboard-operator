@@ -1547,41 +1547,40 @@ typing-extensions = ">=4.5.0"
 
 [[package]]
 name = "ops"
-version = "2.23.0"
+version = "2.23.6"
 description = "The Python library behind great charms"
 optional = false
 python-versions = ">=3.8"
 groups = ["charm-libs", "lint", "unit"]
 files = [
-    {file = "ops-2.23.0-py3-none-any.whl", hash = "sha256:7a42840410e8570acc3a4b498973a5bcd3fd0b12dd06837f57b9379b3acdfac3"},
-    {file = "ops-2.23.0.tar.gz", hash = "sha256:3e6c29a8f2119c7b8eaa88c82b5371de236dfcb7a7bf0012a6e2a829f0837fb7"},
+    {file = "ops-2.23.6-py3-none-any.whl", hash = "sha256:cd5c9671c1178e81b5e5d5b09613e23799cfbd5737232e39086eae3b23a0bf6a"},
+    {file = "ops-2.23.6.tar.gz", hash = "sha256:03939c2de79fc60df1273484d2b4a45b921f403d4692a95f7b702a756e68a990"},
 ]
 
 [package.dependencies]
-importlib-metadata = "*"
 opentelemetry-api = ">=1.0,<2.0"
-ops-scenario = {version = "7.23.0", optional = true, markers = "extra == \"testing\""}
+ops-scenario = {version = "7.23.6", optional = true, markers = "extra == \"testing\""}
 PyYAML = "==6.*"
 websocket-client = "==1.*"
 
 [package.extras]
-testing = ["ops-scenario (==7.23.0)"]
-tracing = ["ops-tracing (==2.23.0)"]
+testing = ["ops-scenario (==7.23.6)"]
+tracing = ["ops-tracing (==2.23.6)"]
 
 [[package]]
 name = "ops-scenario"
-version = "7.23.0"
+version = "7.23.6"
 description = "Python library providing a state-transition testing API for Operator Framework charms."
 optional = false
 python-versions = ">=3.8"
 groups = ["unit"]
 files = [
-    {file = "ops_scenario-7.23.0-py3-none-any.whl", hash = "sha256:88ddb6b8b41688c580b38fc10dfa3706ab65a481931c26b07a298f2dd82a86ae"},
-    {file = "ops_scenario-7.23.0.tar.gz", hash = "sha256:32a40966a92138779e5f47fff0653037e98e4561fcb30a02014733a88a68c998"},
+    {file = "ops_scenario-7.23.6-py3-none-any.whl", hash = "sha256:07f13e0edffbe22097e1bae07e219a42a32fff52b7886a9e254e31b2ec93e923"},
+    {file = "ops_scenario-7.23.6.tar.gz", hash = "sha256:ef0e4a9f982a95fb00601ca2d897e10a6e30e6b89349f4110d01291c7e153f34"},
 ]
 
 [package.dependencies]
-ops = "2.23.0"
+ops = "2.23.6"
 PyYAML = ">=6.0.1"
 
 [[package]]
@@ -2967,4 +2966,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "75108d65be1fb07716447a177fb2ba96ecfdab42dbf42d455e225ec470621eaa"
+content-hash = "f3d484973ccc5a26a92c862b830368ef95ecb83501cadb445124fcc06422f4f9"
