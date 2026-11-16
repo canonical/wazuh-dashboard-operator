@@ -105,6 +105,13 @@ class ODWorkload(WorkloadBase):
         shutil.chown(path, user="snap_daemon", group="root")
 
     @override
+    def remove(self, path: str) -> None:
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
+
+    @override
     def prepare_wazuh_config(self) -> None:
         """Create the Wazuh data directories with snap_daemon ownership.
 

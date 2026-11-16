@@ -135,14 +135,16 @@ def test_migrate_config_copies_legacy_file(workload: MagicMock) -> None:
     WazuhManager(workload).migrate_config()
 
     workload.write.assert_called_once_with(content=legacy_config, path=EXPECTED_WAZUH_CONF_PATH)
+    workload.remove.assert_called_once_with(EXPECTED_LEGACY_WAZUH_CONF_PATH)
 
 
-def test_migrate_config_does_not_overwrite_existing_file(workload: MagicMock) -> None:
+def test_migrate_config_keeps_existing_file_and_removes_legacy(workload: MagicMock) -> None:
     workload.read_raw.return_value = "existing config"
 
     WazuhManager(workload).migrate_config()
 
     workload.write.assert_not_called()
+    workload.remove.assert_called_once_with(EXPECTED_LEGACY_WAZUH_CONF_PATH)
 
 
 def test_migrate_config_noop_without_legacy_file(workload: MagicMock) -> None:
@@ -151,6 +153,7 @@ def test_migrate_config_noop_without_legacy_file(workload: MagicMock) -> None:
     WazuhManager(workload).migrate_config()
 
     workload.write.assert_not_called()
+    workload.remove.assert_not_called()
 
 
 def test_wazuh_properties_unchanged_does_not_write(workload: MagicMock) -> None:

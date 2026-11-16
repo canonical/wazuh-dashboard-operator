@@ -220,6 +220,10 @@ async def test_upgrade_dashboard_writes_common_path(
     hosts = config.get("hosts")
     assert hosts, f"wazuh.yml was not written to {WAZUH_CONF}"
 
+    assert not get_file_contents(
+        ops_test, dashboard_unit, LEGACY_WAZUH_CONF
+    ), f"{LEGACY_WAZUH_CONF} should be removed once the config is migrated"
+
     host = hosts[0]["default"]
     assert host["url"].endswith(endpoint.split("://", 1)[1].split(":", 1)[0])
     assert host["port"] == int(endpoint.rsplit(":", 1)[1].rstrip("/"))

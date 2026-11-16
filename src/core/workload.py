@@ -111,6 +111,15 @@ class WorkloadBase(ABC):
         ...
 
     @abstractmethod
+    def remove(self, path: str) -> None:
+        """Removes a workload file, ignoring it when it does not exist.
+
+        Args:
+            path: the full filepath to remove
+        """
+        ...
+
+    @abstractmethod
     def prepare_wazuh_config(self) -> None:
         """Creates the Wazuh data directories owned by the workload user."""
         ...
