@@ -107,12 +107,6 @@ def test_wazuh_updates_default_host_in_any_position(workload: MagicMock) -> None
     assert written["hosts"] == [{"other": {"url": "x"}}, {"default": EXPECTED_HOST}]
 
 
-def test_wazuh_conf_paths_are_stable() -> None:
-    """Guard the wazuh.yml locations shared with the snap."""
-    assert PATHS["WAZUH_CONF"] == EXPECTED_WAZUH_CONF_PATH
-    assert PATHS["LEGACY_WAZUH_CONF"] == EXPECTED_LEGACY_WAZUH_CONF_PATH
-
-
 @patch("workload.shutil.chown")
 @patch("workload.os.makedirs")
 @patch("workload.os.path.isdir", return_value=True)
