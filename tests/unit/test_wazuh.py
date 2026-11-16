@@ -104,19 +104,6 @@ def test_wazuh_updates_default_host_in_any_position(workload: MagicMock) -> None
     assert written["hosts"] == [{"other": {"url": "x"}}, {"default": EXPECTED_HOST}]
 
 
-@patch("workload.shutil.chown")
-@patch("workload.os.makedirs")
-@patch("workload.os.path.isdir", return_value=True)
-def test_prepare_wazuh_config(isdir, makedirs, chown) -> None:
-    """The Wazuh data tree must be writable by the snap user."""
-    ODWorkload.__new__(ODWorkload).prepare_wazuh_config()
-
-    wazuh_root = "/var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard/wazuh"
-    for path in (wazuh_root, f"{wazuh_root}/config", f"{wazuh_root}/downloads"):
-        makedirs.assert_any_call(path, exist_ok=True)
-        chown.assert_any_call(path, user="snap_daemon", group="root")
-
-
 def test_remove_legacy_config_removes_legacy_file(workload: MagicMock) -> None:
     WazuhManager(workload).remove_legacy_config()
 

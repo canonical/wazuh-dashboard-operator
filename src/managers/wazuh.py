@@ -42,7 +42,6 @@ class WazuhManager:
 
     def set_dashboard_properties(self, wazuh_config: wazuh_api.WazuhApiRelationData) -> None:
         """Writes the Wazuh config file."""
-        self.workload.prepare_wazuh_config()
         wazuh_conf = self.workload.read_raw(literals.PATHS["WAZUH_CONF"])
         try:
             wazuh_conf_yaml = yaml.safe_load(wazuh_conf)
