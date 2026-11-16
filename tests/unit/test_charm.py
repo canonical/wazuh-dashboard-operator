@@ -23,6 +23,7 @@ from literals import (
     CONTAINER,
     MSG_INCOMPATIBLE_UPGRADE,
     MSG_STATUS_ERROR,
+    MSG_STATUS_UNAVAIL,
     MSG_STATUS_UNHEALTHY,
     OPENSEARCH_REL_NAME,
     PEER,
@@ -249,12 +250,64 @@ def test_update_status_retries_starting_workload_after_reboot(harness):
     with (
         patch("workload.ODWorkload.alive", return_value=False),
         patch("charm.OpensearchDashboardsCharm.init_server") as patched_init_server,
+        patch("managers.health.HealthManager.unit_healthy", return_value=(True, "")),
         patch("managers.config.ConfigManager.config_changed", return_value=False),
         patch("managers.config.ConfigManager.set_dashboard_properties"),
     ):
         harness.charm.on.update_status.emit()
 
         patched_init_server.assert_called_once()
+
+
+@responses.activate
+def test_update_status_waits_for_health_after_restarting_workload(harness):
+    """A workload restarted on reconcile gets time to become healthy before status is set."""
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
+        harness.set_leader(True)
+        harness.charm.unit.status = ActiveStatus()
+        set_healthy_opensearch_connection(harness)
+
+    with (
+        patch("workload.ODWorkload.alive", return_value=False),
+        patch("charm.OpensearchDashboardsCharm.init_server") as patched_init_server,
+        patch(
+            "managers.health.HealthManager.unit_healthy",
+            side_effect=[(False, MSG_STATUS_UNAVAIL), (True, "")],
+        ) as patched_unit_healthy,
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+        patch("os.path.exists", return_value=True),
+        patch("os.path.getsize", return_value=1),
+        patch("time.sleep"),
+    ):
+        harness.charm.on.update_status.emit()
+
+        patched_init_server.assert_called_once()
+        assert patched_unit_healthy.call_count == 2
+        assert isinstance(harness.model.unit.status, ActiveStatus)
+
+
+def test_update_status_does_not_start_workload_during_failed_upgrade(harness):
+    """Do not restart a workload deliberately left stopped by a failed upgrade."""
+    with harness.hooks_disabled():
+        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
+        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
+        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
+        upgrade_rel = harness.model.get_relation("upgrade")
+        harness.update_relation_data(upgrade_rel.id, f"{CHARM_KEY}/0", {"state": "failed"})
+
+    with (
+        patch("workload.ODWorkload.alive", return_value=False),
+        patch("charm.OpensearchDashboardsCharm.init_server") as patched_init_server,
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
+        patch("managers.config.ConfigManager.set_dashboard_properties"),
+    ):
+        harness.charm.on.update_status.emit()
+
+        patched_init_server.assert_not_called()
 
 
 def test_update_status_does_not_start_running_workload(harness):
