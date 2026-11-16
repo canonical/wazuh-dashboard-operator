@@ -159,8 +159,11 @@ class OpensearchDashboardsCharm(CharmBase):
 
         outdated_status = [MSG_WAITING_FOR_PEER]
 
-        # attempt startup of server
-        if not self.state.unit_server.started:
+        # attempt startup of server. The `started` flag is stored in the peer
+        # relation and survives host reboots, but the snap services are
+        # disabled, so they do not come back on their own. Retry the startup
+        # whenever the workload is not actually running.
+        if not self.state.unit_server.started or not self.workload.alive():
             self.init_server()
 
         # don't delay scale-down leader ops by restarting dying unit

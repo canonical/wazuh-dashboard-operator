@@ -36,8 +36,11 @@ class ODWorkload(WorkloadBase):
 
     @override
     def start(self) -> None:
+        """Starts the workload services and enables them at boot."""
         try:
-            self.dashboards.start(services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE])
+            self.dashboards.start(
+                services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE], enable=True
+            )
         except snap.SnapError as e:
             logger.exception(str(e))
 
