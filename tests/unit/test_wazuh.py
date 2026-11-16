@@ -22,8 +22,6 @@ EXPECTED_HOST = {
     "run_as": True,
 }
 
-EXPECTED_LEGACY_WAZUH_CONF_PATH = "/var/snap/wazuh-dashboard/current/config/wazuh/config/wazuh.yml"
-
 
 @pytest.fixture
 def workload() -> MagicMock:
@@ -107,7 +105,7 @@ def test_wazuh_updates_default_host_in_any_position(workload: MagicMock) -> None
 def test_remove_legacy_config_removes_legacy_file(workload: MagicMock) -> None:
     WazuhManager(workload).remove_legacy_config()
 
-    workload.remove.assert_called_once_with(EXPECTED_LEGACY_WAZUH_CONF_PATH)
+    workload.remove.assert_called_once_with(PATHS["LEGACY_WAZUH_CONF"])
 
 
 def test_remove_legacy_config_does_not_touch_the_common_file(workload: MagicMock) -> None:
@@ -119,9 +117,9 @@ def test_remove_legacy_config_does_not_touch_the_common_file(workload: MagicMock
 
 @patch("workload.os.remove", side_effect=FileNotFoundError)
 def test_workload_remove_ignores_missing_file(remove: MagicMock) -> None:
-    ODWorkload.__new__(ODWorkload).remove(EXPECTED_LEGACY_WAZUH_CONF_PATH)
+    ODWorkload.__new__(ODWorkload).remove(PATHS["LEGACY_WAZUH_CONF"])
 
-    remove.assert_called_once_with(EXPECTED_LEGACY_WAZUH_CONF_PATH)
+    remove.assert_called_once_with(PATHS["LEGACY_WAZUH_CONF"])
 
 
 def test_wazuh_properties_unchanged_does_not_write(workload: MagicMock) -> None:
