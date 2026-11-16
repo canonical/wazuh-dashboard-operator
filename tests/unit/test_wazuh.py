@@ -22,9 +22,6 @@ EXPECTED_HOST = {
     "run_as": True,
 }
 
-EXPECTED_WAZUH_CONF_PATH = (
-    "/var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard/wazuh/config/wazuh.yml"
-)
 EXPECTED_LEGACY_WAZUH_CONF_PATH = "/var/snap/wazuh-dashboard/current/config/wazuh/config/wazuh.yml"
 
 
@@ -120,34 +117,24 @@ def test_prepare_wazuh_config(isdir, makedirs, chown) -> None:
         chown.assert_any_call(path, user="snap_daemon", group="root")
 
 
-def test_migrate_config_copies_legacy_file(workload: MagicMock) -> None:
-    legacy_config = yaml.safe_dump({"hosts": [{"default": EXPECTED_HOST}]})
-    workload.read_raw.side_effect = lambda path: (
-        legacy_config if path == EXPECTED_LEGACY_WAZUH_CONF_PATH else ""
-    )
+def test_remove_legacy_config_removes_legacy_file(workload: MagicMock) -> None:
+    WazuhManager(workload).remove_legacy_config()
 
-    WazuhManager(workload).migrate_config()
-
-    workload.write.assert_called_once_with(content=legacy_config, path=EXPECTED_WAZUH_CONF_PATH)
     workload.remove.assert_called_once_with(EXPECTED_LEGACY_WAZUH_CONF_PATH)
 
 
-def test_migrate_config_keeps_existing_file_and_removes_legacy(workload: MagicMock) -> None:
-    workload.read_raw.return_value = "existing config"
+def test_remove_legacy_config_does_not_touch_the_common_file(workload: MagicMock) -> None:
+    WazuhManager(workload).remove_legacy_config()
 
-    WazuhManager(workload).migrate_config()
-
+    workload.read_raw.assert_not_called()
     workload.write.assert_not_called()
-    workload.remove.assert_called_once_with(EXPECTED_LEGACY_WAZUH_CONF_PATH)
 
 
-def test_migrate_config_noop_without_legacy_file(workload: MagicMock) -> None:
-    workload.read_raw.return_value = ""
+@patch("workload.os.remove", side_effect=FileNotFoundError)
+def test_workload_remove_ignores_missing_file(remove: MagicMock) -> None:
+    ODWorkload.__new__(ODWorkload).remove(EXPECTED_LEGACY_WAZUH_CONF_PATH)
 
-    WazuhManager(workload).migrate_config()
-
-    workload.write.assert_not_called()
-    workload.remove.assert_not_called()
+    remove.assert_called_once_with(EXPECTED_LEGACY_WAZUH_CONF_PATH)
 
 
 def test_wazuh_properties_unchanged_does_not_write(workload: MagicMock) -> None:

@@ -25,32 +25,19 @@ class WazuhManager:
     ) -> None:
         self.workload = workload
 
-    def migrate_config(self) -> None:
-        """Move the pre-4.14 Wazuh config to the path used by the 4.14 snap.
+    def remove_legacy_config(self) -> None:
+        """Remove the pre-4.14 Wazuh config path.
 
         Wazuh 4.14 resolves its configuration from OpenSearch Dashboards'
-        ``path.data`` ($SNAP_COMMON), while older revisions used
-        $SNAP_DATA/current/config. Move the old file to the new location so
-        charm upgrades preserve the existing settings. Relation data is applied
-        afterwards by ``set_dashboard_properties``.
+        ``path.data`` ($SNAP_COMMON) and the plugin creates ``wazuh.yml``
+        there on startup, so the old $SNAP_DATA/current/config copy is stale.
+        Remove it so the two locations cannot drift. The ``hosts`` entry is
+        written from relation data by ``set_dashboard_properties``.
 
-        The old file is removed once the new one exists so the two locations
-        cannot drift. If a rollback re-installs an older charm, that charm
-        recreates the legacy file from relation data on the next
-        ``wazuh-api`` relation change.
+        If a rollback re-installs an older charm, that charm recreates the
+        legacy file from relation data on the next ``wazuh-api`` relation
+        change.
         """
-        self.workload.prepare_wazuh_config()
-
-        legacy_config = self.workload.read_raw(literals.PATHS["LEGACY_WAZUH_CONF"])
-        if not legacy_config:
-            return
-
-        if not self.workload.read_raw(literals.PATHS["WAZUH_CONF"]):
-            self.workload.write(
-                content=legacy_config,
-                path=literals.PATHS["WAZUH_CONF"],
-            )
-
         self.workload.remove(literals.PATHS["LEGACY_WAZUH_CONF"])
 
     def set_dashboard_properties(self, wazuh_config: wazuh_api.WazuhApiRelationData) -> None:

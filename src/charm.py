@@ -152,10 +152,10 @@ class OpensearchDashboardsCharm(CharmBase):
 
     def reconcile(self, event: EventBase) -> None:
         """Generic handler for all 'something changed, update' events across all relations."""
-        # Keep reconcile idempotent: this also migrates the Wazuh config on
-        # charm upgrade and refreshes it from relation data without an
-        # upgrade-specific event handler.
-        self.wazuh_manager.migrate_config()
+        # Keep reconcile idempotent: drop the stale pre-4.14 config and refresh
+        # the Wazuh config from relation data without an upgrade-specific event
+        # handler.
+        self.wazuh_manager.remove_legacy_config()
         self.wazuh_api_events.update_configuration()
 
         # 1. Block until peer relation is set
