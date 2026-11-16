@@ -168,7 +168,9 @@ class OpensearchDashboardsCharm(CharmBase):
         # relation and survives host reboots, but the snap services are
         # disabled, so they do not come back on their own. Retry the startup
         # whenever the workload is not actually running.
-        if not self.state.unit_server.started or not self.workload.alive():
+        if not self.state.unit_server.started or (
+            self.upgrade_events.idle and not self.workload.alive()
+        ):
             self.init_server()
 
         # don't delay scale-down leader ops by restarting dying unit
