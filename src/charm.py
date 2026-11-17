@@ -162,7 +162,7 @@ class OpensearchDashboardsCharm(CharmBase):
 
         update_grafana_dashboards_title(self)
 
-        outdated_status = [MSG_WAITING_FOR_PEER]
+        outdated_status = [MSG_WAITING_FOR_PEER, MSG_STARTING_SERVER]
 
         # don't delay scale-down leader ops by restarting dying unit
         if getattr(event, "departing_unit", None) == self.unit:
@@ -170,9 +170,19 @@ class OpensearchDashboardsCharm(CharmBase):
 
         # Start the workload on first install, and recover it after a reboot
         # or crash when no upgrade/rollback owns the unit.
-        unit_healthy, unit_msg = self._ensure_workload_running()
+        if not self.state.unit_server.started:
+            self.init_server()
+        elif self.upgrade_events.idle and not self.workload.alive():
+            self.init_server()
+            # The workload needs time to answer the API; the next reconcile
+            # clears this status once it is healthy.
+            self.unit.status = WaitingStatus(MSG_STARTING_SERVER)
+            return
 
         # 2. Restart if the service is down or on config change
+
+        # Evaluate unit health at this point (as it may trigger a restart)
+        unit_healthy, unit_msg = self.health_manager.unit_healthy()
         if (
             (not unit_healthy and unit_msg == MSG_STATUS_HANGING)
             or self.config_manager.config_changed()
@@ -305,25 +315,6 @@ class OpensearchDashboardsCharm(CharmBase):
         clear_status(self.unit, [MSG_STARTING, MSG_STARTING_SERVER])
 
     # --- CONVENIENCE METHODS ---
-
-    def _ensure_workload_running(self) -> tuple[bool, str]:
-        """Start the workload if needed and return its current health.
-
-        `started` is stored in peer data and survives reboots. Services started
-        by this charm are enabled at boot, but units upgraded from older
-        revisions may still have them disabled, and a boot-time start can race
-        the co-located indexer. Retry whenever the workload is down and no
-        upgrade/rollback owns the unit.
-        """
-        if not self.state.unit_server.started:
-            self.init_server()
-            return self.health_manager.unit_healthy()
-
-        if self.upgrade_events.idle and not self.workload.alive():
-            self.init_server()
-            return self._wait_for_unit_health()
-
-        return self.health_manager.unit_healthy()
 
     def _wait_for_unit_health(self) -> tuple[bool, str]:
         """Wait for the workload API to become healthy after starting it."""
