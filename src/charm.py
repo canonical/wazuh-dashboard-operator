@@ -171,7 +171,11 @@ class OpensearchDashboardsCharm(CharmBase):
         retried_startup = False
         if not self.state.unit_server.started:
             self.init_server()
-        elif self.upgrade_events.idle and not self.workload.alive():
+        elif (
+            getattr(event, "departing_unit", None) != self.unit
+            and self.upgrade_events.idle
+            and not self.workload.alive()
+        ):
             self.init_server()
             retried_startup = True
 
