@@ -159,38 +159,15 @@ class OpensearchDashboardsCharm(CharmBase):
 
         outdated_status = [MSG_WAITING_FOR_PEER]
 
-        # attempt startup of server. The `started` flag is stored in the peer
-        # relation and survives host reboots, but the snap services are
-        # disabled, so they do not come back on their own. Retry the startup
-        # whenever the workload is not actually running.
-        retried_startup = False
-        if not self.state.unit_server.started:
-            self.init_server()
-        elif (
-            getattr(event, "departing_unit", None) != self.unit
-            and self.upgrade_events.idle
-            and not self.workload.alive()
-        ):
-            self.init_server()
-            retried_startup = True
-
         # don't delay scale-down leader ops by restarting dying unit
         if getattr(event, "departing_unit", None) == self.unit:
             return
 
+        # Start the workload on first install, and recover it after a reboot
+        # or crash when no upgrade/rollback owns the unit.
+        unit_healthy, unit_msg = self._ensure_workload_running()
+
         # 2. Restart if the service is down or on config change
-
-        # Evaluate unit health at this point (as it may trigger a restart)
-        unit_healthy, unit_msg = self.health_manager.unit_healthy()
-
-        if retried_startup:
-            # init_server() only issues the snap start; wait for the dashboard
-            # API so a booting workload is not reported as blocked.
-            start_time = time.time()
-            while not unit_healthy and time.time() - start_time < SERVICE_AVAILABLE_TIMEOUT:
-                time.sleep(5)
-                unit_healthy, unit_msg = self.health_manager.unit_healthy()
-
         if (
             (not unit_healthy and unit_msg == MSG_STATUS_HANGING)
             or self.config_manager.config_changed()
@@ -318,15 +295,39 @@ class OpensearchDashboardsCharm(CharmBase):
         # Reason: we are emitting an 'update-status' right after
         # If the service is not yet functional, the status is set as
         # 'Service unavailable' until the next 'update-status' hook execution
-        start_time = time.time()
-        unit_healthy, _ = self.health_manager.unit_healthy()
-        while not unit_healthy and time.time() - start_time < SERVICE_AVAILABLE_TIMEOUT:
-            time.sleep(5)
-            unit_healthy, _ = self.health_manager.unit_healthy()
+        self._wait_for_unit_health()
 
         clear_status(self.unit, [MSG_STARTING, MSG_STARTING_SERVER])
 
     # --- CONVENIENCE METHODS ---
+
+    def _ensure_workload_running(self) -> tuple[bool, str]:
+        """Start the workload if needed and return its current health.
+
+        `started` is stored in peer data and survives reboots. Services started
+        by this charm are enabled at boot, but units upgraded from older
+        revisions may still have them disabled, and a boot-time start can race
+        the co-located indexer. Retry whenever the workload is down and no
+        upgrade/rollback owns the unit.
+        """
+        if not self.state.unit_server.started:
+            self.init_server()
+            return self.health_manager.unit_healthy()
+
+        if self.upgrade_events.idle and not self.workload.alive():
+            self.init_server()
+            return self._wait_for_unit_health()
+
+        return self.health_manager.unit_healthy()
+
+    def _wait_for_unit_health(self) -> tuple[bool, str]:
+        """Wait for the workload API to become healthy after starting it."""
+        start_time = time.time()
+        healthy, message = self.health_manager.unit_healthy()
+        while not healthy and time.time() - start_time < SERVICE_AVAILABLE_TIMEOUT:
+            time.sleep(5)
+            healthy, message = self.health_manager.unit_healthy()
+        return healthy, message
 
     def init_server(self):
         """Calls startup functions for server start."""
