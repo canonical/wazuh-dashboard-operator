@@ -62,8 +62,12 @@ class WorkloadBase(ABC):
         ...
 
     @abstractmethod
-    def stop(self) -> None:
-        """Stops the workload service."""
+    def stop(self, disable: bool = False) -> None:
+        """Stops the workload service.
+
+        Args:
+            disable: Also disable the service at boot. Defaults to False.
+        """
         ...
 
     @abstractmethod
@@ -124,7 +128,6 @@ class WorkloadBase(ABC):
         """Runs a command on the workload substrate."""
         ...
 
-    @property
     @abstractmethod
     def alive(self) -> bool:
         """Checks that the workload is alive."""

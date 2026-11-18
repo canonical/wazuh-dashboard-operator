@@ -144,7 +144,7 @@ def test_upgrade_granted_sets_failed_if_failed_snap(harness, mocker):
 
     harness.charm.upgrade_events._on_upgrade_granted(mock_event)
 
-    ODWorkload.stop.assert_called_once()
+    ODWorkload.stop.assert_called_once_with(disable=True)
     ODWorkload.install.assert_called_once()
     ODWorkload.restart.assert_not_called()
     ODUpgradeEvents.set_unit_completed.assert_not_called()
@@ -167,7 +167,7 @@ def test_upgrade_granted_sets_failed_if_failed_upgrade_check(harness, mocker):
 
     harness.charm.upgrade_events._on_upgrade_granted(mock_event)
 
-    ODWorkload.stop.assert_called_once()
+    ODWorkload.stop.assert_called_once_with(disable=True)
     ODWorkload.install.assert_called_once()
     ODUpgradeEvents.set_unit_completed.assert_not_called()
     ODUpgradeEvents.set_unit_failed.assert_called_once()
@@ -190,7 +190,7 @@ def test_upgrade_granted_succeeds(harness, mocker):
 
     harness.charm.upgrade_events._on_upgrade_granted(mock_event)
 
-    ODWorkload.stop.assert_called_once()
+    ODWorkload.stop.assert_called_once_with(disable=True)
     ODWorkload.install.assert_called_once()
     ODWorkload.restart.assert_called_once()
     ODUpgradeEvents.set_unit_completed.assert_called_once()
