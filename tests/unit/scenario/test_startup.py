@@ -25,15 +25,34 @@ def peer_state(upgrade_state: str = "idle") -> testing.State:
 
 
 def test_update_status_sets_waiting_when_restarting_workload(context: Ctx) -> None:
+    workload_alive = {"value": False}
+
+    def init_server() -> None:
+        workload_alive["value"] = True
+
+    with (
+        patch("workload.ODWorkload.alive", side_effect=lambda: workload_alive["value"]),
+        patch("charm.OpensearchDashboardsCharm.init_server", side_effect=init_server) as patched,
+        patch("charm.update_grafana_dashboards_title"),
+    ):
+        state = context.run(context.on.update_status(), peer_state())
+
+    patched.assert_called_once()
+    assert state.unit_status == testing.WaitingStatus(MSG_STARTING_SERVER)
+
+
+def test_update_status_reports_failure_when_start_keeps_failing(context: Ctx) -> None:
     with (
         patch("workload.ODWorkload.alive", return_value=False),
         patch("charm.OpensearchDashboardsCharm.init_server") as init_server,
+        patch("managers.config.ConfigManager.config_changed", return_value=False),
         patch("charm.update_grafana_dashboards_title"),
     ):
         state = context.run(context.on.update_status(), peer_state())
 
     init_server.assert_called_once()
-    assert state.unit_status == testing.WaitingStatus(MSG_STARTING_SERVER)
+    assert state.unit_status != testing.WaitingStatus(MSG_STARTING_SERVER)
+    assert isinstance(state.unit_status, testing.BlockedStatus)
 
 
 def test_update_status_does_not_start_running_workload(context: Ctx) -> None:

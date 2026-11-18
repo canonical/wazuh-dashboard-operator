@@ -169,10 +169,15 @@ class OpensearchDashboardsCharm(CharmBase):
             self.init_server()
         elif self.upgrade_events.idle and not self.workload.alive():
             self.init_server()
-            # The workload needs time to answer the API; the next reconcile
-            # clears this status once it is healthy.
-            self.unit.status = WaitingStatus(MSG_STARTING_SERVER)
-            return
+
+            if self.workload.alive():
+                # The workload needs time to answer the API; the next
+                # reconcile clears this status once it is healthy.
+                self.unit.status = WaitingStatus(MSG_STARTING_SERVER)
+                return
+
+            # The start failed: fall through so the regular health checks
+            # report it, while the next reconcile retries the start.
 
         # 2. Restart if the service is down or on config change
 
