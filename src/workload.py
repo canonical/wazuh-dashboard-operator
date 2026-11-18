@@ -39,15 +39,21 @@ class ODWorkload(WorkloadBase):
 
     @override
     def start(self) -> None:
+        """Starts the workload services and enables them at boot."""
         try:
-            self.dashboards.start(services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE])
+            self.dashboards.start(
+                services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE], enable=True
+            )
         except snap.SnapError as e:
             logger.exception(str(e))
 
     @override
-    def stop(self) -> None:
+    def stop(self, disable: bool = False) -> None:
+        """Stops the workload services, optionally disabling them at boot."""
         try:
-            self.dashboards.stop(services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE])
+            self.dashboards.stop(
+                services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE], disable=disable
+            )
         except snap.SnapError as e:
             logger.exception(str(e))
 
@@ -62,8 +68,16 @@ class ODWorkload(WorkloadBase):
         ),
     )
     def restart(self) -> bool:
+        """Restarts the workload, starting and enabling it if it is down."""
         try:
-            self.dashboards.restart(services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE])
+            if self.alive():
+                self.dashboards.restart(
+                    services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE]
+                )
+            else:
+                self.dashboards.start(
+                    services=[self.SNAP_APP_SERVICE, self.SNAP_EXPORTER_SERVICE], enable=True
+                )
         except snap.SnapError as e:
             logger.exception(str(e))
         return self.alive()

@@ -162,21 +162,32 @@ class OpensearchDashboardsCharm(CharmBase):
 
         update_grafana_dashboards_title(self)
 
-        outdated_status = [MSG_WAITING_FOR_PEER]
-
-        # attempt startup of server
-        if not self.state.unit_server.started:
-            self.init_server()
+        outdated_status = [MSG_WAITING_FOR_PEER, MSG_STARTING_SERVER]
 
         # don't delay scale-down leader ops by restarting dying unit
         if getattr(event, "departing_unit", None) == self.unit:
             return
 
+        # Start the workload on first install, and recover it after a reboot
+        # or crash when no upgrade/rollback owns the unit.
+        if not self.state.unit_server.started:
+            self.init_server()
+        elif self.upgrade_events.idle and not self.workload.alive():
+            self.init_server()
+
+            if self.workload.alive():
+                # The workload needs time to answer the API; the next
+                # reconcile clears this status once it is healthy.
+                self.unit.status = WaitingStatus(MSG_STARTING_SERVER)
+                return
+
+            # The start failed: fall through so the regular health checks
+            # report it, while the next reconcile retries the start.
+
         # 2. Restart if the service is down or on config change
 
         # Evaluate unit health at this point (as it may trigger a restart)
         unit_healthy, unit_msg = self.health_manager.unit_healthy()
-
         if (
             (not unit_healthy and unit_msg == MSG_STATUS_HANGING)
             or self.config_manager.config_changed()
@@ -304,15 +315,20 @@ class OpensearchDashboardsCharm(CharmBase):
         # Reason: we are emitting an 'update-status' right after
         # If the service is not yet functional, the status is set as
         # 'Service unavailable' until the next 'update-status' hook execution
-        start_time = time.time()
-        unit_healthy, _ = self.health_manager.unit_healthy()
-        while not unit_healthy and time.time() - start_time < SERVICE_AVAILABLE_TIMEOUT:
-            time.sleep(5)
-            unit_healthy, _ = self.health_manager.unit_healthy()
+        self._wait_for_unit_health()
 
         clear_status(self.unit, [MSG_STARTING, MSG_STARTING_SERVER])
 
     # --- CONVENIENCE METHODS ---
+
+    def _wait_for_unit_health(self) -> tuple[bool, str]:
+        """Wait for the workload API to become healthy after starting it."""
+        start_time = time.time()
+        healthy, message = self.health_manager.unit_healthy()
+        while not healthy and time.time() - start_time < SERVICE_AVAILABLE_TIMEOUT:
+            time.sleep(5)
+            healthy, message = self.health_manager.unit_healthy()
+        return healthy, message
 
     def init_server(self):
         """Calls startup functions for server start."""

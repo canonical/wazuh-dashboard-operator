@@ -20,7 +20,12 @@ from literals import (
     OPENSEARCH_REL_NAME,
     SUBSTRATE,
 )
-from src.literals import MSG_STATUS_DB_DOWN, MSG_STATUS_DB_UNHEALTHY, MSG_STATUS_HANGING
+from src.literals import (
+    MSG_STATUS_DB_DOWN,
+    MSG_STATUS_DB_UNHEALTHY,
+    MSG_STATUS_HANGING,
+    MSG_STATUS_WORKLOAD_DOWN,
+)
 from tests.unit.test_charm import MSG_STATUS_UNHEALTHY
 
 logger = logging.getLogger(__name__)
@@ -53,6 +58,15 @@ def harness():
     harness._update_config({"log_level": "INFO"})
     harness.begin()
     return harness
+
+
+def test_unit_healthy_workload_down(harness):
+    """A stopped workload is reported as down instead of querying its API."""
+    with patch("workload.ODWorkload.alive", return_value=False):
+        healthy, message = harness.charm.health_manager.unit_healthy()
+
+    assert healthy is False
+    assert message == MSG_STATUS_WORKLOAD_DOWN
 
 
 @responses.activate

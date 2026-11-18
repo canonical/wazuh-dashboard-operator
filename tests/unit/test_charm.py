@@ -22,6 +22,7 @@ from literals import (
     CHARM_KEY,
     CONTAINER,
     MSG_INCOMPATIBLE_UPGRADE,
+    MSG_STARTING_SERVER,
     MSG_STATUS_ERROR,
     MSG_STATUS_UNHEALTHY,
     OPENSEARCH_REL_NAME,
@@ -247,10 +248,13 @@ def test_relation_changed_does_not_restart_on_departing(harness):
     with (
         patch("charms.rolling_ops.v0.rollingops.RollingOpsManager._on_acquire_lock") as patched,
         patch("managers.config.ConfigManager.set_dashboard_properties"),
-        patch("workload.ODWorkload.start"),
+        patch("workload.ODWorkload.start") as patched_start,
+        patch("charm.OpensearchDashboardsCharm.init_server") as patched_init_server,
     ):
         harness.remove_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
         patched.assert_not_called()
+        patched_init_server.assert_not_called()
+        patched_start.assert_not_called()
 
 
 def test_relation_changed_restarts(harness):
@@ -694,6 +698,7 @@ def test_service_available(harness):
         ),
     ):
         harness.charm.init_server()
+        harness.charm.unit.status = WaitingStatus(MSG_STARTING_SERVER)
         harness.charm.on.update_status.emit()
 
         assert isinstance(harness.model.unit.status, ActiveStatus)
