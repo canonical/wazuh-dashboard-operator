@@ -3,7 +3,7 @@
 
 """Tests for updating the Wazuh dashboard configuration without discarding settings."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -12,6 +12,7 @@ from charms.wazuh_server.v0 import wazuh_api
 from core.workload import WorkloadBase
 from literals import PATHS
 from managers.wazuh import WazuhManager
+from workload import ODWorkload
 
 EXPECTED_HOST = {
     "url": "https://wazuh.example",
@@ -99,3 +100,32 @@ def test_wazuh_updates_default_host_in_any_position(workload: MagicMock) -> None
     update_properties(workload)
     written = yaml.safe_load(workload.write.call_args.kwargs["content"])
     assert written["hosts"] == [{"other": {"url": "x"}}, {"default": EXPECTED_HOST}]
+
+
+def test_remove_legacy_config_removes_legacy_file(workload: MagicMock) -> None:
+    WazuhManager(workload).remove_legacy_config()
+
+    workload.remove.assert_called_once_with(PATHS["LEGACY_WAZUH_CONF"])
+
+
+def test_remove_legacy_config_does_not_touch_the_common_file(workload: MagicMock) -> None:
+    WazuhManager(workload).remove_legacy_config()
+
+    workload.read_raw.assert_not_called()
+    workload.write.assert_not_called()
+
+
+@patch("workload.os.remove", side_effect=FileNotFoundError)
+def test_workload_remove_ignores_missing_file(remove: MagicMock) -> None:
+    ODWorkload.__new__(ODWorkload).remove(PATHS["LEGACY_WAZUH_CONF"])
+
+    remove.assert_called_once_with(PATHS["LEGACY_WAZUH_CONF"])
+
+
+def test_wazuh_properties_unchanged_does_not_write(workload: MagicMock) -> None:
+    existing = {"hosts": [{"default": EXPECTED_HOST}]}
+    workload.read_raw.return_value = yaml.safe_dump(existing, sort_keys=False)
+
+    update_properties(workload)
+
+    workload.write.assert_not_called()

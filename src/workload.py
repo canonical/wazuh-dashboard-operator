@@ -19,7 +19,10 @@ from typing_extensions import override
 
 from core.workload import WorkloadBase
 from exceptions import OSDInstallError
-from literals import OPENSEARCH_DASHBOARDS_SNAP_CHANNEL, OPENSEARCH_DASHBOARDS_SNAP_REVISION
+from literals import (
+    OPENSEARCH_DASHBOARDS_SNAP_CHANNEL,
+    OPENSEARCH_DASHBOARDS_SNAP_REVISION,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -98,13 +101,11 @@ class ODWorkload(WorkloadBase):
 
     @override
     def read_raw(self, path: str) -> str:
-        if not os.path.exists(path):
-            return ""
-        else:
+        try:
             with open(path) as f:
-                content = f.read()
-
-        return content
+                return f.read()
+        except FileNotFoundError:
+            return ""
 
     @override
     def write(self, content: str, path: str) -> None:
@@ -115,6 +116,13 @@ class ODWorkload(WorkloadBase):
             f.write(content)
 
         shutil.chown(path, user="snap_daemon", group="root")
+
+    @override
+    def remove(self, path: str) -> None:
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
 
     @override
     def exec(self, command: list[str], working_dir: str | None = None) -> str:

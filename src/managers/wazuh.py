@@ -25,10 +25,26 @@ class WazuhManager:
     ) -> None:
         self.workload = workload
 
+    def remove_legacy_config(self) -> None:
+        """Remove the pre-4.14 Wazuh config path.
+
+        Wazuh 4.14 resolves its configuration from OpenSearch Dashboards'
+        ``path.data`` ($SNAP_COMMON) and the plugin creates ``wazuh.yml``
+        there on startup, so the old $SNAP_DATA/current/config copy is stale.
+        Remove it so the two locations cannot drift. The ``hosts`` entry is
+        written from relation data by ``set_dashboard_properties``.
+
+        If a rollback re-installs an older charm, that charm recreates the
+        legacy file from relation data on the next ``wazuh-api`` relation
+        change.
+        """
+        self.workload.remove(literals.PATHS["LEGACY_WAZUH_CONF"])
+
     def set_dashboard_properties(self, wazuh_config: wazuh_api.WazuhApiRelationData) -> None:
         """Writes the Wazuh config file."""
+        wazuh_conf = self.workload.read_raw(literals.PATHS["WAZUH_CONF"])
         try:
-            wazuh_conf_yaml = yaml.safe_load(self.workload.read_raw(literals.PATHS["WAZUH_CONF"]))
+            wazuh_conf_yaml = yaml.safe_load(wazuh_conf)
         except yaml.YAMLError:
             logger.warning("Existing Wazuh configuration is not valid YAML, overwriting it")
             wazuh_conf_yaml = None
@@ -52,7 +68,12 @@ class WazuhManager:
                 break
         else:
             hosts.insert(0, {"default": details})
+
+        content = yaml.safe_dump(wazuh_conf_yaml, sort_keys=False)
+        if content == wazuh_conf:
+            return
+
         self.workload.write(
-            content=yaml.safe_dump(wazuh_conf_yaml, sort_keys=False),
+            content=content,
             path=literals.PATHS["WAZUH_CONF"],
         )

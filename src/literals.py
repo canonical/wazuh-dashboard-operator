@@ -4,7 +4,7 @@
 
 """Collection of global literals for the charm."""
 
-OPENSEARCH_DASHBOARDS_SNAP_REVISION = "13"
+OPENSEARCH_DASHBOARDS_SNAP_REVISION = "16"
 OPENSEARCH_DASHBOARDS_SNAP_CHANNEL = "4.14/edge"
 
 SUBSTRATE = "vm"
@@ -35,7 +35,10 @@ PATHS = {
     "DATA": "/var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard",
     "LOGS": "/var/snap/wazuh-dashboard/common/var/log/wazuh-dashboard",
     "BIN": "/snap/wazuh-dashboard/current/opt/wazuh-dashboard",
-    "WAZUH_CONF": "/var/snap/wazuh-dashboard/current/config/wazuh/config/wazuh.yml",
+    "WAZUH_CONF": (
+        "/var/snap/wazuh-dashboard/common/var/lib/wazuh-dashboard/wazuh/config/wazuh.yml"
+    ),
+    "LEGACY_WAZUH_CONF": "/var/snap/wazuh-dashboard/current/config/wazuh/config/wazuh.yml",
 }
 
 PEER_APP_SECRETS = ["monitor-username", "monitor-password", "oauth-client-secret"]

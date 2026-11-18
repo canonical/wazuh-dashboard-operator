@@ -115,6 +115,15 @@ class WorkloadBase(ABC):
         ...
 
     @abstractmethod
+    def remove(self, path: str) -> None:
+        """Removes a workload file, ignoring it when it does not exist.
+
+        Args:
+            path: the full filepath to remove
+        """
+        ...
+
+    @abstractmethod
     def exec(self, command: list[str], working_dir: str | None = None) -> None:
         """Runs a command on the workload substrate."""
         ...
