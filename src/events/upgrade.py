@@ -87,7 +87,7 @@ class ODUpgradeEvents(DataUpgrade):
 
     @override
     def _on_upgrade_granted(self, event: UpgradeGrantedEvent) -> None:
-        self.charm.workload.stop()
+        self.charm.workload.stop(disable=True)
 
         try:
             self.charm.workload.install()
