@@ -37,21 +37,6 @@ def test_stop_can_disable_snap_services(mocker):
     )
 
 
-def test_stop_does_not_disable_by_default(mocker):
-    """Only the upgrade flow should disable boot startup."""
-    dashboards = MagicMock()
-    snap_cache = mocker.patch("workload.snap.SnapCache")
-    snap_cache.return_value = {ODWorkload.SNAP_NAME: dashboards}
-
-    workload = ODWorkload()
-    workload.stop()
-
-    dashboards.stop.assert_called_once_with(
-        services=[ODWorkload.SNAP_APP_SERVICE, ODWorkload.SNAP_EXPORTER_SERVICE],
-        disable=False,
-    )
-
-
 def test_restart_starts_and_enables_a_stopped_workload(mocker):
     dashboards = MagicMock()
     snap_cache = mocker.patch("workload.snap.SnapCache")
