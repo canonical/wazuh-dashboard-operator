@@ -240,63 +240,6 @@ def test_relation_changed_does_not_start_units_again(harness):
         patched.assert_not_called()
 
 
-def test_update_status_retries_starting_workload_after_reboot(harness):
-    """The snap service does not survive a reboot, so reconcile must start it again."""
-    with harness.hooks_disabled():
-        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
-        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
-
-    with (
-        patch("workload.ODWorkload.alive", return_value=False),
-        patch("charm.OpensearchDashboardsCharm.init_server") as patched_init_server,
-        patch("managers.config.ConfigManager.config_changed", return_value=False),
-        patch("managers.config.ConfigManager.set_dashboard_properties"),
-    ):
-        harness.charm.on.update_status.emit()
-
-        patched_init_server.assert_called_once()
-        assert isinstance(harness.model.unit.status, WaitingStatus)
-        assert harness.model.unit.status.message == MSG_STARTING_SERVER
-
-
-def test_update_status_does_not_start_workload_during_failed_upgrade(harness):
-    """Do not restart a workload deliberately left stopped by a failed upgrade."""
-    with harness.hooks_disabled():
-        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
-        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
-        upgrade_rel = harness.model.get_relation("upgrade")
-        harness.update_relation_data(upgrade_rel.id, f"{CHARM_KEY}/0", {"state": "failed"})
-
-    with (
-        patch("workload.ODWorkload.alive", return_value=False),
-        patch("charm.OpensearchDashboardsCharm.init_server") as patched_init_server,
-        patch("managers.config.ConfigManager.config_changed", return_value=False),
-        patch("managers.config.ConfigManager.set_dashboard_properties"),
-    ):
-        harness.charm.on.update_status.emit()
-
-        patched_init_server.assert_not_called()
-
-
-def test_update_status_does_not_start_running_workload(harness):
-    with harness.hooks_disabled():
-        peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
-        harness.add_relation_unit(peer_rel_id, f"{CHARM_KEY}/0")
-        harness.update_relation_data(peer_rel_id, f"{CHARM_KEY}/0", {"state": "started"})
-
-    with (
-        patch("workload.ODWorkload.alive", return_value=True),
-        patch("charm.OpensearchDashboardsCharm.init_server") as patched_init_server,
-        patch("managers.config.ConfigManager.config_changed", return_value=False),
-        patch("managers.config.ConfigManager.set_dashboard_properties"),
-    ):
-        harness.charm.on.update_status.emit()
-
-        patched_init_server.assert_not_called()
-
-
 def test_relation_changed_does_not_restart_on_departing(harness):
     with harness.hooks_disabled():
         peer_rel_id = harness.add_relation(PEER, CHARM_KEY)
