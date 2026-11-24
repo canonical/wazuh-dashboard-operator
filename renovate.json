@@ -1,0 +1,65 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "enabledManagers": [
+    "custom.regex"
+  ],
+  "hostRules": [
+    {
+      "matchHost": "api.snapcraft.io",
+      "headers": {
+        "X-Ubuntu-Series": "16",
+        "X-Ubuntu-Architecture": "amd64"
+      }
+    }
+  ],
+  "customDatasources": {
+    "snapstore-revision": {
+      "defaultRegistryUrlTemplate": "https://api.snapcraft.io/api/v1/snaps/details/{{packageName}}?channel=4.14/edge&fields=revision,version",
+      "format": "json",
+      "transformTemplates": [
+        "{\"releases\": [{\"version\": $string(revision)}]}"
+      ]
+    },
+    "snapstore-version": {
+      "defaultRegistryUrlTemplate": "https://api.snapcraft.io/api/v1/snaps/details/{{packageName}}?channel=4.14/edge&fields=revision,version",
+      "format": "json",
+      "transformTemplates": [
+        "{\"releases\": [{\"version\": version}]}"
+      ]
+    }
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "wazuh-dashboard snap revision on the 4.14/edge channel",
+      "managerFilePatterns": [
+        "/(^|/)literals\\.py$/"
+      ],
+      "matchStrings": [
+        "OPENSEARCH_DASHBOARDS_SNAP_REVISION = \"(?<currentValue>\\d+)\""
+      ],
+      "depNameTemplate": "wazuh-dashboard",
+      "datasourceTemplate": "custom.snapstore-revision",
+      "versioningTemplate": "semver-coerced"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Keep the wazuh-dashboard snap revision and the Wazuh workload version in a single PR; an integration run must gate it, so do not automerge.",
+      "matchPackageNames": [
+        "wazuh-dashboard"
+      ],
+      "groupName": "wazuh-dashboard-snap",
+      "automerge": false
+    }
+  ],
+  "schedule": [
+    "* * * * 0,6"
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  }
+}
