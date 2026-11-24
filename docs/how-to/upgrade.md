@@ -6,6 +6,11 @@ Before upgrading or refreshing the charm, run the `pre-upgrade-check` action on 
 The action validates that the workload is running and creates the upgrade stack that
 `juju refresh` uses to coordinate the upgrade.
 
+```{important}
+The Wazuh indexer, dashboard and server must run the same Wazuh version, patch included.
+Upgrade all three together, in this order: indexer, dashboard, then server.
+```
+
 ```{note}
 Always run `pre-upgrade-check` before `juju refresh`. Refreshing without the upgrade stack leaves
 the workload snap on its previous revision, and the dashboard can report an API version mismatch.
