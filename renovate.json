@@ -30,6 +30,13 @@
       "transformTemplates": [
         "{\"releases\": [{\"version\": version}]}"
       ]
+    },
+    "charmhub-revision": {
+      "defaultRegistryUrlTemplate": "https://api.charmhub.io/v2/charms/info/{{packageName}}?fields=channel-map.revision.revision",
+      "format": "json",
+      "transformTemplates": [
+        "{\"releases\": [{\"version\": $string(`channel-map`[channel.name = \"4.14/edge\" and channel.base.architecture = \"amd64\"][0].revision.revision)}]}"
+      ]
     }
   },
   "customManagers": [
@@ -45,13 +52,27 @@
       "depNameTemplate": "wazuh-dashboard",
       "datasourceTemplate": "custom.snapstore-revision",
       "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "wazuh-indexer charm revision on the 4.14/edge channel, used by the integration tests",
+      "managerFilePatterns": [
+        "/(^|/)tests/integration/helpers\\.py$/"
+      ],
+      "matchStrings": [
+        "OPENSEARCH_REVISION = (?<currentValue>\\d+)"
+      ],
+      "depNameTemplate": "wazuh-indexer",
+      "datasourceTemplate": "custom.charmhub-revision",
+      "versioningTemplate": "semver-coerced"
     }
   ],
   "packageRules": [
     {
-      "description": "Keep the wazuh-dashboard snap revision and the Wazuh workload version in a single PR; an integration run must gate it, so do not automerge.",
+      "description": "Keep the wazuh-dashboard snap revision, the wazuh-indexer charm revision and the Wazuh workload version in a single PR; an integration run must gate it, so do not automerge.",
       "matchPackageNames": [
-        "wazuh-dashboard"
+        "wazuh-dashboard",
+        "wazuh-indexer"
       ],
       "groupName": "wazuh-dashboard-snap",
       "automerge": false,
